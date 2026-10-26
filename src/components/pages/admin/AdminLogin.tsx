@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Check, Eye, EyeOff } from "lucide-react";
+import { LuArrowLeft as ArrowLeft, LuCheck as Check, LuEye as Eye, LuEyeOff as EyeOff } from "react-icons/lu";
 
 export function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);

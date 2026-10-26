@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Flag, Heart, Shirt } from "lucide-react";
+import { LuArrowRight as ArrowRight, LuFlag as Flag, LuHeart as Heart, LuShirt as Shirt } from "react-icons/lu";
 
 export const metadata = { title: "About GoalNet" };
 

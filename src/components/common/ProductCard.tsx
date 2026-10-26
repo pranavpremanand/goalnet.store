@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Heart } from "lucide-react";
+import { LuArrowUpRight as ArrowUpRight, LuHeart as Heart } from "react-icons/lu";
 import { formatRupees, type Product } from "@/data/products";
 
 export function ProductCard({ product }: { product: Product }) {

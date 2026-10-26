@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { LuCheck as Check, LuPencil as Pencil, LuPlus as Plus, LuTrash2 as Trash2, LuX as X } from "react-icons/lu";
 
 const initialCategories = ["National jerseys", "Club jerseys", "Retro classics", "Special editions"];
 

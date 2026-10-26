@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, ExternalLink } from "lucide-react";
+import { LuBell as Bell, LuExternalLink as ExternalLink } from "react-icons/lu";
 import { BrandMark } from "@/ui/BrandMark";
 
 export function AdminNavbar() {

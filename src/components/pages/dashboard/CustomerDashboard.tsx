@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bell, CalendarCheck, Check, ChevronDown, ChevronUp, CircleHelp, CreditCard, Heart, LayoutDashboard, LogOut, MapPin, MessageCircle, Package, Pencil, Plus, Settings, Star, Trash2, Truck, UserRound, X } from "lucide-react";
+import { LuArrowRight as ArrowRight, LuBell as Bell, LuCalendarCheck as CalendarCheck, LuCheck as Check, LuChevronDown as ChevronDown, LuChevronUp as ChevronUp, LuCircleHelp as CircleHelp, LuCreditCard as CreditCard, LuHeart as Heart, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuMapPin as MapPin, LuMessageCircle as MessageCircle, LuPackage as Package, LuPencil as Pencil, LuPlus as Plus, LuSettings as Settings, LuStar as Star, LuTrash2 as Trash2, LuTruck as Truck, LuUserRound as UserRound, LuX as X } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
 import { featuredProducts, formatRupees } from "@/data/products";
 

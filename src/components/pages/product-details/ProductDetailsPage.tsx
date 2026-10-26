@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, Heart, Share2, Star, Truck, X } from "lucide-react";
+import { LuArrowRight as ArrowRight, LuCheck as Check, LuHeart as Heart, LuShare2 as Share2, LuStar as Star, LuTruck as Truck, LuX as X } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { featuredProducts, formatRupees, type Product } from "@/data/products";

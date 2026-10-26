@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Filter, SlidersHorizontal, X } from "lucide-react";
+import { LuFilter as Filter, LuSlidersHorizontal as SlidersHorizontal, LuX as X } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
 import { featuredProducts } from "@/data/products";
 

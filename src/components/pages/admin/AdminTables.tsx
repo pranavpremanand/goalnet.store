@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, Search, ShieldAlert, Users } from "lucide-react";
+import { LuCheck as Check, LuChevronDown as ChevronDown, LuSearch as Search, LuShieldAlert as ShieldAlert, LuUsers as Users } from "react-icons/lu";
 
 const initialUsers = [
   { name: "Aarav Mehta", email: "aarav@example.com", created: "18 Oct 2026", blocked: false },

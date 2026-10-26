@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Minus, Plus, ShieldCheck, Trash2, X } from "lucide-react";
+import { LuCheck as Check, LuMinus as Minus, LuPlus as Plus, LuShieldCheck as ShieldCheck, LuTrash2 as Trash2, LuX as X } from "react-icons/lu";
 import { formatRupees } from "@/data/products";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 

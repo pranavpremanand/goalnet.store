@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Eye, EyeOff, Mail, Phone, Check } from "lucide-react";
+import { LuArrowLeft as ArrowLeft, LuEye as Eye, LuEyeOff as EyeOff, LuMail as Mail, LuPhone as Phone, LuCheck as Check } from "react-icons/lu";
 
 type AuthMode = "login" | "signup" | "forgot-password";
 

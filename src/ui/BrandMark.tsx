@@ -6,19 +6,24 @@ type BrandMarkProps = {
   compact?: boolean;
 };
 
-export function BrandMark({ inverse = false, compact = false }: BrandMarkProps) {
+export function BrandMark({
+  inverse = false,
+  compact = false,
+}: BrandMarkProps) {
   return (
     <Link
       aria-label="GoalNet home"
-      className={`inline-flex items-center ${inverse ? "bg-white p-1.5" : ""}`}
+      className="inline-flex items-center"
       href="/"
     >
       <Image
         alt=""
-        className={compact ? "h-12 w-auto object-contain" : "h-14 w-auto object-contain"}
+        className={
+          compact ? "h-12 w-auto object-contain" : "h-14 w-auto object-contain"
+        }
         height={887}
         priority
-        src="/logo.png"
+        src={inverse ? "logo-white.png" : "/logo.png"}
         unoptimized
         width={1774}
       />

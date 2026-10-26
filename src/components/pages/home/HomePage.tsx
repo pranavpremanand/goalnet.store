@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, ArrowUpRight, Quote } from "lucide-react";
+import { LuArrowDown as ArrowDown, LuArrowRight as ArrowRight, LuArrowUpRight as ArrowUpRight, LuQuote as Quote } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
 import { featuredProducts } from "@/data/products";
 

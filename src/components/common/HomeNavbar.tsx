@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
-  Menu,
-  Search,
-  ShoppingBag,
-  UserRound,
-  X,
-} from "lucide-react";
+  LuArrowRight as ArrowRight,
+  LuMenu as Menu,
+  LuSearch as Search,
+  LuShoppingBag as ShoppingBag,
+  LuUserRound as UserRound,
+  LuX as X,
+} from "react-icons/lu";
 import { BrandMark } from "@/ui/BrandMark";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 

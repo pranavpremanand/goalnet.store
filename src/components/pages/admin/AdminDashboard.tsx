@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, CircleDollarSign, Package, ShoppingBag, Users } from "lucide-react";
+import { LuArrowRight as ArrowRight, LuBoxes as Boxes, LuCircleDollarSign as CircleDollarSign, LuPackage as Package, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
 import { featuredProducts, formatRupees } from "@/data/products";
 
 const metrics = [

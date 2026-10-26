@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, ClipboardList, LayoutDashboard, LogOut, ShoppingBag, Users } from "lucide-react";
+import { LuBoxes as Boxes, LuClipboardList as ClipboardList, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
 
 const items = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },

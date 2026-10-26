@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, ImagePlus, Plus, X } from "lucide-react";
+import { LuArrowUpRight as ArrowUpRight, LuImagePlus as ImagePlus, LuPlus as Plus, LuX as X } from "react-icons/lu";
 import { featuredProducts, formatRupees, type Product } from "@/data/products";
 
 const sizes = ["XS", "S", "M", "L", "XL"];
