@@ -40,7 +40,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-white/15 px-5 py-4 text-center text-[11px] text-white/55">
-        © 2026 Play On. Made for the love of the game.
+        © 2026 GoalNet. Made for the love of the game.
       </div>
     </footer>
   );

@@ -30,7 +30,7 @@ export function ContactForm() {
       </section>
       <aside className="relative flex min-h-[360px] flex-col justify-end overflow-hidden bg-charcoal p-7 text-white sm:p-10">
         <div aria-hidden="true" className="absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(135deg, transparent 48%, rgba(242,250,24,.35) 49%, transparent 50%), linear-gradient(45deg, transparent 48%, rgba(255,255,255,.15) 49%, transparent 50%)", backgroundSize: "44px 44px" }} />
-        <div className="relative"><p className="text-xs font-bold uppercase text-brand">Play On support</p><h2 className="mt-3 max-w-sm font-display text-3xl font-semibold">Good football starts with good people.</h2><div className="mt-8 space-y-4 text-sm"><a className="flex items-center gap-3 hover:text-brand" href="mailto:playon@example.com"><Mail size={17} /> playon@example.com</a><a className="flex items-center gap-3 hover:text-brand" href="tel:+16035550123"><Phone size={17} /> (603) 555-0123</a><p className="flex items-center gap-3"><MapPin size={17} /> Ahmedabad, India</p></div></div>
+        <div className="relative"><p className="text-xs font-bold uppercase text-brand">GoalNet support</p><h2 className="mt-3 max-w-sm font-display text-3xl font-semibold">Good football starts with good people.</h2><div className="mt-8 space-y-4 text-sm"><a className="flex items-center gap-3 hover:text-brand" href="mailto:goalnet@example.com"><Mail size={17} /> goalnet@example.com</a><a className="flex items-center gap-3 hover:text-brand" href="tel:+16035550123"><Phone size={17} /> (603) 555-0123</a><p className="flex items-center gap-3"><MapPin size={17} /> Ahmedabad, India</p></div></div>
       </aside>
     </main>
   );

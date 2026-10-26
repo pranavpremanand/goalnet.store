@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -24,6 +24,21 @@ export function HomeNavbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { itemCount } = useLocalCart();
 
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
   return (
     <>
       <div className="flex min-h-9 items-center justify-center bg-ink px-4 text-center text-[11px] font-semibold uppercase text-white sm:text-xs">
@@ -38,6 +53,7 @@ export function HomeNavbar() {
             <button
               aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={menuOpen}
+              aria-controls="mobile-navigation-drawer"
               className="grid size-10 place-items-center bg-brand text-ink transition hover:bg-[#d8df0d] lg:hidden"
               onClick={() => setMenuOpen(!menuOpen)}
               type="button"
@@ -118,19 +134,45 @@ export function HomeNavbar() {
       </header>
 
       {menuOpen && (
-        <div className="fixed inset-0 top-[108px] z-30 bg-paper px-6 pb-10 pt-4 lg:hidden">
-          <div className="mx-auto flex max-w-lg flex-col">
-            {links.map((link, index) => (
-              <Link
-                className="flex items-center justify-between border-b border-line py-5 font-display text-3xl font-semibold"
-                href={link.href}
-                key={link.href}
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            aria-label="Close navigation menu"
+            className="drawer-backdrop absolute inset-0 bg-black/45"
+            onClick={() => setMenuOpen(false)}
+            type="button"
+          />
+          <aside
+            aria-label="Mobile navigation"
+            aria-modal="true"
+            className="drawer-enter absolute inset-y-0 left-0 flex w-[min(88vw,24rem)] flex-col bg-paper px-6 pb-8 pt-5 shadow-2xl"
+            id="mobile-navigation-drawer"
+            role="dialog"
+          >
+            <div className="flex items-center justify-between border-b border-line pb-5">
+              <BrandMark />
+              <button
+                aria-label="Close navigation menu"
+                autoFocus
+                className="grid size-10 place-items-center border border-line"
                 onClick={() => setMenuOpen(false)}
+                type="button"
               >
-                <span>0{index + 1} / {link.label}</span>
-                <ArrowRight aria-hidden="true" size={22} />
-              </Link>
-            ))}
+                <X size={19} />
+              </button>
+            </div>
+            <nav aria-label="Mobile navigation links" className="mt-4">
+              {links.map((link) => (
+                <Link
+                  className="flex items-center justify-between border-b border-line py-5 font-display text-2xl font-semibold"
+                  href={link.href}
+                  key={link.href}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {link.label}
+                  <ArrowRight aria-hidden="true" size={20} />
+                </Link>
+              ))}
+            </nav>
             <Link
               className="mt-7 inline-flex w-fit items-center gap-2 bg-brand px-5 py-3 text-sm font-bold uppercase"
               href="/login"
@@ -138,7 +180,7 @@ export function HomeNavbar() {
             >
               Account <UserRound size={16} />
             </Link>
-          </div>
+          </aside>
         </div>
       )}
     </>

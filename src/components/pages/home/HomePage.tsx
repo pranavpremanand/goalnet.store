@@ -26,10 +26,10 @@ export function HomePage() {
             <p className="mb-6 flex items-center gap-3 text-xs font-bold uppercase text-brand sm:text-sm">
               <span className="h-px w-9 bg-brand" /> The shirt is never just a shirt
             </p>
-            <h1 className="font-display text-5xl font-semibold leading-[0.98] sm:text-6xl md:text-7xl">
+            <h1 className="font-display text-[2.8rem] font-semibold leading-[0.98] md:!leading-tight sm:text-6xl md:text-7xl">
               Every legend
               <br />
-              has a <span className="bg-brand px-2 text-ink">beginning.</span>
+              has a <span className="inline-block bg-brand px-2 pb-2 text-ink">beginning.</span>
             </h1>
             <p className="mt-7 max-w-md font-copy text-sm leading-7 text-white/85 sm:text-base">
               Wear the colors that carry a story. Find your team, your era, your
@@ -47,15 +47,12 @@ export function HomePage() {
           <div className="absolute bottom-7 left-5 flex items-center gap-3 text-[10px] font-semibold uppercase text-white/75 sm:left-8 lg:left-14">
             <ArrowDown aria-hidden="true" size={16} /> Scroll to find your colors
           </div>
-          <span className="absolute bottom-7 right-5 hidden text-[10px] font-semibold uppercase text-white/70 sm:right-8 sm:block lg:right-14">
-            01 — Play On / 2026
-          </span>
         </div>
       </section>
 
       <section className="mx-auto grid max-w-[1440px] gap-5 px-5 py-16 sm:px-8 md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-8 md:py-24 lg:px-14">
         <div className="flex items-start gap-3 text-brand">
-          <Quote aria-hidden="true" className="mt-1 shrink-0" fill="currentColor" size={22} />
+          <Quote aria-hidden="true" stroke="black" strokeWidth={0.2} className="mt-1 shrink-0" fill="currentColor" size={22} />
           <span className="font-display text-sm font-bold uppercase text-ink">A little more than<br /> ninety minutes</span>
         </div>
         <p className="max-w-[750px] font-display text-2xl font-medium leading-snug sm:text-3xl md:text-center">
