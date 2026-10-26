@@ -29,7 +29,7 @@ export function HomePage() {
             <h1 className="font-display text-[2.8rem] font-semibold !leading-[1.2] md:!leading-tight sm:text-6xl md:text-7xl">
               Every legend
               <br />
-              has a <span className="inline-block bg-brand px-2 pb-2 text-ink">beginning.</span>
+              has a <span className="inline-block bg-brand px-2 py-0.5 text-ink">beginning.</span>
             </h1>
             <p className="mt-7 max-w-md font-copy text-sm leading-7 text-white/85 sm:text-base">
               Wear the colors that carry a story. Find your team, your era, your
