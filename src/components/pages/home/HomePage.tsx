@@ -26,7 +26,7 @@ export function HomePage() {
             <p className="mb-6 flex items-center gap-3 text-xs font-bold uppercase text-brand sm:text-sm">
               <span className="h-px w-9 bg-brand" /> The shirt is never just a shirt
             </p>
-            <h1 className="font-display text-[2.8rem] font-semibold leading-[0.98] md:!leading-tight sm:text-6xl md:text-7xl">
+            <h1 className="font-display text-[2.8rem] font-semibold !leading-[0.98] md:!leading-tight sm:text-6xl md:text-7xl">
               Every legend
               <br />
               has a <span className="inline-block bg-brand px-2 pb-2 text-ink">beginning.</span>
