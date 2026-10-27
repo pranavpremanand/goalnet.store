@@ -1,139 +1,77 @@
-const productionEndpoint = "https://staging-express.delhivery.com/c/api/pin-codes/json";
-// const productionEndpoint = "https://track.delhivery.com/c/api/pin-codes/json/";
+type JsonRecord = Record<string, unknown>;
 
-const stateNames: Record<string, string> = {
-  AN: "Andaman and Nicobar Islands",
-  AP: "Andhra Pradesh",
-  AR: "Arunachal Pradesh",
-  AS: "Assam",
-  BR: "Bihar",
-  CH: "Chandigarh",
-  CG: "Chhattisgarh",
-  DD: "Dadra and Nagar Haveli and Daman and Diu",
-  DL: "Delhi",
-  GA: "Goa",
-  GJ: "Gujarat",
-  HP: "Himachal Pradesh",
-  HR: "Haryana",
-  JH: "Jharkhand",
-  JK: "Jammu and Kashmir",
-  KA: "Karnataka",
-  KL: "Kerala",
-  LA: "Ladakh",
-  LD: "Lakshadweep",
-  MH: "Maharashtra",
-  ML: "Meghalaya",
-  MN: "Manipur",
-  MP: "Madhya Pradesh",
-  MZ: "Mizoram",
-  NL: "Nagaland",
-  OD: "Odisha",
-  PB: "Punjab",
-  PY: "Puducherry",
-  RJ: "Rajasthan",
-  SK: "Sikkim",
-  TN: "Tamil Nadu",
-  TR: "Tripura",
-  TS: "Telangana",
-  UK: "Uttarakhand",
-  UP: "Uttar Pradesh",
-  WB: "West Bengal",
-};
-
-type DataRecord = Record<string, unknown>;
-
-function asRecord(value: unknown): DataRecord | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as DataRecord
-    : null;
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function firstText(record: DataRecord, keys: string[]) {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (typeof value === "number") return String(value);
-  }
-  return "";
+function isEnabled(value: unknown) {
+  return ["y", "yes", "true", "1"].includes(String(value ?? "").toLowerCase());
 }
 
-function recordsFrom(payload: unknown): DataRecord[] {
-  if (Array.isArray(payload)) {
-    return payload.map(asRecord).filter((record): record is DataRecord => record !== null);
-  }
-
-  const root = asRecord(payload);
-  if (!root) return [];
-
-  for (const key of ["delivery_codes", "data", "results"]) {
-    const value = root[key];
-    if (Array.isArray(value)) {
-      return value.map(asRecord).filter((record): record is DataRecord => record !== null);
-    }
-  }
-  return [];
-}
-
-function enabled(value: unknown) {
-  return value === true || value === 1 || (typeof value === "string" && ["y", "yes", "true", "1"].includes(value.toLowerCase()));
+function readText(record: JsonRecord, key: string) {
+  const value = record[key];
+  return typeof value === "string" || typeof value === "number" ? String(value) : "";
 }
 
 export async function GET(request: Request) {
-  const pin = new URL(request.url).searchParams.get("pin")?.trim() ?? "";
-  if (!/^\d{6}$/.test(pin)) {
+  const pincode = new URL(request.url).searchParams.get("pincode")?.trim() ?? "";
+
+  if (!/^\d{6}$/.test(pincode)) {
     return Response.json({ error: "Enter a valid 6-digit pincode." }, { status: 400 });
   }
 
-  const token = process.env.DELHIVERY_API_TOKEN;
+  const token = process.env.DELHIVERY_API_TOKEN?.trim();
   if (!token) {
     return Response.json(
-      { error: "Pincode lookup is not configured. Enter city and state manually." },
+      { error: "Delivery lookup is not configured. Please contact support." },
       { status: 503 },
     );
   }
 
+  const endpoint = new URL("https://staging-express.delhivery.com/c/api/pin-codes/json/");
+  endpoint.searchParams.set("filter_codes", pincode);
+
   try {
-    const url = new URL(productionEndpoint);
-    url.searchParams.set("filter_codes", pin);
-    const upstream = await fetch(url, {
-      headers: { Authorization: `Token ${token}`, Accept: "application/json" },
+    const upstream = await fetch(endpoint, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Token ${token}`,
+      },
       cache: "no-store",
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!upstream.ok) {
       return Response.json(
-        { error: "Pincode lookup is unavailable. Enter city and state manually." },
+        { error: "The delivery service could not verify this pincode. Please try again." },
         { status: 502 },
       );
     }
 
-    const records = recordsFrom(await upstream.json());
-    const result = records[0];
-    const postalData = result ? asRecord(result.postal_code) ?? result : null;
-    if (!postalData) {
-      return Response.json({ error: "No delivery information was found for this pincode." }, { status: 404 });
+    const payload: unknown = await upstream.json();
+    const deliveryCodes = isRecord(payload) && Array.isArray(payload.delivery_codes)
+      ? payload.delivery_codes
+      : [];
+    const firstResult = deliveryCodes.find(isRecord);
+    const postalCode = firstResult && isRecord(firstResult.postal_code)
+      ? firstResult.postal_code
+      : null;
+
+    if (!postalCode) {
+      return Response.json({ pincode, serviceable: false });
     }
 
-    const city = firstText(postalData, ["city", "city_name", "district", "district_name", "taluk"]);
-    const rawState = firstText(postalData, ["state", "state_name", "state_code"]);
-    const state = stateNames[rawState.toUpperCase()] ?? rawState;
-    if (!city || !state) {
-      return Response.json(
-        { error: "City or state details were not returned. Enter them manually." },
-        { status: 502 },
-      );
-    }
-
-    const availabilityFlags = ["pre_paid", "cod", "cash", "delivery"]
-      .filter((key) => key in postalData)
-      .map((key) => postalData[key]);
-    const serviceable = availabilityFlags.length === 0 || availabilityFlags.some(enabled);
-
-    return Response.json({ pin, city, state, serviceable });
+    const serviceable = isEnabled(postalCode.pre_paid) || isEnabled(postalCode.delivery);
+    return Response.json({
+      pincode,
+      serviceable,
+      city: readText(postalCode, "city"),
+      district: readText(postalCode, "district"),
+      state: readText(postalCode, "state"),
+    });
   } catch {
     return Response.json(
-      { error: "Pincode lookup is unavailable. Enter city and state manually." },
+      { error: "The delivery service could not be reached. Please try again." },
       { status: 502 },
     );
   }

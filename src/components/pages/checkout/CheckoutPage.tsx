@@ -7,17 +7,17 @@ import { LuCheck as Check, LuMinus as Minus, LuPlus as Plus, LuShieldCheck as Sh
 import { formatRupees } from "@/data/products";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 
-type Address = { name: string; phone: string; email: string; pin: string; address: string; city: string; state: string };
+type Address = { name: string; phone: string; email: string; pin: string; address: string };
+type PincodeLookup = { status: "idle" | "loading" | "success" | "error"; message: string };
 
 export function CheckoutPage() {
   const { items, total, updateQuantity, removeItem, clearCart } = useLocalCart();
-  const [address, setAddress] = useState<Address>({ name: "Aarav Mehta", phone: "+91 98765 43210", email: "aarav@example.com", pin: "380001", address: "12 Riverfront Road", city: "Ahmedabad", state: "Gujarat" });
+  const [address, setAddress] = useState<Address>({ name: "Aarav Mehta", phone: "+91 98765 43210", email: "aarav@example.com", pin: "380001", address: "12 Riverfront Road, Ahmedabad, Gujarat" });
   const [addressFormOpen, setAddressFormOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [protect, setProtect] = useState(false);
-  const [draft, setDraft] = useState<Address>({ name: "", phone: "", email: "", pin: "", address: "", city: "", state: "" });
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupMessage, setLookupMessage] = useState("");
+  const [draft, setDraft] = useState<Address>({ name: "", phone: "", email: "", pin: "", address: "" });
+  const [pincodeLookup, setPincodeLookup] = useState<PincodeLookup>({ status: "idle", message: "" });
   const totalDue = total + 80 + (protect ? 499 : 0);
 
   function saveAddress(event: React.FormEvent<HTMLFormElement>) {
@@ -26,31 +26,40 @@ export function CheckoutPage() {
     setAddressFormOpen(false);
   }
 
-  async function lookupPincode() {
+  async function checkPincode() {
     if (!/^\d{6}$/.test(draft.pin)) {
-      setLookupMessage("Enter a valid 6-digit pincode.");
+      setPincodeLookup({ status: "error", message: "Enter a valid 6-digit pincode." });
       return;
     }
 
-    setLookupLoading(true);
-    setLookupMessage("");
+    setPincodeLookup({ status: "loading", message: "Checking delivery availability…" });
     try {
-      const response = await fetch(`/api/delivery/pincode?pin=${encodeURIComponent(draft.pin)}`);
-      const result = await response.json() as { city?: string; state?: string; serviceable?: boolean; error?: string };
-      if (!response.ok) throw new Error(result.error ?? "Pincode lookup failed.");
+      const response = await fetch(`/api/delivery/pincode?pincode=${encodeURIComponent(draft.pin)}`, { cache: "no-store" });
+      const result = await response.json() as {
+        serviceable?: boolean;
+        city?: string;
+        district?: string;
+        state?: string;
+        error?: string;
+      };
 
-      setDraft((current) => ({
-        ...current,
-        city: result.city ?? current.city,
-        state: result.state ?? current.state,
-      }));
-      setLookupMessage(result.serviceable === false
-        ? "Location found, but courier serviceability is unavailable for this pincode."
-        : "City and state found. Please confirm the address details.");
-    } catch (error) {
-      setLookupMessage(error instanceof Error ? error.message : "Lookup failed. Enter city and state manually.");
-    } finally {
-      setLookupLoading(false);
+      if (!response.ok) {
+        setPincodeLookup({ status: "error", message: result.error ?? "Delivery availability could not be checked." });
+        return;
+      }
+
+      if (!result.serviceable) {
+        setPincodeLookup({ status: "error", message: "This pincode is not listed for prepaid delivery." });
+        return;
+      }
+
+      const locality = [result.city, result.district, result.state].filter(Boolean).join(", ");
+      setPincodeLookup({
+        status: "success",
+        message: `Pincode listed for delivery${locality ? ` in ${locality}` : ""}. Final serviceability is subject to courier confirmation.`,
+      });
+    } catch {
+      setPincodeLookup({ status: "error", message: "The delivery service could not be reached. Please try again." });
     }
   }
 
@@ -82,37 +91,32 @@ export function CheckoutPage() {
       <div className="mt-8 grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
         <section>
           <div className="flex items-center justify-between border-b border-line pb-4"><h2 className="font-display text-2xl font-semibold">Delivery information</h2><span className="text-xs font-bold uppercase text-muted">01 / 02</span></div>
-          <div className="mt-5 border border-line p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex gap-3">
-                <span className="mt-1 grid size-5 shrink-0 place-items-center border border-ink bg-brand"><Check size={13} /></span>
-                <div>
-                  <p className="font-semibold">{address.name}</p>
-                  <p className="mt-1 text-sm text-muted">{address.address}, {address.city}, {address.state}</p>
-                  <p className="mt-1 text-sm text-muted">{address.phone} · {address.email}</p>
-                  <p className="mt-1 text-sm text-muted">PIN {address.pin}</p>
-                </div>
-              </div>
-              <button className="text-xs font-bold uppercase underline" onClick={() => { setDraft(address); setAddressFormOpen(true); }} type="button">Edit</button>
-            </div>
-          </div>
+          <div className="mt-5 border border-line p-4 sm:p-5"><div className="flex items-start justify-between gap-4"><div className="flex gap-3"><span className="mt-1 grid size-5 shrink-0 place-items-center border border-ink bg-brand"><Check size={13} /></span><div><p className="font-semibold">{address.name}</p><p className="mt-1 text-sm text-muted">{address.address}</p><p className="mt-1 text-sm text-muted">{address.phone} · {address.email}</p><p className="mt-1 text-sm text-muted">PIN {address.pin}</p></div></div><button className="text-xs font-bold uppercase underline" onClick={() => { setDraft(address); setAddressFormOpen(true); }} type="button">Edit</button></div></div>
           {!addressFormOpen ? (
-            <button className="mt-4 text-xs font-bold uppercase underline decoration-brand decoration-2 underline-offset-4" onClick={() => { setDraft({ name: "", phone: "", email: "", pin: "", address: "", city: "", state: "" }); setLookupMessage(""); setAddressFormOpen(true); }} type="button">+ Add another address</button>
+            <button
+              className="mt-4 text-xs font-bold uppercase underline decoration-brand decoration-2 underline-offset-4"
+              onClick={() => {
+                setDraft({ name: "", phone: "", email: "", pin: "", address: "" });
+                setPincodeLookup({ status: "idle", message: "" });
+                setAddressFormOpen(true);
+              }}
+              type="button"
+            >
+              + Add another address
+            </button>
           ) : (
             <form className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-2" onSubmit={saveAddress}>
               <label className="text-xs font-semibold">Full name<input className="mt-1.5 w-full border border-line p-3 text-sm" onChange={(event) => setDraft({ ...draft, name: event.target.value })} required value={draft.name} /></label>
               <label className="text-xs font-semibold">Phone<input className="mt-1.5 w-full border border-line p-3 text-sm" onChange={(event) => setDraft({ ...draft, phone: event.target.value })} required value={draft.phone} /></label>
               <label className="text-xs font-semibold">Email<input className="mt-1.5 w-full border border-line p-3 text-sm" onChange={(event) => setDraft({ ...draft, email: event.target.value })} required type="email" value={draft.email} /></label>
-              <label className="text-xs font-semibold">Pincode
-                <span className="mt-1.5 flex border border-line">
-                  <input aria-describedby="pincode-lookup-message" className="min-w-0 flex-1 p-3 text-sm outline-none" inputMode="numeric" maxLength={6} onChange={(event) => { setDraft({ ...draft, pin: event.target.value.replace(/\D/g, "") }); setLookupMessage(""); }} required value={draft.pin} />
-                  <button className="shrink-0 border-l border-line px-3 text-[10px] font-bold uppercase disabled:text-muted" disabled={lookupLoading} onClick={lookupPincode} type="button">{lookupLoading ? "Checking" : "Lookup"}</button>
-                </span>
-              </label>
-              <label className="text-xs font-semibold">City<input autoComplete="address-level2" className="mt-1.5 w-full border border-line p-3 text-sm" onChange={(event) => setDraft({ ...draft, city: event.target.value })} required value={draft.city} /></label>
-              <label className="text-xs font-semibold">State<input autoComplete="address-level1" className="mt-1.5 w-full border border-line p-3 text-sm" onChange={(event) => setDraft({ ...draft, state: event.target.value })} required value={draft.state} /></label>
-              <label className="text-xs font-semibold sm:col-span-2">Street address<textarea autoComplete="street-address" className="mt-1.5 w-full border border-line p-3 text-sm" onChange={(event) => setDraft({ ...draft, address: event.target.value })} required value={draft.address} /></label>
-              <p aria-live="polite" className="text-xs text-muted sm:col-span-2" id="pincode-lookup-message">{lookupMessage || "City and state can be edited manually if lookup is unavailable."}</p>
+              <div>
+                <div className="flex items-end gap-2">
+                  <label className="min-w-0 flex-1 text-xs font-semibold">Pincode<input className="mt-1.5 w-full border border-line p-3 text-sm" inputMode="numeric" maxLength={6} onChange={(event) => { setDraft({ ...draft, pin: event.target.value.replace(/\D/g, "").slice(0, 6) }); setPincodeLookup({ status: "idle", message: "" }); }} required value={draft.pin} /></label>
+                  <button className="mb-px min-h-[46px] shrink-0 border border-line px-3 text-xs font-bold uppercase disabled:opacity-50" disabled={pincodeLookup.status === "loading"} onClick={checkPincode} type="button">{pincodeLookup.status === "loading" ? "Checking" : "Check"}</button>
+                </div>
+                {pincodeLookup.message && <p aria-live="polite" className={`mt-2 text-xs ${pincodeLookup.status === "success" ? "text-[#16812c]" : pincodeLookup.status === "error" ? "text-red-700" : "text-muted"}`}>{pincodeLookup.message}</p>}
+              </div>
+              <label className="text-xs font-semibold sm:col-span-2">Address<textarea className="mt-1.5 w-full border border-line p-3 text-sm" onChange={(event) => setDraft({ ...draft, address: event.target.value })} required value={draft.address} /></label>
               <div className="flex gap-3 sm:col-span-2"><button className="bg-brand px-5 py-3 text-xs font-bold uppercase" type="submit">Save address</button><button className="border border-line px-5 py-3 text-xs font-bold uppercase" onClick={() => setAddressFormOpen(false)} type="button">Cancel</button></div>
             </form>
           )}
