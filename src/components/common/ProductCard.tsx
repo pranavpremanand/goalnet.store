@@ -59,7 +59,7 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
         <p className="shrink-0 pt-3 text-sm font-bold">{formatRupees(product.price)}</p>
       </div>
-      <p className="mt-1 text-xs font-medium text-[#16812c]">● In stock</p>
+      <p className="mt-1 text-xs text-muted">Check product availability</p>
     </article>
   );
 }

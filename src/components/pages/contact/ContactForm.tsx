@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { FaWhatsapp } from "react-icons/fa";
 import {
   LuCheck as Check,
   LuMail as Mail,
   LuMapPin as MapPin,
-  LuPhone as Phone,
 } from "react-icons/lu";
 
 export function ContactForm() {
@@ -123,12 +121,6 @@ export function ContactForm() {
               href="mailto:contactgoalnet@gmail.com"
             >
               <Mail size={17} /> contactgoalnet@gmail.com
-            </a>
-            <a
-              className="flex items-center gap-3 hover:text-brand"
-              href="https://wa.me/91778011255"
-            >
-              <FaWhatsapp size={17} /> +91 97780 11255
             </a>
             <p className="flex items-center gap-3">
               <MapPin size={17} /> Kerala, India

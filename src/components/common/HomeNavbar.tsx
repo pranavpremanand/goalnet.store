@@ -14,6 +14,7 @@ import { BrandMark } from "@/ui/BrandMark";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 
 const links = [
+  { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
   { label: "About", href: "/about-us" },
   { label: "Contact", href: "/contact-us" },
@@ -42,7 +43,9 @@ export function HomeNavbar() {
   return (
     <>
       <div className="flex min-h-9 items-center justify-center bg-ink px-4 text-center text-[11px] font-semibold uppercase text-white sm:text-xs">
-        Free shipping on every jersey. No minimum.
+        <Link className="inline-flex items-center gap-2 hover:text-brand" href="/shipping-policy">
+          Standard shipping ₹80 per order <span className="hidden text-white/60 sm:inline">· See delivery details</span>
+        </Link>
       </div>
       <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
         <nav

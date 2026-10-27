@@ -48,7 +48,7 @@ export function AdminProducts() {
           <article className="group border border-line" key={product.id}>
             <div className="relative aspect-[16/10] overflow-hidden bg-canvas">
               <Image alt={product.imageAlt} className="object-cover transition duration-500 group-hover:scale-[1.03]" fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" src={product.image} unoptimized={product.image.startsWith("blob:")} />
-              <span className="absolute left-3 top-3 bg-white px-2 py-1 text-[10px] font-bold uppercase">In stock</span>
+              <span className="absolute left-3 top-3 bg-white px-2 py-1 text-[10px] font-bold uppercase">Preview inventory</span>
             </div>
             <div className="p-4">
               <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase text-muted">{product.category}</p><h2 className="mt-1 font-display text-xl font-semibold">{product.name}</h2></div><p className="text-sm font-bold">{formatRupees(product.price)}</p></div>

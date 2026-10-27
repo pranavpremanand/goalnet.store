@@ -77,7 +77,43 @@ export function CustomerDashboard({ page }: { page: string }) {
 
         {page === "dashboard" && <div className="mt-6 space-y-7"><section className="relative overflow-hidden bg-ink p-6 text-white sm:p-9"><div className="absolute right-0 top-0 h-full w-1/3 bg-brand [clip-path:polygon(45%_0,100%_0,100%_100%,0_100%)]" /><div className="relative max-w-xl"><p className="text-xs font-bold uppercase text-brand">The game keeps moving</p><h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">Your order is on its way.</h2><p className="mt-2 text-sm text-white/65">Argentina Home Jersey · Order {orders[0].id}</p><div className="mt-6 h-1.5 bg-white/20"><div className="h-full bg-brand" style={{ width: `${orders[0].progress}%` }} /></div><div className="mt-3 flex justify-between gap-2 text-[10px] font-semibold uppercase text-white/60"><span>Confirmed</span><span>Packed</span><span className="text-brand">On the way</span><span>Delivered</span></div><Link className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase text-brand" href="/dashboard/my-orders">Track order <ArrowRight size={15} /></Link></div></section><div className="grid gap-4 sm:grid-cols-3"><div className="border border-line p-5"><Package size={19} /><p className="mt-4 text-xs uppercase text-muted">Orders placed</p><p className="mt-1 font-display text-2xl font-semibold">08</p></div><div className="border border-line p-5"><Heart size={19} /><p className="mt-4 text-xs uppercase text-muted">Saved favorites</p><p className="mt-1 font-display text-2xl font-semibold">03</p></div><div className="border border-line p-5"><CreditCard size={19} /><p className="mt-4 text-xs uppercase text-muted">GoalNet credit</p><p className="mt-1 font-display text-2xl font-semibold">₹0</p></div></div><section><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl font-semibold">A few favorites</h2><Link className="text-xs font-bold uppercase underline" href="/dashboard/favorites">See all</Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{featuredProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></section></div>}
 
-        {page === "my-orders" && <div className="mt-6 space-y-4">{orders.map((order) => <article className="border border-line" key={order.id}><button aria-expanded={expandedOrder === order.id} className="flex w-full flex-wrap items-center justify-between gap-3 p-4 text-left sm:p-5" onClick={() => setExpandedOrder(expandedOrder === order.id ? "" : order.id)} type="button"><span><span className="block text-xs text-muted">Order {order.id} · Placed {order.date}</span><span className="mt-1 block font-semibold">{order.product.name}</span></span><span className="flex items-center gap-4"><span className="text-sm font-bold">{formatRupees(order.amount)}</span>{expandedOrder === order.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</span></button>{expandedOrder === order.id && <div className="border-t border-line p-4 sm:p-5"><div className="mb-6"><div className="flex justify-between gap-1">{statusSteps.map((step, index) => <div className="flex flex-1 flex-col items-center text-center" key={step}><span className={`grid size-7 place-items-center rounded-full text-xs font-bold ${index <= (order.progress === 100 ? 3 : 2) ? "bg-brand text-ink" : "bg-canvas text-muted"}`}>{index < (order.progress === 100 ? 3 : 2) ? <Check size={14} /> : index + 1}</span><span className="mt-2 text-[9px] text-muted sm:text-[10px]">{step}</span></div>)}</div><div className="mx-[12%] -mt-[38px] mb-8 h-px bg-line" /></div><div className="flex flex-wrap items-center gap-4 border-t border-line pt-4"><div className="relative size-16 overflow-hidden bg-canvas"><Image alt={order.product.imageAlt} className="object-cover" fill sizes="64px" src={order.product.image} /></div><div className="min-w-[150px] flex-1"><p className="font-semibold">{order.product.name}</p><p className="mt-1 text-xs text-muted">GoalNet Official · Size {order.size} · Qty 1</p></div><div className="flex flex-wrap gap-2"><button className="border border-line px-3 py-2 text-[10px] font-bold uppercase" onClick={() => { setDialogOrder(order.id); setDialog("review"); }} type="button">Write review</button><button className="border border-line px-3 py-2 text-[10px] font-bold uppercase" onClick={() => setDialog("invoice")} type="button">Invoice</button>{order.status !== "Completed" && <button className="border border-line px-3 py-2 text-[10px] font-bold uppercase text-red-700" onClick={() => { setDialogOrder(order.id); setDialog("cancel"); }} type="button">Cancel order</button>}{order.status === "Completed" && <button className="border border-line px-3 py-2 text-[10px] font-bold uppercase" onClick={() => { setDialogOrder(order.id); setDialog("return"); }} type="button">Return order</button>}</div></div></div>}</article>)}</div>}
+        {page === "my-orders" && (
+          <div className="mt-6 space-y-4">
+            {orders.map((order) => (
+              <article className="border border-line" key={order.id}>
+                <button aria-expanded={expandedOrder === order.id} className="flex w-full flex-wrap items-center justify-between gap-3 p-4 text-left sm:p-5" onClick={() => setExpandedOrder(expandedOrder === order.id ? "" : order.id)} type="button">
+                  <span><span className="block text-xs text-muted">Order {order.id} · Placed {order.date}</span><span className="mt-1 block font-semibold">{order.product.name}</span></span>
+                  <span className="flex items-center gap-4"><span className="text-sm font-bold">{formatRupees(order.amount)}</span>{expandedOrder === order.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</span>
+                </button>
+                {expandedOrder === order.id && (
+                  <div className="border-t border-line p-4 sm:p-5">
+                    <div className="mb-6">
+                      <div className="flex justify-between gap-1">
+                        {statusSteps.map((step, index) => (
+                          <div className="flex flex-1 flex-col items-center text-center" key={step}>
+                            <span className={`grid size-7 place-items-center rounded-full text-xs font-bold ${index <= (order.progress === 100 ? 3 : 2) ? "bg-brand text-ink" : "bg-canvas text-muted"}`}>{index < (order.progress === 100 ? 3 : 2) ? <Check size={14} /> : index + 1}</span>
+                            <span className="mt-2 text-[9px] text-muted sm:text-[10px]">{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mx-[12%] -mt-[38px] mb-8 h-px bg-line" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 border-t border-line pt-4">
+                      <div className="relative size-16 overflow-hidden bg-canvas"><Image alt={order.product.imageAlt} className="object-cover" fill sizes="64px" src={order.product.image} /></div>
+                      <div className="min-w-[150px] flex-1"><p className="font-semibold">{order.product.name}</p><p className="mt-1 text-xs text-muted">GOALNET store · Size {order.size} · Qty 1</p></div>
+                      <div className="flex flex-wrap gap-2">
+                        <button className="border border-line px-3 py-2 text-[10px] font-bold uppercase" onClick={() => { setDialogOrder(order.id); setDialog("review"); }} type="button">Write review</button>
+                        <button className="border border-line px-3 py-2 text-[10px] font-bold uppercase" onClick={() => setDialog("invoice")} type="button">Invoice</button>
+                        {order.status !== "Completed" && <button className="border border-line px-3 py-2 text-[10px] font-bold uppercase text-red-700" onClick={() => { setDialogOrder(order.id); setDialog("cancel"); }} type="button">Cancel order</button>}
+                        {order.status === "Completed" && <button className="border border-line px-3 py-2 text-[10px] font-bold uppercase" onClick={() => { setDialogOrder(order.id); setDialog("return"); }} type="button">Return order</button>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
 
         {page === "favorites" && <div className="mt-6"><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{featuredProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></div>}
 
@@ -87,7 +123,22 @@ export function CustomerDashboard({ page }: { page: string }) {
 
         {page === "shipping" && <div className="mt-6 grid gap-4 md:grid-cols-2">{addresses.map((address, index) => <article className="border border-line p-5" key={`${address.pin}-${index}`}><div className="flex justify-between"><span className="flex items-center gap-2 text-xs font-bold uppercase"><MapPin size={15} /> {index === 0 ? "Default address" : "Saved address"}</span><button aria-label="Delete address" className="text-muted hover:text-red-700" onClick={() => setAddresses((current) => current.filter((_, itemIndex) => itemIndex !== index))} type="button"><Trash2 size={16} /></button></div><p className="mt-4 font-semibold">{address.name}</p><p className="mt-1 text-sm text-muted">{address.area}, {address.city}, {address.state} {address.pin}</p><p className="mt-1 text-sm text-muted">{address.phone}</p><p className="text-sm text-muted">{address.email}</p></article>)}<button className="flex min-h-44 flex-col items-center justify-center gap-3 border border-dashed border-line text-xs font-bold uppercase hover:border-ink" onClick={() => setDialog("address")} type="button"><span className="grid size-9 place-items-center bg-brand"><Plus size={18} /></span>Add address</button></div>}
 
-        {page === "message" && <section className="mt-6 flex min-h-[440px] max-w-3xl flex-col border border-line"><div className="flex items-center gap-3 border-b border-line p-4"><span className="grid size-10 place-items-center bg-brand"><MessageCircle size={19} /></span><div><p className="font-semibold">GoalNet Support</p><p className="text-xs text-muted">Usually replies within a day</p></div></div><div className="flex-1 space-y-4 bg-canvas/70 p-5"><p className="max-w-[80%] bg-white p-3 text-sm">Hi Aarav, thanks for reaching out. How can we help with your order?</p><p className="ml-auto max-w-[80%] bg-brand p-3 text-sm">I’d like to check the delivery status of my latest order.</p></div><form className="flex gap-2 border-t border-line p-3" onSubmit={(event) => { event.preventDefault(); setNotice("Message sent in this preview."); }}><input aria-label="Write a message" className="min-w-0 flex-1 px-2 text-sm outline-none" placeholder="Write a message..." /><button className="bg-brand px-4 text-xs font-bold uppercase" type="submit">Send</button></form></section>}
+        {page === "message" && (
+          <section className="mt-6 flex min-h-[440px] max-w-3xl flex-col border border-line">
+            <div className="flex items-center gap-3 border-b border-line p-4">
+              <span className="grid size-10 place-items-center bg-brand"><MessageCircle size={19} /></span>
+              <div><p className="font-semibold">GoalNet Support</p><p className="text-xs text-muted">Contact us about your order</p></div>
+            </div>
+            <div className="flex-1 space-y-4 bg-canvas/70 p-5">
+              <p className="max-w-[80%] bg-white p-3 text-sm">Hi Aarav, thanks for reaching out. How can we help with your order?</p>
+              <p className="ml-auto max-w-[80%] bg-brand p-3 text-sm">I’d like to check the delivery status of my latest order.</p>
+            </div>
+            <form className="flex gap-2 border-t border-line p-3" onSubmit={(event) => { event.preventDefault(); setNotice("Message sent in this preview."); }}>
+              <input aria-label="Write a message" className="min-w-0 flex-1 px-2 text-sm outline-none" placeholder="Write a message..." />
+              <button className="bg-brand px-4 text-xs font-bold uppercase" type="submit">Send</button>
+            </form>
+          </section>
+        )}
 
         {page === "support-ticket" && <form className="mt-6 max-w-xl space-y-5" onSubmit={saveLocal}><label className="block text-xs font-semibold">Order or ticket number<input className="mt-2 w-full border border-line p-3 text-sm" placeholder="e.g. PO-20481" /></label><label className="block text-xs font-semibold">What do you need help with?<select className="mt-2 w-full border border-line bg-white p-3 text-sm"><option>Choose a topic</option><option>Order status</option><option>Return or exchange</option><option>Product question</option><option>Other</option></select></label><label className="block text-xs font-semibold">Describe the issue<textarea className="mt-2 min-h-36 w-full border border-line p-3 text-sm" placeholder="Tell us what happened..." required /></label><button className="bg-brand px-6 py-3 text-xs font-bold uppercase" type="submit">Submit ticket</button></form>}
       </section>

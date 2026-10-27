@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { LuArrowRight as ArrowRight, LuCheck as Check, LuHeart as Heart, LuShare2 as Share2, LuStar as Star, LuTruck as Truck, LuX as X } from "react-icons/lu";
+import { LuArrowRight as ArrowRight, LuCheck as Check, LuHeart as Heart, LuShare2 as Share2, LuTruck as Truck, LuX as X } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { featuredProducts, formatRupees, type Product } from "@/data/products";
@@ -31,7 +31,7 @@ export function ProductDetailsPage({ product }: { product: Product }) {
   }
 
   function checkDelivery() {
-    setDeliveryMessage(/^\d{6}$/.test(deliveryCode) ? "Delivery available. Estimated arrival: 3–5 business days." : "Enter a valid 6-digit pincode.");
+    setDeliveryMessage(/^\d{6}$/.test(deliveryCode) ? "Pincode format is valid. Delivery availability depends on courier serviceability." : "Enter a valid 6-digit pincode.");
   }
 
   async function shareProduct() {
@@ -52,7 +52,7 @@ export function ProductDetailsPage({ product }: { product: Product }) {
         <div>
           <div className="relative aspect-[4/4.3] overflow-hidden bg-canvas sm:aspect-[1.05/1]">
             <Image alt={product.imageAlt} className="object-cover" fill priority sizes="(max-width: 1024px) 100vw, 55vw" src={images[activeImage]} />
-            <span className="absolute left-4 top-4 bg-brand px-3 py-1.5 text-[10px] font-bold uppercase">Official collection</span>
+            <span className="absolute left-4 top-4 bg-brand px-3 py-1.5 text-[10px] font-bold uppercase">GOALNET selection</span>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:max-w-[360px]">
             {images.map((image, index) => (
@@ -65,11 +65,10 @@ export function ProductDetailsPage({ product }: { product: Product }) {
         <div className="lg:pt-4">
           <p className="text-xs font-bold uppercase text-muted">{product.category}</p>
           <h1 className="mt-2 font-display text-4xl font-semibold leading-tight sm:text-5xl">{product.name}</h1>
-          <div className="mt-4 flex items-center gap-2 text-sm"><span aria-label="Rated 5 out of 5" className="flex text-[#b77a00]">{Array.from({ length: 5 }, (_, index) => <Star fill="currentColor" key={index} size={15} />)}</span><span className="text-muted">5.0 · 24 reviews</span></div>
           <p className="mt-5 font-display text-3xl font-medium">{formatRupees(product.price)}</p>
-          <p className="mt-5 max-w-lg font-copy text-sm leading-7 text-muted">A fan-first fit made for matchday and every day after. Breathable fabric, considered details, and colors that bring the whole story back.</p>
+          <p className="mt-5 max-w-lg font-copy text-sm leading-7 text-muted">Product fabric, fit and construction may vary by design. Please check the product details for the available information before ordering.</p>
           <div className="mt-7">
-            <div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-bold uppercase">Select size</h2><button className="border-b border-muted text-xs text-muted" type="button" onClick={() => setNotice("Size guide: XS 34–36, S 36–38, M 38–40, L 40–42, XL 42–44 inches.")}>Size guide</button></div>
+            <div className="mb-3 flex items-center justify-between"><h2 className="text-xs font-bold uppercase">Select size</h2><button className="border-b border-muted text-xs text-muted" type="button" onClick={() => setNotice("Compare the product size information with a jersey you own. If you are unsure, contact contactgoalnet@gmail.com before ordering.")}>Size guide</button></div>
             <div className="flex gap-2">{sizes.map((option) => <button aria-pressed={size === option} className={`grid size-12 place-items-center border text-sm font-semibold transition ${size === option ? "border-ink bg-brand" : "border-line hover:border-ink"}`} key={option} onClick={() => { setSize(option); setNotice(""); }} type="button">{option}</button>)}</div>
           </div>
           <div className="mt-7 grid grid-cols-[1fr_auto] gap-2">
@@ -82,10 +81,10 @@ export function ProductDetailsPage({ product }: { product: Product }) {
             <div className="flex items-center gap-2 text-sm font-semibold"><Truck size={18} /> Check delivery availability</div>
             <div className="mt-3 flex max-w-sm border-b border-ink"><input aria-label="Delivery pincode" className="min-w-0 flex-1 py-2 text-sm outline-none" inputMode="numeric" maxLength={6} onChange={(event) => setDeliveryCode(event.target.value.replace(/\D/g, ""))} placeholder="Enter 6-digit pincode" value={deliveryCode} /><button className="text-xs font-bold uppercase" onClick={checkDelivery} type="button">Check</button></div>
             {deliveryMessage && <p aria-live="polite" className="mt-2 text-xs text-muted">{deliveryMessage}</p>}
-            <p className="mt-3 text-xs text-muted">Free shipping. Delivered in 3–5 business days.</p>
+            <p className="mt-3 text-xs text-muted">Processing generally takes 2–3 business days. Delivery is estimated at 5–10 business days after dispatch; serviceability varies by location.</p>
           </div>
           <div className="divide-y divide-line">
-            {["Description", "Shipping and taxes"].map((title) => <div key={title}><button aria-expanded={expanded === title} className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold" onClick={() => setExpanded(expanded === title ? "" : title)} type="button">{title}<span>{expanded === title ? "−" : "+"}</span></button>{expanded === title && <p className="pb-4 font-copy text-xs leading-6 text-muted">{title === "Description" ? "Designed for a comfortable fit with breathable sports fabric and durable finish. Please check the size guide before ordering." : "Free nationwide shipping on every order. Delivery timelines vary by pincode; taxes are included in the displayed price."}</p>}</div>)}
+            {["Description", "Shipping and delivery"].map((title) => <div key={title}><button aria-expanded={expanded === title} className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold" onClick={() => setExpanded(expanded === title ? "" : title)} type="button">{title}<span>{expanded === title ? "−" : "+"}</span></button>{expanded === title && <p className="pb-4 font-copy text-xs leading-6 text-muted">{title === "Description" ? "Product fabric, fit and construction may vary by design. Refer to the product information before ordering." : "Standard shipping is ₹80 per order. Additional shipping may apply to multiple-jersey orders and will be shown before confirmation. Orders are generally processed in 2–3 business days; delivery is estimated at 5–10 business days after dispatch."}</p>}</div>)}
           </div>
         </div>
       </div>
