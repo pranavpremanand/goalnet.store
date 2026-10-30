@@ -4,7 +4,8 @@ import type { UserRole } from "@/server/models/user.model";
 import { hashPassword, verifyPassword } from "@/server/lib/password";
 import { generateSessionToken, hashSessionToken } from "@/server/lib/token";
 import { createSession, deleteSession, findActiveSessionUserId } from "@/server/repositories/session.repository";
-import { createUser, findUserById, findUserByEmailWithPassword, isDuplicateKeyError, userEmailExists, type UserRecord } from "@/server/repositories/user.repository";
+import { createUser, findUserById, findUserByEmailWithPassword, userEmailExists, type UserRecord } from "@/server/repositories/user.repository";
+import { isDuplicateKeyError } from "@/server/db/errors";
 import type { SignInInput, SignUpInput } from "@/lib/validation/auth";
 
 const EMAIL_TAKEN = "An account with this email already exists. Try signing in instead.";

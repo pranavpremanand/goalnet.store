@@ -17,4 +17,11 @@ export function getDeliveryConfig() {
   };
 }
 
+export function getImageKitConfig() {
+  const publicKey = readEnv("IMAGEKIT_PUBLIC_KEY");
+  const privateKey = readEnv("IMAGEKIT_PRIVATE_KEY");
+  const urlEndpoint = readEnv("IMAGEKIT_URL_ENDPOINT")?.replace(/\/+$/, "");
+  return publicKey && privateKey && urlEndpoint ? { publicKey, privateKey, urlEndpoint } : null;
+}
+
 export const isProduction = process.env.NODE_ENV === "production";

@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LuArrowLeft as ArrowLeft, LuEye as Eye, LuEyeOff as EyeOff } from "react-icons/lu";
-import { ApiError, signInAdmin } from "@/lib/auth-client";
+import { ApiError } from "@/lib/api-client";
+import { signInAdmin } from "@/lib/auth-client";
 import { signInSchema, type SignInInput } from "@/lib/validation/auth";
 
 const inputClass = "mt-2 w-full border border-line p-3 text-sm outline-none focus:border-ink aria-invalid:border-red-600";

@@ -16,10 +16,6 @@ function toRecord(doc: UserDoc): UserRecord {
   return { id: doc._id.toString(), name: doc.name, email: doc.email, role: doc.role };
 }
 
-export function isDuplicateKeyError(error: unknown) {
-  return typeof error === "object" && error !== null && (error as { code?: number }).code === 11000;
-}
-
 export async function findUserByEmailWithPassword(email: string): Promise<UserWithPassword | null> {
   await connectToDatabase();
   const doc = await UserModel.findOne({ email }).select("+passwordHash").lean<UserDoc>();

@@ -3,63 +3,105 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { LuArrowUpRight as ArrowUpRight, LuImagePlus as ImagePlus, LuPlus as Plus, LuX as X } from "react-icons/lu";
-import { featuredProducts, formatRupees, type Product } from "@/data/products";
+import { useRouter } from "next/navigation";
+import { LuCheck as Check, LuPencil as Pencil, LuPlus as Plus, LuTrash2 as Trash2 } from "react-icons/lu";
+import { ApiError } from "@/lib/api-client";
+import { productApi } from "@/lib/admin-api";
+import type { CategoryDto, ProductDto, ProductListResult } from "@/lib/types/catalog";
+import { formatRupees } from "@/data/products";
+import { adminInputClass } from "@/components/pages/admin/FormFields";
 
-const sizes = ["XS", "S", "M", "L", "XL"];
+type Filters = { q: string; category: string; status: string };
 
-export function AdminProducts() {
-  const [products, setProducts] = useState(featuredProducts);
-  const [formOpen, setFormOpen] = useState(false);
+function pageHref(filters: Filters, page: number) {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.status !== "all") params.set("status", filters.status);
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
+  return `/admin/products${query ? `?${query}` : ""}`;
+}
+
+export function AdminProducts({ result, categories, filters }: { result: ProductListResult; categories: CategoryDto[]; filters: Filters }) {
+  const router = useRouter();
+  const [toDelete, setToDelete] = useState<ProductDto | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [images, setImages] = useState<string[]>([]);
+  const totalPages = Math.max(1, Math.ceil(result.total / result.limit));
 
-  function submitProduct(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const product: Product = {
-      id: `preview-${Date.now()}`,
-      name: String(form.get("name")),
-      category: String(form.get("category")),
-      price: Number(form.get("price-md")) || 2500,
-      image: images[0] ?? "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=85",
-      imageAlt: `Preview image for ${String(form.get("name"))}`,
-      color: "Blue",
-    };
-    setProducts((current) => [product, ...current]);
-    setFormOpen(false);
-    setImages([]);
-    setNotice(`${product.name} was added to this preview.`);
-    event.currentTarget.reset();
-  }
-
-  function selectImages(files: FileList | null) {
-    if (!files) return;
-    setImages(Array.from(files).slice(0, 3).map((file) => URL.createObjectURL(file)));
+  async function confirmDelete(product: ProductDto) {
+    setDeleting(true);
+    setError("");
+    try {
+      await productApi.remove(product.id);
+      setToDelete(null);
+      setNotice("Product deleted.");
+      router.refresh();
+    } catch (failure) {
+      setError(failure instanceof ApiError ? failure.message : "Something went wrong. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase text-muted">Store catalog</p><h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Products</h1><p className="mt-2 text-sm text-muted">Review inventory and keep the collection current.</p></div><button className="inline-flex min-h-11 items-center gap-2 bg-brand px-4 text-xs font-bold uppercase" onClick={() => setFormOpen(!formOpen)} type="button">{formOpen ? <X size={16} /> : <Plus size={16} />}{formOpen ? "Close form" : "Add product"}</button></div>
-      {notice && <p aria-live="polite" className="mt-5 border-l-4 border-brand bg-canvas p-3 text-sm">{notice}</p>}
-      {formOpen && <form className="mt-6 border border-line p-4 sm:p-6" onSubmit={submitProduct}><div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase text-muted">New catalog item</p><h2 className="mt-1 font-display text-2xl font-semibold">Add product</h2></div><button aria-label="Close add product form" onClick={() => setFormOpen(false)} type="button"><X size={19} /></button></div><div className="mt-5 grid gap-4 md:grid-cols-2"><label className="text-xs font-semibold">Product name<input className="mt-2 w-full border border-line p-3 text-sm" name="name" placeholder="e.g. National team home jersey" required /></label><label className="text-xs font-semibold">Category<select className="mt-2 w-full border border-line bg-white p-3 text-sm" name="category"><option>National jerseys</option><option>Club jerseys</option><option>Retro classics</option><option>Special editions</option></select></label><label className="text-xs font-semibold md:col-span-2">Description<textarea className="mt-2 min-h-24 w-full border border-line p-3 text-sm" name="description" placeholder="Product description" /></label></div><div className="mt-6 overflow-x-auto"><h3 className="mb-2 text-xs font-bold uppercase">Available sizes and price</h3><table className="w-full min-w-[540px] border-collapse text-left text-xs"><thead className="bg-canvas"><tr><th className="p-3">Size</th><th className="p-3">Quantity</th><th className="p-3">Price (₹)</th></tr></thead><tbody>{sizes.map((size) => <tr className="border-b border-line" key={size}><td className="p-2 font-semibold">{size}</td><td className="p-2"><input aria-label={`${size} quantity`} className="w-full border border-line p-2" min="0" name={`qty-${size.toLowerCase()}`} type="number" defaultValue="5" /></td><td className="p-2"><input aria-label={`${size} price`} className="w-full border border-line p-2" min="0" name={`price-${size.toLowerCase()}`} type="number" defaultValue="2500" /></td></tr>)}</tbody></table></div><div className="mt-5"><label className="flex min-h-20 cursor-pointer items-center gap-3 border border-dashed border-line px-4"><ImagePlus size={20} /><span><span className="block text-xs font-bold uppercase">Product images</span><span className="text-xs text-muted">PNG or JPG · up to 3 images</span></span><input accept="image/png,image/jpeg" className="sr-only" multiple onChange={(event) => selectImages(event.target.files)} type="file" /></label>{images.length > 0 && <div className="mt-3 flex gap-3">{images.map((image) => <div className="relative size-16 overflow-hidden bg-canvas" key={image}><Image alt="Selected product preview" className="object-cover" fill sizes="64px" src={image} /><button aria-label="Remove preview image" className="absolute right-0 top-0 grid size-5 place-items-center bg-ink text-white" onClick={() => setImages((current) => current.filter((item) => item !== image))} type="button"><X size={12} /></button></div>)}</div>}</div><div className="mt-5 flex gap-3"><button className="bg-brand px-6 py-3 text-xs font-bold uppercase" type="submit">Save product</button><button className="border border-line px-6 py-3 text-xs font-bold uppercase" onClick={() => setFormOpen(false)} type="button">Cancel</button></div></form>}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {products.map((product) => (
-          <article className="group border border-line" key={product.id}>
-            <div className="relative aspect-[16/10] overflow-hidden bg-canvas">
-              <Image alt={product.imageAlt} className="object-cover transition duration-500 group-hover:scale-[1.03]" fill sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" src={product.image} unoptimized={product.image.startsWith("blob:")} />
-              <span className="absolute left-3 top-3 bg-white px-2 py-1 text-[10px] font-bold uppercase">Preview inventory</span>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase text-muted">{product.category}</p><h2 className="mt-1 font-display text-xl font-semibold">{product.name}</h2></div><p className="text-sm font-bold">{formatRupees(product.price)}</p></div>
-              <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
-                <p className="text-xs text-muted">Sizes XS–XL</p>
-                {product.id.startsWith("preview-") ? <span className="text-[10px] font-bold uppercase text-muted">Preview record</span> : <Link className="inline-flex items-center gap-1 text-xs font-bold uppercase underline" href={`/admin/product/${product.id}`}>Edit product <ArrowUpRight size={14} /></Link>}
-              </div>
-            </div>
-          </article>
-        ))}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div><p className="text-xs font-bold uppercase text-muted">Catalog</p><h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Products</h1><p className="mt-2 text-sm text-muted">{result.total} {result.total === 1 ? "product" : "products"}</p></div>
+        <Link className="inline-flex min-h-11 items-center gap-2 bg-brand px-5 text-xs font-bold uppercase" href="/admin/product/new"><Plus size={15} /> Add product</Link>
       </div>
+      {notice && <p aria-live="polite" className="mt-5 flex items-center gap-2 bg-canvas p-3 text-sm"><Check size={15} />{notice}</p>}
+
+      <form action="/admin/products" className="mt-6 grid gap-3 border border-line p-4 sm:grid-cols-[1fr_200px_160px_auto] sm:items-end" method="get">
+        <label className="text-xs font-semibold">Search<input aria-label="Search products" className={adminInputClass} defaultValue={filters.q} name="q" placeholder="Name, slug or team" /></label>
+        <label className="text-xs font-semibold">Category<select className={adminInputClass} defaultValue={filters.category} name="category"><option value="">All categories</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+        <label className="text-xs font-semibold">Status<select className={adminInputClass} defaultValue={filters.status} name="status"><option value="all">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+        <button className="min-h-11 border border-ink px-5 text-xs font-bold uppercase hover:bg-canvas" type="submit">Filter</button>
+      </form>
+
+      {result.items.length === 0 ? (
+        <p className="mt-6 border border-dashed border-line p-8 text-center text-sm text-muted">{result.total === 0 && !filters.q && !filters.category && filters.status === "all" ? "No products yet. Add your first product." : "No products match these filters."}</p>
+      ) : (
+        <div className="mt-6 overflow-x-auto border border-line">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-canvas text-[10px] font-bold uppercase text-muted"><tr><th className="px-4 py-3">Product</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Price</th><th className="px-4 py-3">Sizes</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
+            <tbody>
+              {result.items.map((product) => (
+                <tr className="border-t border-line" key={product.id}>
+                  <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="relative aspect-4/5 w-10 shrink-0 overflow-hidden bg-canvas">{product.images[0] && <Image alt={product.images[0].alt || product.name} className="object-cover" fill sizes="40px" src={product.images[0].url} />}</div><div><p className="font-semibold">{product.name}</p><p className="text-xs text-muted">{product.slug}</p></div></div></td>
+                  <td className="px-4 py-3">{product.category.name}</td>
+                  <td className="px-4 py-3">{formatRupees(product.price)}</td>
+                  <td className="px-4 py-3 text-muted">{product.variants.map((variant) => variant.size).join(", ")}</td>
+                  <td className="px-4 py-3"><span className={`px-2 py-1 text-[10px] font-bold uppercase ${product.isActive ? "bg-brand" : "bg-canvas text-muted"}`}>{product.isActive ? "Active" : "Inactive"}</span>{product.isFeatured && <span className="ml-1 bg-ink px-2 py-1 text-[10px] font-bold uppercase text-white">Featured</span>}</td>
+                  <td className="px-4 py-3"><div className="flex justify-end gap-2"><Link aria-label={`Edit ${product.name}`} className="grid size-9 place-items-center border border-line" href={`/admin/product/${product.id}`}><Pencil size={15} /></Link><button aria-label={`Delete ${product.name}`} className="grid size-9 place-items-center border border-line text-red-700" onClick={() => { setError(""); setNotice(""); setToDelete(product); }} type="button"><Trash2 size={15} /></button></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <nav aria-label="Pagination" className="mt-5 flex items-center justify-between text-xs font-bold uppercase">
+          {result.page > 1 ? <Link className="underline" href={pageHref(filters, result.page - 1)}>Previous</Link> : <span />}
+          <span className="text-muted">Page {result.page} of {totalPages}</span>
+          {result.page < totalPages ? <Link className="underline" href={pageHref(filters, result.page + 1)}>Next</Link> : <span />}
+        </nav>
+      )}
+
+      {toDelete && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4">
+          <section aria-modal="true" className="w-full max-w-sm bg-paper p-6" role="dialog">
+            <p className="text-xs font-bold uppercase text-muted">Please confirm</p>
+            <h2 className="mt-2 font-display text-2xl font-semibold">Delete this product?</h2>
+            <p className="mt-2 text-sm text-muted">“{toDelete.name}” and its images will be removed. This cannot be undone.</p>
+            {error && <p className="mt-3 border-l-4 border-red-600 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</p>}
+            <div className="mt-5 flex gap-3"><button className="min-h-11 bg-red-700 px-5 text-xs font-bold uppercase text-white disabled:opacity-60" disabled={deleting} onClick={() => void confirmDelete(toDelete)} type="button">{deleting ? "Deleting…" : "Delete"}</button><button className="min-h-11 border border-line px-5 text-xs font-bold uppercase" onClick={() => setToDelete(null)} type="button">Cancel</button></div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

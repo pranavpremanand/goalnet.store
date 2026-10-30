@@ -1,19 +1,24 @@
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { AdminProductDetail } from "@/components/pages/admin/AdminProductDetail";
-import { featuredProducts } from "@/data/products";
+import { AdminProductForm } from "@/components/pages/admin/AdminProductForm";
+import { objectIdSchema } from "@/lib/validation/catalog";
+import { requireAdminPage } from "@/server/auth/current-user";
+import { NotFoundError } from "@/server/errors";
+import * as categoryService from "@/server/services/category.service";
+import * as productService from "@/server/services/product.service";
 
-export function generateStaticParams() {
-  return featuredProducts.map((product) => ({ productId: product.id }));
-}
+export const metadata = { title: "Edit product | GoalNet Admin" };
 
-async function ProductRoute({ params }: { params: Promise<{ productId: string }> }) {
-  const { productId } = await params;
-  const product = featuredProducts.find((item) => item.id === productId);
-  if (!product) notFound();
-  return <AdminProductDetail product={product} />;
-}
+export default async function Page({ params }: { params: Promise<{ productId: string }> }) {
+  await requireAdminPage();
+  const id = objectIdSchema.safeParse((await params).productId);
+  if (!id.success) notFound();
 
-export default function Page({ params }: { params: Promise<{ productId: string }> }) {
-  return <Suspense><ProductRoute params={params} /></Suspense>;
+  const [product, categories] = await Promise.all([
+    productService.getProduct(id.data).catch((error: unknown) => {
+      if (error instanceof NotFoundError) notFound();
+      throw error;
+    }),
+    categoryService.listCategories(),
+  ]);
+  return <AdminProductForm categories={categories} product={product} />;
 }

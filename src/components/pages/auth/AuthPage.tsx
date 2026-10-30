@@ -4,11 +4,12 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm, type FieldValues, type Path, type UseFormRegisterReturn, type UseFormSetError } from "react-hook-form";
+import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LuArrowLeft as ArrowLeft, LuEye as Eye, LuEyeOff as EyeOff, LuMail as Mail, LuPhone as Phone, LuCheck as Check } from "react-icons/lu";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
-import { ApiError, signInUser, signUpUser } from "@/lib/auth-client";
+import { signInUser, signUpUser } from "@/lib/auth-client";
+import { showApiError } from "@/lib/form-errors";
 import { forgotPasswordSchema, signInSchema, signUpSchema, type ForgotPasswordInput, type SignInInput, type SignUpInput } from "@/lib/validation/auth";
 
 type AuthMode = "login" | "signup" | "forgot-password";
@@ -36,19 +37,6 @@ function PasswordField({ autoComplete, error, registration }: { autoComplete: st
       <FieldError message={error} />
     </label>
   );
-}
-
-// Server-side rejections are surfaced on the matching field, or as a form-level message.
-function showApiError<Values extends FieldValues>(error: unknown, setError: UseFormSetError<Values>) {
-  if (!(error instanceof ApiError)) {
-    setError("root.server", { message: "Something went wrong. Please try again." });
-    return;
-  }
-  const fieldEntries = Object.entries(error.fieldErrors ?? {}).filter(([, messages]) => messages.length > 0);
-  if (error.status === 409 || error.status === 400) {
-    fieldEntries.forEach(([field, messages]) => setError(field as Path<Values>, { type: "server", message: messages[0] }));
-  }
-  if (!fieldEntries.length) setError("root.server", { message: error.message });
 }
 
 function useAfterAuth(redirectTo?: string) {

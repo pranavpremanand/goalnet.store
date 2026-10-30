@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { ForbiddenError, UnauthorizedError } from "@/server/errors";
 import { readSessionCookie } from "@/server/http/session-cookie";
 import { getUserFromSessionToken, type AuthUser } from "@/server/services/auth.service";
@@ -16,5 +17,12 @@ export async function requireUser() {
 export async function requireAdmin() {
   const user = await requireUser();
   if (user.role !== "admin") throw new ForbiddenError();
+  return user;
+}
+
+// Same check for pages: sends non-admins to the admin login instead of returning an error.
+export async function requireAdminPage() {
+  const user = await getCurrentUser();
+  if (user?.role !== "admin") redirect("/admin/login");
   return user;
 }
