@@ -7,6 +7,9 @@ import { useRouter } from "next/navigation";
 import { LuArrowRight as ArrowRight, LuBell as Bell, LuCalendarCheck as CalendarCheck, LuCheck as Check, LuChevronDown as ChevronDown, LuChevronUp as ChevronUp, LuCircleHelp as CircleHelp, LuCreditCard as CreditCard, LuHeart as Heart, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuMapPin as MapPin, LuMessageCircle as MessageCircle, LuPackage as Package, LuPencil as Pencil, LuPlus as Plus, LuSettings as Settings, LuStar as Star, LuTrash2 as Trash2, LuTruck as Truck, LuUserRound as UserRound, LuX as X } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
 import { featuredProducts, formatRupees } from "@/data/products";
+import { OrderDetails } from "@/components/pages/orders/OrderDetails";
+import { addSavedAddress, removeSavedAddress, useDemoStore } from "@/lib/demo-store";
+import { signOutUser } from "@/lib/auth-client";
 
 const sections = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -28,14 +31,23 @@ const statusSteps = ["Order confirmed", "Packed", "Out for delivery", "Delivered
 
 export function CustomerDashboard({ page }: { page: string }) {
   const router = useRouter();
+  const { session, orders: storedOrders } = useDemoStore();
+  const displayName = session?.name ?? "Aarav Mehta";
+  const displayEmail = session?.email ?? "aarav@example.com";
+  const initials = displayName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const myOrders = session ? storedOrders.filter((order) => order.userEmail === session.email) : [];
+  const [expandedPlaced, setExpandedPlaced] = useState("");
   const [expandedOrder, setExpandedOrder] = useState("PO-20481");
   const [dialog, setDialog] = useState("");
   const [dialogOrder, setDialogOrder] = useState("");
   const [settings, setSettings] = useState({ email: true, messages: true });
   const [editing, setEditing] = useState(false);
-  const [addresses, setAddresses] = useState([
+  const [demoAddresses, setDemoAddresses] = useState([
     { name: "Aarav Mehta", area: "Riverfront Road", city: "Ahmedabad", pin: "380001", state: "Gujarat", phone: "+91 98765 43210", email: "aarav@example.com" },
   ]);
+  const addresses = session
+    ? session.addresses.map((saved) => ({ name: saved.name, area: [saved.apartment, saved.address].filter(Boolean).join(", "), city: saved.city, pin: saved.pin, state: saved.state, phone: saved.phone, email: saved.email }))
+    : demoAddresses;
   const [notice, setNotice] = useState("");
   function saveLocal(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,13 +58,20 @@ export function CustomerDashboard({ page }: { page: string }) {
   function addAddress(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    setAddresses((current) => [...current, { name: String(data.get("name")), area: String(data.get("area")), city: String(data.get("city")), pin: String(data.get("pin")), state: String(data.get("state")), phone: String(data.get("phone")), email: String(data.get("email")) }]);
+    const entry = { name: String(data.get("name")), area: String(data.get("area")), city: String(data.get("city")), pin: String(data.get("pin")), state: String(data.get("state")), phone: String(data.get("phone")), email: String(data.get("email")) };
+    if (session) addSavedAddress({ name: entry.name, email: entry.email, phone: entry.phone, pin: entry.pin, state: entry.state, city: entry.city, address: entry.area, apartment: "" });
+    else setDemoAddresses((current) => [...current, entry]);
     setDialog("");
-    setNotice("Address added to this preview.");
+    setNotice("Address saved.");
+  }
+
+  function removeAddress(index: number) {
+    if (session) removeSavedAddress(index);
+    else setDemoAddresses((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
   const pageTitle: Record<string, string> = {
-    dashboard: "Welcome back, Aarav",
+    dashboard: `Welcome back, ${displayName.split(" ")[0]}`,
     "my-orders": "Your orders",
     favorites: "Your favorites",
     message: "Messages",
@@ -65,21 +84,31 @@ export function CustomerDashboard({ page }: { page: string }) {
   return (
     <main className="mx-auto grid max-w-[1440px] gap-7 px-4 py-6 sm:px-7 lg:grid-cols-[230px_1fr] lg:gap-10 lg:px-10 lg:py-10">
       <aside className="lg:sticky lg:top-28 lg:h-fit">
-        <div className="flex items-center gap-3 border-b border-line pb-5"><span className="grid size-12 place-items-center bg-brand text-lg font-bold">AM</span><div><p className="font-semibold">Aarav Mehta</p><p className="text-xs text-muted">aarav@example.com</p></div></div>
+        <div className="flex items-center gap-3 border-b border-line pb-5"><span className="grid size-12 place-items-center bg-brand text-lg font-bold">{initials}</span><div><p className="font-semibold">{displayName}</p><p className="text-xs text-muted">{displayEmail}</p></div></div>
         <nav aria-label="Customer dashboard" className="mt-4 grid grid-cols-4 gap-1 sm:grid-cols-8 lg:grid-cols-1">
           {sections.map(({ id, label, icon: Icon }) => <Link aria-current={page === id ? "page" : undefined} className={`flex min-h-10 items-center gap-3 px-2 py-2 text-left text-[10px] transition sm:flex-col sm:justify-center sm:gap-1 sm:text-[10px] lg:flex-row lg:justify-start lg:px-3 lg:text-sm ${page === id ? "bg-brand font-semibold text-ink" : "text-muted hover:bg-canvas hover:text-ink"}`} href={`/dashboard/${id}`} key={id}><Icon size={17} /><span className="truncate">{label}</span></Link>)}
         </nav>
-        <button className="mt-5 hidden items-center gap-3 px-3 py-2 text-sm text-muted hover:text-red-700 lg:flex" onClick={() => router.push("/login")} type="button"><LogOut size={17} /> Sign out</button>
+        <button className="mt-5 hidden items-center gap-3 px-3 py-2 text-sm text-muted hover:text-red-700 lg:flex" onClick={async () => { await signOutUser(); router.push("/login"); }} type="button"><LogOut size={17} /> Sign out</button>
       </aside>
       <section className="min-w-0">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5"><div><p className="text-xs font-bold uppercase text-muted">My GoalNet</p><h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">{pageTitle[page] ?? pageTitle.dashboard}</h1></div><button aria-label="Notifications" className="grid size-10 place-items-center border border-line"><Bell size={17} /></button></div>
         {notice && <p aria-live="polite" className="mt-4 flex items-center gap-2 bg-canvas p-3 text-sm"><Check size={16} />{notice}<button aria-label="Dismiss" className="ml-auto" onClick={() => setNotice("")} type="button"><X size={15} /></button></p>}
 
-        {page === "dashboard" && <div className="mt-6 space-y-7"><section className="relative overflow-hidden bg-ink p-6 text-white sm:p-9"><div className="absolute right-0 top-0 h-full w-1/3 bg-brand [clip-path:polygon(45%_0,100%_0,100%_100%,0_100%)]" /><div className="relative max-w-xl"><p className="text-xs font-bold uppercase text-brand">The game keeps moving</p><h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">Your order is on its way.</h2><p className="mt-2 text-sm text-white/65">Argentina Home Jersey · Order {orders[0].id}</p><div className="mt-6 h-1.5 bg-white/20"><div className="h-full bg-brand" style={{ width: `${orders[0].progress}%` }} /></div><div className="mt-3 flex justify-between gap-2 text-[10px] font-semibold uppercase text-white/60"><span>Confirmed</span><span>Packed</span><span className="text-brand">On the way</span><span>Delivered</span></div><Link className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase text-brand" href="/dashboard/my-orders">Track order <ArrowRight size={15} /></Link></div></section><div className="grid gap-4 sm:grid-cols-3"><div className="border border-line p-5"><Package size={19} /><p className="mt-4 text-xs uppercase text-muted">Orders placed</p><p className="mt-1 font-display text-2xl font-semibold">08</p></div><div className="border border-line p-5"><Heart size={19} /><p className="mt-4 text-xs uppercase text-muted">Saved favorites</p><p className="mt-1 font-display text-2xl font-semibold">03</p></div><div className="border border-line p-5"><CreditCard size={19} /><p className="mt-4 text-xs uppercase text-muted">GoalNet credit</p><p className="mt-1 font-display text-2xl font-semibold">₹0</p></div></div><section><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl font-semibold">A few favorites</h2><Link className="text-xs font-bold uppercase underline" href="/dashboard/favorites">See all</Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{featuredProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></section></div>}
+        {page === "dashboard" && <div className="mt-6 space-y-7"><section className="relative overflow-hidden bg-ink p-6 text-white sm:p-9"><div className="absolute right-0 top-0 h-full w-1/3 bg-brand [clip-path:polygon(45%_0,100%_0,100%_100%,0_100%)]" /><div className="relative max-w-xl"><p className="text-xs font-bold uppercase text-brand">The game keeps moving</p><h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">Your order is on its way.</h2><p className="mt-2 text-sm text-white/65">Argentina Home Jersey · Order {orders[0].id}</p><div className="mt-6 h-1.5 bg-white/20"><div className="h-full bg-brand" style={{ width: `${orders[0].progress}%` }} /></div><div className="mt-3 flex justify-between gap-2 text-[10px] font-semibold uppercase text-white/60"><span>Confirmed</span><span>Packed</span><span className="text-brand">On the way</span><span>Delivered</span></div><Link className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase text-brand" href="/dashboard/my-orders">Track order <ArrowRight size={15} /></Link></div></section><div className="grid gap-4 sm:grid-cols-3"><div className="border border-line p-5"><Package size={19} /><p className="mt-4 text-xs uppercase text-muted">Orders placed</p><p className="mt-1 font-display text-2xl font-semibold">{session ? String(myOrders.length).padStart(2, "0") : "08"}</p></div><div className="border border-line p-5"><Heart size={19} /><p className="mt-4 text-xs uppercase text-muted">Saved favorites</p><p className="mt-1 font-display text-2xl font-semibold">03</p></div><div className="border border-line p-5"><CreditCard size={19} /><p className="mt-4 text-xs uppercase text-muted">GoalNet credit</p><p className="mt-1 font-display text-2xl font-semibold">₹0</p></div></div><section><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl font-semibold">A few favorites</h2><Link className="text-xs font-bold uppercase underline" href="/dashboard/favorites">See all</Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{featuredProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></section></div>}
 
         {page === "my-orders" && (
           <div className="mt-6 space-y-4">
-            {orders.map((order) => (
+            {session && myOrders.length === 0 && <p className="border border-line p-6 text-sm text-muted">You haven’t placed any orders yet. <Link className="font-semibold text-ink underline" href="/shop">Explore jerseys</Link></p>}
+            {myOrders.map((order) => (
+              <article className="border border-line" key={order.ref}>
+                <button aria-expanded={expandedPlaced === order.ref} className="flex w-full flex-wrap items-center justify-between gap-3 p-4 text-left sm:p-5" onClick={() => setExpandedPlaced(expandedPlaced === order.ref ? "" : order.ref)} type="button">
+                  <span><span className="block text-xs text-muted">Order {order.ref} · {order.status}</span><span className="mt-1 block font-semibold">{order.lines.map((line) => line.name).join(", ")}</span></span>
+                  <span className="flex items-center gap-4"><span className="text-sm font-bold">{formatRupees(order.total)}</span>{expandedPlaced === order.ref ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</span>
+                </button>
+                {expandedPlaced === order.ref && <div className="border-t border-line p-4 sm:p-5"><OrderDetails order={order} /></div>}
+              </article>
+            ))}
+            {!session && orders.map((order) => (
               <article className="border border-line" key={order.id}>
                 <button aria-expanded={expandedOrder === order.id} className="flex w-full flex-wrap items-center justify-between gap-3 p-4 text-left sm:p-5" onClick={() => setExpandedOrder(expandedOrder === order.id ? "" : order.id)} type="button">
                   <span><span className="block text-xs text-muted">Order {order.id} · Placed {order.date}</span><span className="mt-1 block font-semibold">{order.product.name}</span></span>
@@ -119,9 +148,9 @@ export function CustomerDashboard({ page }: { page: string }) {
 
         {page === "settings" && <div className="mt-6 max-w-2xl divide-y divide-line border-y border-line">{[{ key: "email" as const, title: "Email notifications", description: "Order updates, delivery reminders, and new collection drops." }, { key: "messages" as const, title: "Chat messages", description: "Replies from the GoalNet support team." }].map((item) => <div className="flex items-center justify-between gap-6 py-5" key={item.key}><div><p className="font-semibold">{item.title}</p><p className="mt-1 text-sm text-muted">{item.description}</p></div><button aria-checked={settings[item.key]} className={`relative h-6 w-11 shrink-0 rounded-full transition ${settings[item.key] ? "bg-brand" : "bg-line"}`} onClick={() => setSettings((current) => ({ ...current, [item.key]: !current[item.key] }))} role="switch" type="button"><span className={`absolute top-1 size-4 rounded-full bg-ink transition ${settings[item.key] ? "left-6" : "left-1"}`} /></button></div>)}</div>}
 
-        {page === "edit-profile" && <form className="mt-6 max-w-2xl space-y-5" onSubmit={saveLocal}><div className="flex items-center gap-4"><span className="grid size-16 place-items-center bg-brand text-xl font-bold">AM</span><label className="border border-line px-4 py-2 text-xs font-bold uppercase">Change photo<input accept="image/*" className="sr-only" type="file" /></label></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-semibold">Full name<input className="mt-2 w-full border border-line p-3 text-sm" defaultValue="Aarav Mehta" disabled={!editing} /></label><label className="text-xs font-semibold">Email<input className="mt-2 w-full border border-line p-3 text-sm" defaultValue="aarav@example.com" disabled={!editing} type="email" /></label><label className="text-xs font-semibold">Mobile number<input className="mt-2 w-full border border-line p-3 text-sm" defaultValue="+91 98765 43210" disabled={!editing} /></label></div>{editing ? <div className="flex gap-3"><button className="bg-brand px-5 py-3 text-xs font-bold uppercase" type="submit">Save changes</button><button className="border border-line px-5 py-3 text-xs font-bold uppercase" onClick={() => setEditing(false)} type="button">Cancel</button></div> : <button className="inline-flex items-center gap-2 bg-brand px-5 py-3 text-xs font-bold uppercase" onClick={() => setEditing(true)} type="button"><Pencil size={14} /> Edit profile</button>}</form>}
+        {page === "edit-profile" && <form className="mt-6 max-w-2xl space-y-5" key={displayEmail} onSubmit={saveLocal}><div className="flex items-center gap-4"><span className="grid size-16 place-items-center bg-brand text-xl font-bold">{initials}</span><label className="border border-line px-4 py-2 text-xs font-bold uppercase">Change photo<input accept="image/*" className="sr-only" type="file" /></label></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-semibold">Full name<input className="mt-2 w-full border border-line p-3 text-sm" defaultValue={displayName} disabled={!editing} /></label><label className="text-xs font-semibold">Email<input className="mt-2 w-full border border-line p-3 text-sm" defaultValue={displayEmail} disabled={!editing} type="email" /></label><label className="text-xs font-semibold">Mobile number<input className="mt-2 w-full border border-line p-3 text-sm" defaultValue="+91 98765 43210" disabled={!editing} /></label></div>{editing ? <div className="flex gap-3"><button className="bg-brand px-5 py-3 text-xs font-bold uppercase" type="submit">Save changes</button><button className="border border-line px-5 py-3 text-xs font-bold uppercase" onClick={() => setEditing(false)} type="button">Cancel</button></div> : <button className="inline-flex items-center gap-2 bg-brand px-5 py-3 text-xs font-bold uppercase" onClick={() => setEditing(true)} type="button"><Pencil size={14} /> Edit profile</button>}</form>}
 
-        {page === "shipping" && <div className="mt-6 grid gap-4 md:grid-cols-2">{addresses.map((address, index) => <article className="border border-line p-5" key={`${address.pin}-${index}`}><div className="flex justify-between"><span className="flex items-center gap-2 text-xs font-bold uppercase"><MapPin size={15} /> {index === 0 ? "Default address" : "Saved address"}</span><button aria-label="Delete address" className="text-muted hover:text-red-700" onClick={() => setAddresses((current) => current.filter((_, itemIndex) => itemIndex !== index))} type="button"><Trash2 size={16} /></button></div><p className="mt-4 font-semibold">{address.name}</p><p className="mt-1 text-sm text-muted">{address.area}, {address.city}, {address.state} {address.pin}</p><p className="mt-1 text-sm text-muted">{address.phone}</p><p className="text-sm text-muted">{address.email}</p></article>)}<button className="flex min-h-44 flex-col items-center justify-center gap-3 border border-dashed border-line text-xs font-bold uppercase hover:border-ink" onClick={() => setDialog("address")} type="button"><span className="grid size-9 place-items-center bg-brand"><Plus size={18} /></span>Add address</button></div>}
+        {page === "shipping" && <div className="mt-6 grid gap-4 md:grid-cols-2">{addresses.map((address, index) => <article className="border border-line p-5" key={`${address.pin}-${index}`}><div className="flex justify-between"><span className="flex items-center gap-2 text-xs font-bold uppercase"><MapPin size={15} /> {index === 0 ? "Default address" : "Saved address"}</span><button aria-label="Delete address" className="text-muted hover:text-red-700" onClick={() => removeAddress(index)} type="button"><Trash2 size={16} /></button></div><p className="mt-4 font-semibold">{address.name}</p><p className="mt-1 text-sm text-muted">{address.area}, {address.city}, {address.state} {address.pin}</p><p className="mt-1 text-sm text-muted">{address.phone}</p><p className="text-sm text-muted">{address.email}</p></article>)}<button className="flex min-h-44 flex-col items-center justify-center gap-3 border border-dashed border-line text-xs font-bold uppercase hover:border-ink" onClick={() => setDialog("address")} type="button"><span className="grid size-9 place-items-center bg-brand"><Plus size={18} /></span>Add address</button></div>}
 
         {page === "message" && (
           <section className="mt-6 flex min-h-[440px] max-w-3xl flex-col border border-line">

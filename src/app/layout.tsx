@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Jost, Poppins } from "next/font/google";
+import { LocalCartProvider } from "@/components/common/LocalCartProvider";
+import { SessionSync } from "@/components/common/SessionSync";
 import "./globals.css";
 
 const jost = Jost({
@@ -39,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${jost.variable} ${poppins.variable}`}>
-      <body>{children}</body>
+      <body><LocalCartProvider><SessionSync />{children}</LocalCartProvider></body>
     </html>
   );
 }

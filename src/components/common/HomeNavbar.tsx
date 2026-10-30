@@ -12,6 +12,7 @@ import {
 } from "react-icons/lu";
 import { BrandMark } from "@/ui/BrandMark";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
+import { useDemoStore } from "@/lib/demo-store";
 
 const links = [
   { label: "Home", href: "/" },
@@ -24,7 +25,8 @@ export function HomeNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { itemCount } = useLocalCart();
-
+  const { session } = useDemoStore();
+  const accountHref = session ? "/dashboard/dashboard" : "/login";
   useEffect(() => {
     if (!menuOpen) return;
 
@@ -99,14 +101,14 @@ export function HomeNavbar() {
               </span>
             </Link>
             <Link
-              aria-label="Sign in to your account"
+              aria-label={session ? "Open your account" : "Sign in to your account"}
               className="hidden size-10 place-items-center transition hover:bg-canvas sm:grid"
-              href="/login"
+              href={accountHref}
             >
               <UserRound size={19} />
             </Link>
             <Link
-              className="ml-1 hidden items-center gap-2 bg-brand px-4 py-3 text-xs font-bold uppercase transition hover:bg-[#d8df0d] sm:flex"
+              className="ml-1 border border-ink/5 hidden items-center gap-2 bg-brand px-4 py-3 text-xs font-bold uppercase transition hover:bg-[#d8df0d] sm:flex"
               href="/shop"
             >
               Shop now <ArrowRight size={15} />
@@ -178,7 +180,7 @@ export function HomeNavbar() {
             </nav>
             <Link
               className="mt-7 inline-flex w-fit items-center gap-2 bg-brand px-5 py-3 text-sm font-bold uppercase"
-              href="/login"
+              href={accountHref}
               onClick={() => setMenuOpen(false)}
             >
               Account <UserRound size={16} />

@@ -73,7 +73,7 @@ export const faqGroups: FAQGroup[] = [
   {
     title: "Account and Support",
     questions: [
-      { question: "Do I need an account to place an order?", blocks: answer("Account creation is supported by the website. Whether guest checkout is available will depend on the checkout options enabled on the website. If guest checkout is enabled, you can place an order without creating an account.") },
+      { question: "Do I need an account to place an order?", blocks: answer("No. You can place an order as a guest without creating an account. Account creation is also supported by the website.") },
       { question: "I forgot my password. What should I do?", blocks: answer("Use the password recovery option on the login page, if available, and follow the instructions. If you continue to experience difficulties, contact our support email.") },
       { question: "How can I contact GOALNET?", blocks: answer("For product availability, order questions and other assistance, contact us through the available Instagram or WhatsApp ordering channels. For email support: contactgoalnet@gmail.com. When contacting us about an existing order, include your order number so we can assist you more efficiently.") },
     ],

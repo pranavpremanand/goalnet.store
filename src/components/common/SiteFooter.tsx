@@ -53,7 +53,7 @@ export function SiteFooter() {
         <div>
           <h2 className="text-xs font-bold uppercase text-white/45">Support</h2>
           <div className="mt-4 flex flex-col gap-3 text-sm">
-            <Link className="hover:text-brand" href="/dashboard/my-orders">Track an order</Link>
+            <Link className="hover:text-brand" href="/order-status">Track an order</Link>
             <Link className="hover:text-brand" href="/dashboard/shipping">My addresses</Link>
             <Link className="hover:text-brand" href="/login">My account</Link>
           </div>

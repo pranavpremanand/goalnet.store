@@ -67,8 +67,8 @@ export function HomePage() {
         </div>
       </section>
       <section className="bg-canvas py-14">
-        <div className="mx-auto grid max-w-[1440px] gap-5 px-5 sm:px-8 md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-8 lg:px-14">
-          <div className="flex items-start gap-3 text-brand">
+        <div className="mx-auto grid max-w-[1440px] gap-5 px-5 sm:px-8 md:grid-cols-[1fr_auto] md:items-center md:gap-8 lg:px-14">
+          {/* <div className="flex items-start gap-3 text-brand">
             <Quote
               aria-hidden="true"
               stroke="black"
@@ -81,11 +81,21 @@ export function HomePage() {
               Where football lives
               <br /> beyond 90 minutes
             </span>
+          </div> */}
+          <div className="flex items-start">
+            <p className="max-w-[750px] font-display text-2xl font-medium leading-snug sm:text-3xl">
+              The shirt you wore when the whole world stopped. The colors that
+              still feel like home.
+            </p>
+            <Quote
+              aria-hidden="true"
+              stroke="black"
+              strokeWidth={0.1}
+              className="mt-1 shrink-0 text-brand"
+              fill="currentColor"
+              size={25}
+            />
           </div>
-          <p className="max-w-[750px] font-display text-2xl font-medium leading-snug sm:text-3xl md:text-center">
-            The shirt you wore when the whole world stopped. The colors that
-            still feel like home.
-          </p>
           <p className="max-w-xs font-copy text-sm leading-7 text-muted md:justify-self-end">
             We celebrate the game, its people, and every story stitched into the
             fabric. Find a piece of yours in our collection.
@@ -146,6 +156,15 @@ export function HomePage() {
             the players who inspire us, the countries we stand behind, and the
             jerseys that become part of our memories.
           </p>
+          {/* <h2 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
+            Greatness is a journey. Wear every chapter.
+          </h2>
+          <p className="mt-6 font-copy text-sm leading-7 text-muted">
+            Football belongs to all of us. From the first kick in the street to
+            the last song in the stands, the game makes memories worth keeping.
+            We bring together club colors, national pride, and retro classics
+            made for the people who love it most.
+          </p> */}
           <Link
             className="mt-7 inline-flex items-center gap-3 border-b border-ink pb-2 text-sm font-bold uppercase"
             href="/about-us"
