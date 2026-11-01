@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LuArrowRight as ArrowRight, LuBell as Bell, LuCalendarCheck as CalendarCheck, LuCheck as Check, LuChevronDown as ChevronDown, LuChevronUp as ChevronUp, LuCircleHelp as CircleHelp, LuCreditCard as CreditCard, LuHeart as Heart, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuMapPin as MapPin, LuMessageCircle as MessageCircle, LuPackage as Package, LuPencil as Pencil, LuPlus as Plus, LuSettings as Settings, LuStar as Star, LuTrash2 as Trash2, LuTruck as Truck, LuUserRound as UserRound, LuX as X } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
-import { featuredProducts, formatRupees } from "@/data/products";
+import { formatRupees } from "@/lib/format";
+import type { StoreProduct } from "@/lib/types/storefront";
 import { OrderDetails } from "@/components/pages/orders/OrderDetails";
 import { addSavedAddress, removeSavedAddress, useDemoStore } from "@/lib/demo-store";
 import { signOutUser } from "@/lib/auth-client";
@@ -22,14 +23,20 @@ const sections = [
   { id: "support-ticket", label: "Support", icon: CircleHelp },
 ];
 
+// Sample orders shown until real order history exists.
+const sampleProducts = [
+  { name: "Argentina Home Jersey", image: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=900&q=85", imageAlt: "Football supporters in a packed stadium" },
+  { name: "Barcelona Home Jersey", image: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=900&q=85", imageAlt: "Players competing on a football pitch" },
+];
+
 const orders = [
-  { id: "PO-20481", date: "08 May 2026", amount: 2500, status: "Out for delivery", progress: 72, product: featuredProducts[0], size: "M" },
-  { id: "PO-20318", date: "22 Apr 2026", amount: 2200, status: "Completed", progress: 100, product: featuredProducts[1], size: "L" },
+  { id: "PO-20481", date: "08 May 2026", amount: 2500, status: "Out for delivery", progress: 72, product: sampleProducts[0], size: "M" },
+  { id: "PO-20318", date: "22 Apr 2026", amount: 2200, status: "Completed", progress: 100, product: sampleProducts[1], size: "L" },
 ];
 
 const statusSteps = ["Order confirmed", "Packed", "Out for delivery", "Delivered"];
 
-export function CustomerDashboard({ page }: { page: string }) {
+export function CustomerDashboard({ page, suggestedProducts }: { page: string; suggestedProducts: StoreProduct[] }) {
   const router = useRouter();
   const { session, orders: storedOrders } = useDemoStore();
   const displayName = session?.name ?? "Aarav Mehta";
@@ -94,11 +101,11 @@ export function CustomerDashboard({ page }: { page: string }) {
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5"><div><p className="text-xs font-bold uppercase text-muted">My GoalNet</p><h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">{pageTitle[page] ?? pageTitle.dashboard}</h1></div><button aria-label="Notifications" className="grid size-10 place-items-center border border-line"><Bell size={17} /></button></div>
         {notice && <p aria-live="polite" className="mt-4 flex items-center gap-2 bg-canvas p-3 text-sm"><Check size={16} />{notice}<button aria-label="Dismiss" className="ml-auto" onClick={() => setNotice("")} type="button"><X size={15} /></button></p>}
 
-        {page === "dashboard" && <div className="mt-6 space-y-7"><section className="relative overflow-hidden bg-ink p-6 text-white sm:p-9"><div className="absolute right-0 top-0 h-full w-1/3 bg-brand [clip-path:polygon(45%_0,100%_0,100%_100%,0_100%)]" /><div className="relative max-w-xl"><p className="text-xs font-bold uppercase text-brand">The game keeps moving</p><h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">Your order is on its way.</h2><p className="mt-2 text-sm text-white/65">Argentina Home Jersey · Order {orders[0].id}</p><div className="mt-6 h-1.5 bg-white/20"><div className="h-full bg-brand" style={{ width: `${orders[0].progress}%` }} /></div><div className="mt-3 flex justify-between gap-2 text-[10px] font-semibold uppercase text-white/60"><span>Confirmed</span><span>Packed</span><span className="text-brand">On the way</span><span>Delivered</span></div><Link className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase text-brand" href="/dashboard/my-orders">Track order <ArrowRight size={15} /></Link></div></section><div className="grid gap-4 sm:grid-cols-3"><div className="border border-line p-5"><Package size={19} /><p className="mt-4 text-xs uppercase text-muted">Orders placed</p><p className="mt-1 font-display text-2xl font-semibold">{session ? String(myOrders.length).padStart(2, "0") : "08"}</p></div><div className="border border-line p-5"><Heart size={19} /><p className="mt-4 text-xs uppercase text-muted">Saved favorites</p><p className="mt-1 font-display text-2xl font-semibold">03</p></div><div className="border border-line p-5"><CreditCard size={19} /><p className="mt-4 text-xs uppercase text-muted">GoalNet credit</p><p className="mt-1 font-display text-2xl font-semibold">₹0</p></div></div><section><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl font-semibold">A few favorites</h2><Link className="text-xs font-bold uppercase underline" href="/dashboard/favorites">See all</Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{featuredProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></section></div>}
+        {page === "dashboard" && <div className="mt-6 space-y-7"><section className="relative overflow-hidden bg-ink p-6 text-white sm:p-9"><div className="absolute right-0 top-0 h-full w-1/3 bg-brand [clip-path:polygon(45%_0,100%_0,100%_100%,0_100%)]" /><div className="relative max-w-xl"><p className="text-xs font-bold uppercase text-brand">The game keeps moving</p><h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">Your order is on its way.</h2><p className="mt-2 text-sm text-white/65">Argentina Home Jersey · Order {orders[0].id}</p><div className="mt-6 h-1.5 bg-white/20"><div className="h-full bg-brand" style={{ width: `${orders[0].progress}%` }} /></div><div className="mt-3 flex justify-between gap-2 text-[10px] font-semibold uppercase text-white/60"><span>Confirmed</span><span>Packed</span><span className="text-brand">On the way</span><span>Delivered</span></div><Link className="mt-6 inline-flex items-center gap-2 text-xs font-bold uppercase text-brand" href="/dashboard/my-orders">Track order <ArrowRight size={15} /></Link></div></section><div className="grid gap-4 sm:grid-cols-3"><div className="border border-line p-5"><Package size={19} /><p className="mt-4 text-xs uppercase text-muted">Orders placed</p><p className="mt-1 font-display text-2xl font-semibold">{session ? String(myOrders.length).padStart(2, "0") : "08"}</p></div><div className="border border-line p-5"><Heart size={19} /><p className="mt-4 text-xs uppercase text-muted">Saved favorites</p><p className="mt-1 font-display text-2xl font-semibold">03</p></div><div className="border border-line p-5"><CreditCard size={19} /><p className="mt-4 text-xs uppercase text-muted">GoalNet credit</p><p className="mt-1 font-display text-2xl font-semibold">₹0</p></div></div><section><div className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl font-semibold">A few favorites</h2><Link className="text-xs font-bold uppercase underline" href="/dashboard/favorites">See all</Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{suggestedProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></section></div>}
 
         {page === "my-orders" && (
           <div className="mt-6 space-y-4">
-            {session && myOrders.length === 0 && <p className="border border-line p-6 text-sm text-muted">You haven’t placed any orders yet. <Link className="font-semibold text-ink underline" href="/shop">Explore jerseys</Link></p>}
+            {session && myOrders.length === 0 && <p className="border border-line p-6 text-sm text-muted">You haven’t placed any orders yet. <Link className="font-semibold text-ink underline" href="/shop">Explore products</Link></p>}
             {myOrders.map((order) => (
               <article className="border border-line" key={order.ref}>
                 <button aria-expanded={expandedPlaced === order.ref} className="flex w-full flex-wrap items-center justify-between gap-3 p-4 text-left sm:p-5" onClick={() => setExpandedPlaced(expandedPlaced === order.ref ? "" : order.ref)} type="button">
@@ -144,7 +151,7 @@ export function CustomerDashboard({ page }: { page: string }) {
           </div>
         )}
 
-        {page === "favorites" && <div className="mt-6"><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{featuredProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></div>}
+        {page === "favorites" && <div className="mt-6"><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{suggestedProducts.slice(0, 3).map((product) => <ProductCard key={product.id} product={product} />)}</div></div>}
 
         {page === "settings" && <div className="mt-6 max-w-2xl divide-y divide-line border-y border-line">{[{ key: "email" as const, title: "Email notifications", description: "Order updates, delivery reminders, and new collection drops." }, { key: "messages" as const, title: "Chat messages", description: "Replies from the GoalNet support team." }].map((item) => <div className="flex items-center justify-between gap-6 py-5" key={item.key}><div><p className="font-semibold">{item.title}</p><p className="mt-1 text-sm text-muted">{item.description}</p></div><button aria-checked={settings[item.key]} className={`relative h-6 w-11 shrink-0 rounded-full transition ${settings[item.key] ? "bg-brand" : "bg-line"}`} onClick={() => setSettings((current) => ({ ...current, [item.key]: !current[item.key] }))} role="switch" type="button"><span className={`absolute top-1 size-4 rounded-full bg-ink transition ${settings[item.key] ? "left-6" : "left-1"}`} /></button></div>)}</div>}
 

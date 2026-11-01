@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LuBoxes as Boxes, LuClipboardList as ClipboardList, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
+import { LuBoxes as Boxes, LuClipboardList as ClipboardList, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuPanelsTopLeft as PanelsTopLeft, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
 import { signOutUser } from "@/lib/auth-client";
 
 const items = [
@@ -10,6 +10,7 @@ const items = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/products", label: "Products", icon: ShoppingBag },
   { href: "/admin/categories", label: "Categories", icon: ClipboardList },
+  { href: "/admin/hero", label: "Homepage hero", icon: PanelsTopLeft },
   { href: "/admin/manage-orders", label: "Orders", icon: Boxes },
 ];
 

@@ -14,7 +14,7 @@ export default function FAQPage() {
           <h1 className="mt-3 max-w-4xl font-display text-4xl font-semibold leading-tight sm:text-5xl">Frequently Asked Questions</h1>
           <div className="mt-4 max-w-3xl space-y-3 font-copy text-sm leading-7 text-muted sm:text-base">
             <p>Welcome to the GOALNET FAQ section.</p>
-            <p>Here you&apos;ll find answers to common questions about our football jerseys, sizing, payments, shipping, orders and returns.</p>
+            <p>Here you&apos;ll find answers to common questions about our football products, sizing, payments, shipping, orders and returns.</p>
           </div>
         </div>
       </header>

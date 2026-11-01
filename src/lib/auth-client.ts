@@ -22,6 +22,12 @@ export async function signInAdmin(input: SignInInput) {
   return user;
 }
 
+export async function signInWithGoogle(credential: string, acceptTerms = false) {
+  const { user } = await request<{ user: AuthUser }>("/api/auth/google", { method: "POST", body: JSON.stringify({ credential, acceptTerms }) });
+  storeSignIn(user);
+  return user;
+}
+
 export async function signOutUser() {
   try {
     await request<void>("/api/auth/signout", { method: "POST" });

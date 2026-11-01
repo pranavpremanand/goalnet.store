@@ -6,9 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LuCheck as Check, LuPencil as Pencil, LuPlus as Plus, LuTrash2 as Trash2 } from "react-icons/lu";
 import { ApiError } from "@/lib/api-client";
+import { PRODUCT_TYPE_LABELS } from "@/lib/catalog-constants";
 import { productApi } from "@/lib/admin-api";
 import type { CategoryDto, ProductDto, ProductListResult } from "@/lib/types/catalog";
-import { formatRupees } from "@/data/products";
+import { formatRupees } from "@/lib/format";
 import { adminInputClass } from "@/components/pages/admin/FormFields";
 
 type Filters = { q: string; category: string; status: string };
@@ -55,7 +56,7 @@ export function AdminProducts({ result, categories, filters }: { result: Product
       {notice && <p aria-live="polite" className="mt-5 flex items-center gap-2 bg-canvas p-3 text-sm"><Check size={15} />{notice}</p>}
 
       <form action="/admin/products" className="mt-6 grid gap-3 border border-line p-4 sm:grid-cols-[1fr_200px_160px_auto] sm:items-end" method="get">
-        <label className="text-xs font-semibold">Search<input aria-label="Search products" className={adminInputClass} defaultValue={filters.q} name="q" placeholder="Name, slug or team" /></label>
+        <label className="text-xs font-semibold">Search<input aria-label="Search products" className={adminInputClass} defaultValue={filters.q} name="q" placeholder="Name, slug, brand or team" /></label>
         <label className="text-xs font-semibold">Category<select className={adminInputClass} defaultValue={filters.category} name="category"><option value="">All categories</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
         <label className="text-xs font-semibold">Status<select className={adminInputClass} defaultValue={filters.status} name="status"><option value="all">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
         <button className="min-h-11 border border-ink px-5 text-xs font-bold uppercase hover:bg-canvas" type="submit">Filter</button>
@@ -70,7 +71,7 @@ export function AdminProducts({ result, categories, filters }: { result: Product
             <tbody>
               {result.items.map((product) => (
                 <tr className="border-t border-line" key={product.id}>
-                  <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="relative aspect-4/5 w-10 shrink-0 overflow-hidden bg-canvas">{product.images[0] && <Image alt={product.images[0].alt || product.name} className="object-cover" fill sizes="40px" src={product.images[0].url} />}</div><div><p className="font-semibold">{product.name}</p><p className="text-xs text-muted">{product.slug}</p></div></div></td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="relative aspect-4/5 w-10 shrink-0 overflow-hidden bg-canvas">{product.images[0] && <Image alt={product.images[0].alt || product.name} className="object-cover" fill sizes="40px" src={product.images[0].url} />}</div><div><p className="font-semibold">{product.name}</p><p className="text-xs text-muted">{PRODUCT_TYPE_LABELS[product.productType]} · {product.slug}</p></div></div></td>
                   <td className="px-4 py-3">{product.category.name}</td>
                   <td className="px-4 py-3">{formatRupees(product.price)}</td>
                   <td className="px-4 py-3 text-muted">{product.variants.map((variant) => variant.size).join(", ")}</td>

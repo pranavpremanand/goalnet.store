@@ -1,7 +1,7 @@
 import { IMAGE_MIME_TYPES, MAX_IMAGE_BYTES } from "@/lib/catalog-constants";
 import { ApiError, apiRequest } from "@/lib/api-client";
 import type { CategoryDto, ImageAsset, ProductDto, UploadAuth } from "@/lib/types/catalog";
-import type { CategoryInput, ProductInput, UploadTarget } from "@/lib/validation/catalog";
+import type { CategoryDeleteOptions, CategoryInput, ProductInput, UploadTarget } from "@/lib/validation/catalog";
 
 const IMAGEKIT_UPLOAD_URL = "https://upload.imagekit.io/api/v1/files/upload";
 
@@ -10,7 +10,13 @@ const json = (method: string, body: unknown) => ({ method, body: JSON.stringify(
 export const categoryApi = {
   create: (input: CategoryInput) => apiRequest<{ category: CategoryDto }>("/api/admin/categories", json("POST", input)),
   update: (id: string, input: CategoryInput) => apiRequest<{ category: CategoryDto }>(`/api/admin/categories/${id}`, json("PUT", input)),
-  remove: (id: string) => apiRequest<void>(`/api/admin/categories/${id}`, { method: "DELETE" }),
+  remove: (id: string, options: CategoryDeleteOptions = {}) => {
+    const params = new URLSearchParams();
+    if (options.productAction) params.set("productAction", options.productAction);
+    if (options.targetCategoryId) params.set("targetCategoryId", options.targetCategoryId);
+    const query = params.toString();
+    return apiRequest<void>(`/api/admin/categories/${id}${query ? `?${query}` : ""}`, { method: "DELETE" });
+  },
 };
 
 export const productApi = {
@@ -18,6 +24,16 @@ export const productApi = {
   update: (id: string, input: ProductInput) => apiRequest<{ product: ProductDto }>(`/api/admin/products/${id}`, json("PUT", input)),
   remove: (id: string) => apiRequest<void>(`/api/admin/products/${id}`, { method: "DELETE" }),
 };
+
+// Deletes uploads that were never saved. Failures are ignored; the server only removes files no record uses.
+export async function discardUploads(fileIds: string[], keepalive = false) {
+  if (fileIds.length === 0) return;
+  try {
+    await fetch("/api/admin/uploads/discard", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileIds }), keepalive });
+  } catch {
+    // Nothing to do: the file simply stays in ImageKit.
+  }
+}
 
 // Uploads straight from the browser to ImageKit using a signature issued by our API.
 export async function uploadImage(file: File, target: UploadTarget): Promise<ImageAsset> {

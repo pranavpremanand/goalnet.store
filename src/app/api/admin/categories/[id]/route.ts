@@ -1,4 +1,4 @@
-import { categoryInputSchema, objectIdSchema } from "@/lib/validation/catalog";
+import { categoryDeleteSchema, categoryInputSchema, objectIdSchema } from "@/lib/validation/catalog";
 import { requireAdmin } from "@/server/auth/current-user";
 import { NotFoundError } from "@/server/errors";
 import { apiHandler, readJson } from "@/server/http/handler";
@@ -24,8 +24,11 @@ export const PUT = apiHandler<Context>(async (request, context) => {
   return Response.json({ category: await categoryService.updateCategory(id, input) });
 });
 
-export const DELETE = apiHandler<Context>(async (_request, context) => {
+export const DELETE = apiHandler<Context>(async (request, context) => {
   await requireAdmin();
-  await categoryService.deleteCategory(await readId(context));
+  const id = await readId(context);
+  const params = new URL(request.url).searchParams;
+  const options = categoryDeleteSchema.parse({ productAction: params.get("productAction") ?? undefined, targetCategoryId: params.get("targetCategoryId") ?? undefined });
+  await categoryService.deleteCategory(id, options);
   return new Response(null, { status: 204 });
 });

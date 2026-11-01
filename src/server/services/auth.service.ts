@@ -1,14 +1,17 @@
-import { ConflictError, UnauthorizedError } from "@/server/errors";
+import { OAuth2Client } from "google-auth-library";
+import { BadRequestError, ConflictError, ServiceUnavailableError, UnauthorizedError } from "@/server/errors";
+import { getGoogleClientId } from "@/server/config/env";
 import { SESSION_TTL_MS } from "@/server/config/session";
 import type { UserRole } from "@/server/models/user.model";
 import { hashPassword, verifyPassword } from "@/server/lib/password";
 import { generateSessionToken, hashSessionToken } from "@/server/lib/token";
 import { createSession, deleteSession, findActiveSessionUserId } from "@/server/repositories/session.repository";
-import { createUser, findUserById, findUserByEmailWithPassword, userEmailExists, type UserRecord } from "@/server/repositories/user.repository";
+import { createGoogleUser, createUser, findUserByEmail, findUserByGoogleSub, findUserById, findUserByEmailWithPassword, linkGoogleIdentity, userEmailExists, type UserRecord } from "@/server/repositories/user.repository";
 import { isDuplicateKeyError } from "@/server/db/errors";
 import type { SignInInput, SignUpInput } from "@/lib/validation/auth";
 
 const EMAIL_TAKEN = "An account with this email already exists. Try signing in instead.";
+const googleClient = new OAuth2Client();
 
 export type AuthUser = Pick<UserRecord, "id" | "name" | "email" | "role">;
 export type AuthResult = { user: AuthUser; sessionToken: string; expiresAt: Date };
@@ -45,6 +48,47 @@ export async function signIn(input: SignInInput, userAgent?: string | null, opti
   // A wrong role gets the same answer as a wrong password, so admin accounts are not revealed.
   if (!user || !passwordMatches || (options.role && user.role !== options.role)) throw new UnauthorizedError("Invalid email or password.");
   return startSession(user, userAgent);
+}
+
+export async function signInWithGoogle(credential: string, userAgent?: string | null, acceptTerms = false) {
+  const clientId = getGoogleClientId();
+  if (!clientId) throw new ServiceUnavailableError("Google sign-in is not configured yet.");
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: clientId });
+    payload = ticket.getPayload();
+  } catch {
+    throw new UnauthorizedError("Google sign-in could not be verified. Please try again.");
+  }
+
+  const googleSub = payload?.sub;
+  const email = payload?.email?.trim().toLowerCase();
+  if (!googleSub || !email || payload?.email_verified !== true) {
+    throw new UnauthorizedError("Google must verify your email address before you can sign in.");
+  }
+
+  const byGoogle = await findUserByGoogleSub(googleSub);
+  if (byGoogle) return startSession(byGoogle, userAgent);
+
+  const byEmail = await findUserByEmail(email);
+  if (byEmail) {
+    const linked = await linkGoogleIdentity(byEmail.id, googleSub);
+    if (!linked) throw new ConflictError("This account is already linked to another Google account. Sign in with your original method.");
+    return startSession(linked, userAgent);
+  }
+
+  if (!acceptTerms) throw new BadRequestError("No GoalNet account is linked to this Google account. Choose Create Account to continue.");
+
+  try {
+    const user = await createGoogleUser({ name: payload.name?.trim() || email.split("@")[0], email, googleSub });
+    return await startSession(user, userAgent);
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error;
+    const racedUser = await findUserByGoogleSub(googleSub);
+    if (racedUser) return startSession(racedUser, userAgent);
+    throw new ConflictError("An account already exists with this email. Sign in with that account, then connect Google.");
+  }
 }
 
 export async function signOut(sessionToken: string | undefined) {

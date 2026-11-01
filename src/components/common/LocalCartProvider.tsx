@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { Product } from "@/data/products";
+import type { CartProduct } from "@/lib/types/storefront";
 
-export type CartLine = Product & {
+export type CartLine = CartProduct & {
   size: string;
   quantity: number;
 };
@@ -12,7 +12,7 @@ type CartContextValue = {
   items: CartLine[];
   itemCount: number;
   total: number;
-  addItem: (product: Product, size: string) => void;
+  addItem: (product: CartProduct, size: string) => void;
   updateQuantity: (productId: string, size: string, quantity: number) => void;
   removeItem: (productId: string, size: string) => void;
   clearCart: () => void;
@@ -25,7 +25,7 @@ export function LocalCartProvider({ children }: { children: ReactNode }) {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  function addItem(product: Product, size: string) {
+  function addItem(product: CartProduct, size: string) {
     setItems((current) => {
       const existing = current.find(
         (item) => item.id === product.id && item.size === size,
@@ -37,7 +37,7 @@ export function LocalCartProvider({ children }: { children: ReactNode }) {
             : item,
         );
       }
-      return [...current, { ...product, size, quantity: 1 }];
+      return [...current, { id: product.id, slug: product.slug, name: product.name, image: product.image, imageAlt: product.imageAlt, price: product.price, size, quantity: 1 }];
     });
   }
 

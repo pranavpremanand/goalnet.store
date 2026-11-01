@@ -3,7 +3,7 @@ import type { LegalDocument } from "@/components/pages/legal/LegalPage";
 export const shippingPolicy: LegalDocument = {
   title: "Shipping & Delivery Policy",
   intro: [
-    "At GOALNET, we aim to make ordering your favourite football jerseys simple and convenient. This policy explains our order processing, shipping charges and delivery procedures.",
+    "At GOALNET, we aim to make ordering your favourite football products simple and convenient. This policy explains our order processing, shipping charges and delivery procedures.",
   ],
   related: [
     { label: "Cancellation Policy", href: "/cancellation-policy" },
@@ -16,7 +16,7 @@ export const shippingPolicy: LegalDocument = {
     ] },
     { heading: "2. Shipping Charges", blocks: [
       { type: "paragraph", text: "Our standard shipping charge is ₹80 per order, subject to the parcel size, weight and delivery destination." },
-      { type: "paragraph", text: "For orders containing multiple jerseys, shipping is calculated based on the combined parcel and applicable courier charges. An additional shipping charge may apply where necessary. Any applicable charge will be communicated to the customer before the order is confirmed." },
+      { type: "paragraph", text: "For orders containing multiple items, shipping is calculated based on the combined parcel and applicable courier charges. An additional shipping charge may apply where necessary. Any applicable charge will be communicated to the customer before the order is confirmed." },
       { type: "paragraph", text: "Shipping charges, if applicable, will be displayed separately at checkout." },
       { type: "paragraph", text: "Any free-shipping offer or promotional shipping rate will be subject to the conditions stated in that offer." },
     ] },
@@ -81,7 +81,7 @@ export const returnsPolicy: LegalDocument = {
       { type: "paragraph", text: "If you receive a product that differs from the product ordered, contact us within 48 hours of delivery." },
       { type: "paragraph", text: "We'll review the order details and the product received to determine whether an incorrect item was supplied." },
       { type: "subheading", text: "Product Received Damaged" },
-      { type: "paragraph", text: "If your jersey arrives visibly damaged, contact us within 48 hours of delivery." },
+      { type: "paragraph", text: "If your product arrives visibly damaged, contact us within 48 hours of delivery." },
       { type: "paragraph", text: "Please provide clear photographs and the requested unboxing evidence so we can assess the condition in which the product arrived." },
       { type: "subheading", text: "Manufacturing or Product Defects" },
       { type: "paragraph", text: "If you discover a product defect, contact us as soon as reasonably possible with photographs or videos showing the issue." },
@@ -254,7 +254,7 @@ export const termsConditions: LegalDocument = {
   ],
   sections: [
     { heading: "1. About GOALNET", blocks: [
-      { type: "paragraph", text: "GOALNET is a football jersey retail brand operating in India." },
+      { type: "paragraph", text: "GOALNET is a football retail brand operating in India." },
       { type: "paragraph", text: "For enquiries about the website, products or orders, contact: contactgoalnet@gmail.com" },
       { type: "paragraph", text: "Seller/legal details required for publication: To be confirmed before launch." },
       { type: "paragraph", text: "Any additional legal seller details required under applicable law will be displayed on the website or otherwise made available to customers." },

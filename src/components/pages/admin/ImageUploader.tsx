@@ -7,16 +7,18 @@ import { IMAGE_MIME_TYPES } from "@/lib/catalog-constants";
 import { uploadImage } from "@/lib/admin-api";
 import type { ImageAsset } from "@/lib/types/catalog";
 import type { UploadTarget } from "@/lib/validation/catalog";
+import type { UploadSession } from "@/components/pages/admin/useUploadSession";
 
 type ImageUploaderProps = {
   target: UploadTarget;
   value: ImageAsset[];
   onChange: (images: ImageAsset[]) => void;
   max: number;
+  session: UploadSession;
   error?: string;
 };
 
-export function ImageUploader({ target, value, onChange, max, error }: ImageUploaderProps) {
+export function ImageUploader({ target, value, onChange, max, session, error }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(0);
   const [uploadError, setUploadError] = useState("");
@@ -35,12 +37,18 @@ export function ImageUploader({ target, value, onChange, max, error }: ImageUplo
     const uploaded = results.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
     const failure = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
     if (failure) setUploadError(failure.reason instanceof Error ? failure.reason.message : "The image upload failed. Please try again.");
+    uploaded.forEach((image) => session.track(image.fileId));
     if (uploaded.length) onChange(single ? uploaded.slice(0, 1) : [...value, ...uploaded]);
     if (inputRef.current) inputRef.current.value = "";
   }
 
   function updateAlt(index: number, alt: string) {
     onChange(value.map((image, imageIndex) => (imageIndex === index ? { ...image, alt } : image)));
+  }
+
+  function removeImage(index: number) {
+    session.release(value[index].fileId);
+    onChange(value.filter((_, imageIndex) => imageIndex !== index));
   }
 
   function makeMain(index: number) {
@@ -56,7 +64,7 @@ export function ImageUploader({ target, value, onChange, max, error }: ImageUplo
             <input aria-label="Image description" className="mt-2 w-full border border-line px-2 py-1.5 text-xs outline-none focus:border-ink" maxLength={200} onChange={(event) => updateAlt(index, event.target.value)} placeholder="Short description (alt text)" value={image.alt} />
             <div className="mt-2 flex items-center justify-between text-[10px] font-bold uppercase">
               {!single && (index === 0 ? <span className="inline-flex items-center gap-1 text-muted"><Star size={12} /> Main</span> : <button className="underline" onClick={() => makeMain(index)} type="button">Make main</button>)}
-              <button aria-label="Remove image" className="ml-auto inline-flex items-center gap-1 text-red-700" onClick={() => onChange(value.filter((_, imageIndex) => imageIndex !== index))} type="button"><Trash2 size={13} /> Remove</button>
+              <button aria-label="Remove image" className="ml-auto inline-flex items-center gap-1 text-red-700" onClick={() => removeImage(index)} type="button"><Trash2 size={13} /> Remove</button>
             </div>
           </li>
         ))}

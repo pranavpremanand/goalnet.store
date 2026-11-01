@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AVAILABILITY_STATUSES, JERSEY_TYPES, LOGO_TYPES, MAX_PRODUCT_IMAGES, SIZES, TEAM_TYPES } from "@/lib/catalog-constants";
+import { AVAILABILITY_STATUSES, JERSEY_TYPES, LOGO_TYPES, MAX_PRODUCT_IMAGES, PRODUCT_TYPES, SIZE_OPTIONS, SIZE_SYSTEMS, TEAM_TYPES, isTeamBased } from "@/lib/catalog-constants";
 
 // Shared by the admin forms and the API so both enforce the same rules.
 
@@ -36,22 +36,25 @@ export const productInputSchema = z
     name: z.string().trim().min(2, "Enter a product name").max(200, "Name must be 200 characters or fewer"),
     slug: slugField,
     description: text("Description", 5000),
+    productType: z.enum(PRODUCT_TYPES, { error: "Select a product type" }),
+    brand: text("Brand", 80),
     team: z.object({
-      name: z.string().trim().min(1, "Enter the team name").max(100, "Team name must be 100 characters or fewer"),
-      type: z.enum(TEAM_TYPES, { error: "Select club or national" }),
+      name: text("Team name", 100),
+      type: z.enum(TEAM_TYPES, { error: "Select club or national" }).nullable(),
     }),
     season: text("Season", 20),
     player: z.object({
       name: text("Player name", 80),
       number: wholeNumber("Player number", 0, 99).nullable(),
     }),
-    jerseyType: z.enum(JERSEY_TYPES, { error: "Select a jersey type" }),
+    jerseyType: z.enum(JERSEY_TYPES, { error: "Select a jersey type" }).nullable(),
     logoType: z.enum(LOGO_TYPES, { error: "Select a logo type" }),
-    fabric: text("Fabric", 120),
+    fabric: text("Material", 120),
     price: z.number({ error: "Enter a price" }).positive("Price must be greater than 0").max(1_000_000, "Price is too high"),
     compareAtPrice: z.number({ error: "Enter a valid price" }).positive("Price must be greater than 0").max(1_000_000, "Price is too high").nullable(),
+    sizeSystem: z.enum(SIZE_SYSTEMS, { error: "Select a size type" }),
     variants: z
-      .array(z.object({ size: z.enum(SIZES), availabilityStatus: z.enum(AVAILABILITY_STATUSES) }))
+      .array(z.object({ size: z.string().trim().min(1).max(20), availabilityStatus: z.enum(AVAILABILITY_STATUSES) }))
       .min(1, "Select at least one size")
       .refine((variants) => new Set(variants.map((variant) => variant.size)).size === variants.length, "Each size can only be added once"),
     images: z.array(imageSchema).min(1, "Upload at least one product image").max(MAX_PRODUCT_IMAGES, `You can add up to ${MAX_PRODUCT_IMAGES} images`),
@@ -67,6 +70,18 @@ export const productInputSchema = z
   .refine((product) => product.compareAtPrice === null || product.compareAtPrice > product.price, {
     path: ["compareAtPrice"],
     message: "Compare-at price must be higher than the selling price",
+  })
+  .superRefine((product, context) => {
+    if (isTeamBased(product.productType)) {
+      if (!product.team.name) context.addIssue({ code: "custom", path: ["team", "name"], message: "Enter the team name" });
+      if (!product.team.type) context.addIssue({ code: "custom", path: ["team", "type"], message: "Select club or national" });
+    }
+    if (product.productType === "jersey" && !product.jerseyType) context.addIssue({ code: "custom", path: ["jerseyType"], message: "Select a jersey type" });
+
+    const allowed = SIZE_OPTIONS[product.sizeSystem];
+    if (product.variants.some((variant) => !allowed.includes(variant.size))) {
+      context.addIssue({ code: "custom", path: ["variants"], message: "Sizes must match the selected size type" });
+    }
   });
 
 export const productListQuerySchema = z.object({
@@ -77,9 +92,23 @@ export const productListQuerySchema = z.object({
   status: z.enum(["all", "active", "inactive"]).default("all"),
 });
 
-export const uploadTargetSchema = z.object({ target: z.enum(["category", "product"]) });
+export const uploadTargetSchema = z.object({ target: z.enum(["category", "product", "hero"]) });
+export const discardUploadsSchema = z.object({ fileIds: z.array(z.string().min(1).max(100)).min(1).max(20) });
+
+// Deleting a category that still has products requires choosing what happens to them.
+export const categoryDeleteSchema = z
+  .object({
+    productAction: z.enum(["reassign", "delete"]).optional(),
+    targetCategoryId: objectIdSchema.optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.productAction === "reassign" && !value.targetCategoryId) {
+      context.addIssue({ code: "custom", path: ["targetCategoryId"], message: "Choose the category to move the products to" });
+    }
+  });
 
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
+export type CategoryDeleteOptions = z.infer<typeof categoryDeleteSchema>;
 export type ProductInput = z.infer<typeof productInputSchema>;
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 export type UploadTarget = z.infer<typeof uploadTargetSchema>["target"];

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LuCheck as Check, LuMinus as Minus, LuPlus as Plus, LuShieldCheck as ShieldCheck, LuTrash2 as Trash2 } from "react-icons/lu";
-import { formatRupees } from "@/data/products";
+import { formatRupees } from "@/lib/format";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { createOrder, useDemoStore, type OrderAddress } from "@/lib/demo-store";
 import { signOutUser } from "@/lib/auth-client";
@@ -119,8 +119,8 @@ export function CheckoutPage() {
         <div className="grid size-20 place-items-center bg-brand"><span className="font-display text-3xl font-black">0</span></div>
         <p className="mt-6 text-xs font-bold uppercase text-muted">Your next favorite is waiting</p>
         <h1 className="mt-2 font-display text-4xl font-semibold">Your bag is empty.</h1>
-        <p className="mt-3 max-w-md font-copy text-sm leading-6 text-muted">Explore the collection and add a jersey to get matchday ready.</p>
-        <Link className="mt-7 inline-flex min-h-12 items-center bg-brand px-6 text-sm font-bold uppercase" href="/shop">Explore jerseys</Link>
+        <p className="mt-3 max-w-md font-copy text-sm leading-6 text-muted">Explore the collection and add an item to get matchday ready.</p>
+        <Link className="mt-7 inline-flex min-h-12 items-center bg-brand px-6 text-sm font-bold uppercase" href="/shop">Explore products</Link>
       </main>
     );
   }
@@ -185,15 +185,15 @@ export function CheckoutPage() {
 
         <section>
           <div className="flex items-center justify-between border-b border-line pb-4"><h2 className="font-display text-2xl font-semibold">Review your order</h2><span className="text-xs text-muted">{items.reduce((sum, item) => sum + item.quantity, 0)} items</span></div>
-          <div className="divide-y divide-line">{items.map((item) => <div className="flex gap-4 py-5" key={`${item.id}-${item.size}`}><div className="relative aspect-4/5 w-20.5 shrink-0 bg-canvas"><Image alt={item.imageAlt} className="object-cover" fill sizes="82px" src={item.image} /></div><div className="min-w-0 flex-1"><Link className="font-semibold" href={`/product-info/${item.id}`}>{item.name}</Link><p className="mt-1 text-xs text-muted">Size {item.size}</p><div className="mt-3 flex items-center gap-2"><button aria-label="Decrease quantity" className="grid size-7 place-items-center border border-line" onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)} type="button"><Minus size={13} /></button><span className="w-5 text-center text-sm">{item.quantity}</span><button aria-label="Increase quantity" className="grid size-7 place-items-center border border-line" onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)} type="button"><Plus size={13} /></button><button aria-label="Remove item" className="ml-2 text-muted hover:text-red-600" onClick={() => removeItem(item.id, item.size)} type="button"><Trash2 size={15} /></button></div></div><p className="shrink-0 text-sm font-bold">{formatRupees(item.price * item.quantity)}</p></div>)}</div>
-          <button aria-pressed={protect} className={`my-4 flex w-full items-center gap-3 border p-4 text-left ${protect ? "border-ink bg-canvas" : "border-line"}`} onClick={() => setProtect(!protect)} type="button"><ShieldCheck className="shrink-0" size={20} /><span className="flex-1"><span className="block text-sm font-semibold">Protect your jersey</span><span className="mt-1 block text-xs text-muted">Add one year of accidental damage cover · {formatRupees(PROTECTION_FEE)}</span></span><span className={`grid size-5 place-items-center border ${protect ? "border-brand bg-brand" : "border-line"}`}>{protect && <Check size={13} />}</span></button>
+          <div className="divide-y divide-line">{items.map((item) => <div className="flex gap-4 py-5" key={`${item.id}-${item.size}`}><div className="relative aspect-4/5 w-20.5 shrink-0 bg-canvas"><Image alt={item.imageAlt} className="object-cover" fill sizes="82px" src={item.image} /></div><div className="min-w-0 flex-1"><Link className="font-semibold" href={`/product-info/${item.slug}`}>{item.name}</Link><p className="mt-1 text-xs text-muted">Size {item.size}</p><div className="mt-3 flex items-center gap-2"><button aria-label="Decrease quantity" className="grid size-7 place-items-center border border-line" onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)} type="button"><Minus size={13} /></button><span className="w-5 text-center text-sm">{item.quantity}</span><button aria-label="Increase quantity" className="grid size-7 place-items-center border border-line" onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)} type="button"><Plus size={13} /></button><button aria-label="Remove item" className="ml-2 text-muted hover:text-red-600" onClick={() => removeItem(item.id, item.size)} type="button"><Trash2 size={15} /></button></div></div><p className="shrink-0 text-sm font-bold">{formatRupees(item.price * item.quantity)}</p></div>)}</div>
+          <button aria-pressed={protect} className={`my-4 flex w-full items-center gap-3 border p-4 text-left ${protect ? "border-ink bg-canvas" : "border-line"}`} onClick={() => setProtect(!protect)} type="button"><ShieldCheck className="shrink-0" size={20} /><span className="flex-1"><span className="block text-sm font-semibold">Protect your purchase</span><span className="mt-1 block text-xs text-muted">Add one year of accidental damage cover · {formatRupees(PROTECTION_FEE)}</span></span><span className={`grid size-5 place-items-center border ${protect ? "border-brand bg-brand" : "border-line"}`}>{protect && <Check size={13} />}</span></button>
           <div className="space-y-3 border-t border-line pt-4 text-sm">
             <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>{formatRupees(total)}</span></div>
             <div className="flex justify-between"><span className="text-muted">Standard shipping</span><span>{formatRupees(SHIPPING_FEE)}</span></div>
-            {protect && <div className="flex justify-between"><span className="text-muted">Jersey protection</span><span>{formatRupees(PROTECTION_FEE)}</span></div>}
+            {protect && <div className="flex justify-between"><span className="text-muted">Product protection</span><span>{formatRupees(PROTECTION_FEE)}</span></div>}
             <div className="flex justify-between border-t border-line pt-4 text-base font-bold"><span>Total</span><span>{formatRupees(totalDue)}</span></div>
           </div>
-          <p className="mt-3 text-xs leading-5 text-muted">Orders with multiple jerseys may have an additional shipping charge. Any applicable charge will be shown before confirmation.</p>
+          <p className="mt-3 text-xs leading-5 text-muted">Orders with multiple items may have an additional shipping charge. Any applicable charge will be shown before confirmation.</p>
           <button className="mt-6 min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50" disabled={stage === "method" || (!useSaved && pincodeLookup.status === "blocked")} form="checkout-form" type="submit">Pay {formatRupees(totalDue)}</button>
           {stage === "method" && <p className="mt-2 text-center text-xs text-muted">Choose how to continue to enter your delivery details.</p>}
           <p className="mt-3 text-center text-[11px] text-muted">Demo checkout only. No payment will be collected.</p>

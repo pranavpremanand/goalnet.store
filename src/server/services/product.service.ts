@@ -1,3 +1,4 @@
+import { isTeamBased } from "@/lib/catalog-constants";
 import type { ProductDto, ProductListResult } from "@/lib/types/catalog";
 import type { ProductInput, ProductListQuery } from "@/lib/validation/catalog";
 import { isDuplicateKeyError } from "@/server/db/errors";
@@ -16,7 +17,17 @@ async function assertCategoryExists(categoryId: string) {
 }
 
 function toData(input: ProductInput, slug: string): productRepository.ProductData {
-  return { ...input, slug };
+  // Jersey-style details only make sense for jerseys and kits, so they are cleared for every other type.
+  const teamBased = isTeamBased(input.productType);
+  return {
+    ...input,
+    slug,
+    team: teamBased ? input.team : { name: "", type: null },
+    season: teamBased ? input.season : "",
+    player: teamBased ? input.player : { name: "", number: null },
+    jerseyType: input.productType === "jersey" ? input.jerseyType : null,
+    logoType: teamBased ? input.logoType : "unknown",
+  };
 }
 
 export async function listProducts(query: ProductListQuery): Promise<ProductListResult> {

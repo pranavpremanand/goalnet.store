@@ -16,13 +16,13 @@ export function SiteFooter() {
         <div>
           <h2 className="text-xs font-bold uppercase text-white/45">Explore</h2>
           <div className="mt-4 flex flex-col gap-3 text-sm">
-            <Link className="hover:text-brand" href="/shop">
-              Shop all jerseys
+            <Link className="hover:text-brand w-fit" href="/shop">
+              Shop all products
             </Link>
-            <Link className="hover:text-brand" href="/about-us">
+            <Link className="hover:text-brand w-fit" href="/about-us">
               Our story
             </Link>
-            <Link className="hover:text-brand" href="/contact-us">
+            <Link className="hover:text-brand w-fit" href="/contact-us">
               Contact
             </Link>
           </div>
@@ -30,22 +30,22 @@ export function SiteFooter() {
         <div>
           <h2 className="text-xs font-bold uppercase text-white/45">Policies</h2>
           <div className="mt-4 flex flex-col gap-3 text-sm">
-            <Link className="hover:text-brand" href="/shipping-policy">
+            <Link className="hover:text-brand w-fit" href="/shipping-policy">
               Shipping & Delivery
             </Link>
-            <Link className="hover:text-brand" href="/returns-refunds">
+            <Link className="hover:text-brand w-fit" href="/returns-refunds">
               Returns & Refunds
             </Link>
-            <Link className="hover:text-brand" href="/privacy-policy">
+            <Link className="hover:text-brand w-fit" href="/privacy-policy">
               Privacy Policy
             </Link>
-            <Link className="hover:text-brand" href="/terms">
+            <Link className="hover:text-brand w-fit" href="/terms">
               Terms & Conditions
             </Link>
-            <Link className="hover:text-brand" href="/cancellation-policy">
+            <Link className="hover:text-brand w-fit" href="/cancellation-policy">
               Cancellation Policy
             </Link>
-            <Link className="hover:text-brand" href="/faq">
+            <Link className="hover:text-brand w-fit" href="/faq">
               FAQs
             </Link>
           </div>
@@ -53,9 +53,9 @@ export function SiteFooter() {
         <div>
           <h2 className="text-xs font-bold uppercase text-white/45">Support</h2>
           <div className="mt-4 flex flex-col gap-3 text-sm">
-            <Link className="hover:text-brand" href="/order-status">Track an order</Link>
-            <Link className="hover:text-brand" href="/dashboard/shipping">My addresses</Link>
-            <Link className="hover:text-brand" href="/login">My account</Link>
+            <Link className="hover:text-brand w-fit" href="/order-status">Track an order</Link>
+            <Link className="hover:text-brand w-fit" href="/dashboard/shipping">My addresses</Link>
+            <Link className="hover:text-brand w-fit" href="/login">My account</Link>
           </div>
           <h3 className="mt-7 text-xs font-bold uppercase text-white/45">Stay in the game</h3>
           <p className="mt-4 leading-6 text-white/65">

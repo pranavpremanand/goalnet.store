@@ -25,7 +25,7 @@ export function ContactForm() {
           Let’s talk football.
         </h1>
         <p className="mt-4 max-w-lg font-copy text-sm leading-7 text-muted">
-          Questions about an order, a jersey, or anything else? Send us a note
+          Questions about an order, a product, or anything else? Send us a note
           and our team will be in touch.
         </p>
         {sent ? (

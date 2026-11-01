@@ -124,11 +124,11 @@ export function HomeNavbar() {
             <label className="mx-auto flex max-w-[900px] items-center gap-3 border-b border-ink py-2">
               <Search aria-hidden="true" size={18} />
               <input
-                aria-label="Search jerseys"
+                aria-label="Search products"
                 autoFocus
                 className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-muted"
                 name="q"
-                placeholder="Search teams, seasons, and jerseys"
+                placeholder="Search teams, seasons, and products"
               />
               <button className="text-xs font-bold uppercase" type="submit">
                 Search

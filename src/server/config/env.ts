@@ -10,6 +10,10 @@ export function getMongoUri() {
   return uri;
 }
 
+export function getGoogleClientId() {
+  return readEnv("GOOGLE_CLIENT_ID");
+}
+
 export function getDeliveryConfig() {
   return {
     token: readEnv("DELHIVERY_API_TOKEN"),

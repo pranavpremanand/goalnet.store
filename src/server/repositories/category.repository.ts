@@ -56,3 +56,8 @@ export async function deleteCategory(id: string) {
   await connectToDatabase();
   return (await CategoryModel.deleteOne({ _id: id })).deletedCount === 1;
 }
+
+export async function isCoverImageFileUsed(fileId: string) {
+  await connectToDatabase();
+  return (await CategoryModel.exists({ "coverImage.fileId": fileId })) !== null;
+}

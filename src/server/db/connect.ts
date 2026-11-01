@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { connection } from "next/server";
 import { getMongoUri } from "@/server/config/env";
 
 type MongooseCache = { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
@@ -8,6 +9,8 @@ const globalCache = globalThis as typeof globalThis & { mongooseCache?: Mongoose
 const cache: MongooseCache = (globalCache.mongooseCache ??= { conn: null, promise: null });
 
 export async function connectToDatabase() {
+  // Database data is per-request: this keeps pages that read it out of build-time prerendering.
+  await connection();
   if (cache.conn) return cache.conn;
 
   cache.promise ??= mongoose.connect(getMongoUri(), { bufferCommands: false });

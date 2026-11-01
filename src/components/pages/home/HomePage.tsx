@@ -1,71 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  LuArrowDown as ArrowDown,
   LuArrowRight as ArrowRight,
-  LuArrowUpRight as ArrowUpRight,
   LuQuote as Quote,
 } from "react-icons/lu";
-import { ProductCard } from "@/components/common/ProductCard";
+import { HomeHero } from "@/components/pages/home/HomeHero";
 import { HomeCategories } from "@/components/pages/home/HomeCategories";
-import { featuredProducts } from "@/data/products";
-
-const heroImage =
-  "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=2200&q=90";
+import { HomeFeatured } from "@/components/pages/home/HomeFeatured";
 
 export function HomePage() {
   return (
     <main>
-      <section className="relative isolate min-h-[670px] overflow-hidden bg-charcoal text-white md:min-h-[760px]">
-        <Image
-          alt="Football match in a packed stadium"
-          className="object-cover object-center"
-          fill
-          priority
-          sizes="100vw"
-          src={heroImage}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/15" />
-        <div className="relative mx-auto flex min-h-[670px] max-w-[1440px] flex-col justify-center px-5 pb-20 pt-16 sm:px-8 md:min-h-[760px] lg:px-14">
-          <div className="max-w-[720px] rise-in">
-            <p className="mb-6 flex items-center gap-3 text-xs font-bold uppercase text-brand sm:text-sm">
-              <span className="h-px w-9 bg-brand" /> The shirt is never just a
-              shirt
-            </p>
-            <h1 className="font-display text-[2.8rem] font-semibold !leading-[1.2] md:!leading-tight sm:text-6xl md:text-7xl">
-              Every legend
-              <br />
-              has a{" "}
-              <span className="inline-block bg-brand px-2 py-0.5 text-ink">
-                beginning.
-              </span>
-            </h1>
-            <p className="mt-7 max-w-md font-copy text-sm leading-7 text-white/85 sm:text-base">
-              Wear the colors that carry a story. Find your team, your era, and
-              the jersey that tells your story.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                className="inline-flex min-h-12 items-center gap-3 bg-brand px-6 text-sm font-bold uppercase text-ink transition hover:bg-[#d8df0d]"
-                href="/shop"
-              >
-                Shop jerseys <ArrowRight size={17} />
-              </Link>
-              <Link
-                className="inline-flex min-h-12 items-center gap-2 border border-white/65 px-5 text-sm font-semibold text-white transition hover:border-brand hover:text-brand"
-                href="/about-us"
-              >
-                Our story <ArrowUpRight size={16} />
-              </Link>
-            </div>
-          </div>
-          <div className="absolute bottom-7 left-5 flex items-center gap-3 text-[10px] font-semibold uppercase text-white/75 sm:left-8 lg:left-14">
-            <ArrowDown aria-hidden="true" size={16} /> Scroll to find your
-            colors
-          </div>
-        </div>
-      </section>
+      <HomeHero />
       <section className="bg-canvas py-14">
         <div className="mx-auto grid max-w-[1440px] gap-5 px-5 sm:px-8 md:grid-cols-[1fr_auto] md:items-center md:gap-8 lg:px-14">
           {/* <div className="flex items-start gap-3 text-brand">
@@ -82,8 +28,8 @@ export function HomePage() {
               <br /> beyond 90 minutes
             </span>
           </div> */}
-          <div className="flex items-start">
-            <p className="max-w-[750px] font-display text-2xl font-medium leading-snug sm:text-3xl">
+          <div className="flex items-start gap-2">
+            <p className="max-w-[720px] font-display text-2xl font-medium leading-snug sm:text-3xl">
               The shirt you wore when the whole world stopped. The colors that
               still feel like home.
             </p>
@@ -105,31 +51,7 @@ export function HomePage() {
 
       <HomeCategories />
 
-      <section className="bg-canvas py-14 sm:py-20">
-        <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-14">
-          <div className="mb-8 flex items-end justify-between gap-5 sm:mb-11">
-            <div>
-              <p className="mb-2 text-[11px] font-bold uppercase text-muted">
-                Picked from the stands
-              </p>
-              <h2 className="font-display text-3xl font-semibold sm:text-4xl">
-                Fans’ favorites
-              </h2>
-            </div>
-            <Link
-              className="inline-flex shrink-0 items-center gap-2 border-b border-ink pb-1 text-xs font-bold uppercase"
-              href="/shop"
-            >
-              View all <ArrowUpRight size={15} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-4 md:gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <HomeFeatured />
 
       <section className="mx-auto grid max-w-[1440px] gap-10 px-5 py-16 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-20 md:py-24 lg:px-14">
         <div className="relative aspect-[4/3] overflow-hidden bg-canvas">
@@ -154,7 +76,7 @@ export function HomePage() {
           <p className="mt-6 font-copy text-sm leading-7 text-muted">
             Football is more than a game. It&apos;s about the clubs we support,
             the players who inspire us, the countries we stand behind, and the
-            jerseys that become part of our memories.
+            kit that becomes part of our memories.
           </p>
           {/* <h2 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
             Greatness is a journey. Wear every chapter.
@@ -190,7 +112,7 @@ export function HomePage() {
             Made for the miles, the noise, and the ninety.
           </h2>
           <p className="mt-5 max-w-lg font-copy text-sm leading-7 text-ink/75">
-            Comfortable, carefully selected jerseys with the details fans
+            Comfortable, carefully selected products with the details fans
             notice. Your colors deserve to go everywhere you do.
           </p>
           <Link
@@ -208,14 +130,14 @@ export function HomePage() {
             The next match starts here
           </p>
           <h2 className="font-display text-3xl font-semibold sm:text-4xl">
-            Find the jersey that feels like yours.
+            Find the piece that feels like yours.
           </h2>
         </div>
         <Link
           className="inline-flex min-h-12 items-center gap-3 bg-ink px-6 text-sm font-bold uppercase text-white transition hover:bg-charcoal"
           href="/shop"
         >
-          Shop all jerseys <ArrowRight size={17} />
+          Shop all products <ArrowRight size={17} />
         </Link>
       </section>
     </main>

@@ -1,7 +1,7 @@
 import type { CategoryDto } from "@/lib/types/catalog";
-import type { CategoryInput } from "@/lib/validation/catalog";
+import type { CategoryDeleteOptions, CategoryInput } from "@/lib/validation/catalog";
 import { isDuplicateKeyError } from "@/server/db/errors";
-import { ConflictError, NotFoundError } from "@/server/errors";
+import { BadRequestError, ConflictError, NotFoundError } from "@/server/errors";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as productRepository from "@/server/repositories/product.repository";
 import { deleteImages, verifyNewImages } from "@/server/services/image.service";
@@ -61,15 +61,28 @@ export async function updateCategory(id: string, input: CategoryInput): Promise<
   return { ...updated, productCount: await productRepository.countProductsInCategory(id) };
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: string, options: CategoryDeleteOptions = {}) {
   const existing = await categoryRepository.findCategoryById(id);
   if (!existing) throw new NotFoundError("Category not found.");
 
   const productCount = await productRepository.countProductsInCategory(id);
+  let productFileIds: string[] = [];
+
   if (productCount > 0) {
-    throw new ConflictError(`This category still has ${productCount} ${productCount === 1 ? "product" : "products"}. Move or delete them first, or set the category to Inactive instead.`);
+    if (!options.productAction) {
+      throw new ConflictError(`This category has ${productCount} ${productCount === 1 ? "product" : "products"}. Move them to another category or delete them along with the category.`);
+    }
+
+    if (options.productAction === "reassign") {
+      const target = options.targetCategoryId && options.targetCategoryId !== id ? await categoryRepository.findCategoryById(options.targetCategoryId) : null;
+      if (!target) throw new BadRequestError("Choose another category to move the products to.", { targetCategoryId: ["Choose another category"] });
+      await productRepository.moveProductsToCategory(id, target.id);
+    } else {
+      productFileIds = await productRepository.listImageFileIdsInCategory(id);
+      await productRepository.deleteProductsInCategory(id);
+    }
   }
 
   await categoryRepository.deleteCategory(id);
-  await deleteImages([existing.coverImage.fileId]);
+  await deleteImages([existing.coverImage.fileId, ...productFileIds]);
 }

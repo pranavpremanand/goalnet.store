@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LuLoaderCircle as Loader, LuLock as Lock, LuX as X } from "react-icons/lu";
-import { formatRupees } from "@/data/products";
+import { formatRupees } from "@/lib/format";
 
 type PaymentDialogProps = {
   amount: number;

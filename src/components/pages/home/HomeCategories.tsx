@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { LuArrowUpRight } from "react-icons/lu";
 import { listActiveCategories } from "@/server/services/category.service";
 
@@ -9,6 +10,7 @@ async function CategoryCards() {
   try {
     categories = await listActiveCategories();
   } catch (error) {
+    unstable_rethrow(error);
     // The homepage should still render if the database is briefly unreachable.
     console.error("Could not load homepage categories", error);
   }
@@ -23,12 +25,12 @@ async function CategoryCards() {
             <h2 className="font-display text-3xl font-semibold sm:text-4xl" id="home-categories-title">Shop by style</h2>
           </div>
           <Link className="inline-flex items-center gap-2 border-b border-ink pb-1 text-xs font-bold uppercase" href="/shop">
-            Browse all jerseys <LuArrowUpRight aria-hidden="true" size={15} />
+            Browse all products <LuArrowUpRight aria-hidden="true" size={15} />
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
           {categories.map((category) => (
-            <Link className="group relative aspect-4/5 overflow-hidden bg-charcoal text-white" href="/shop" key={category.id}>
+            <Link className="group relative aspect-4/5 overflow-hidden bg-charcoal text-white" href={`/shop?category=${category.slug}`} key={category.id}>
               <Image
                 alt={category.coverImage.alt || category.name}
                 className="object-cover transition duration-500 group-hover:scale-105"

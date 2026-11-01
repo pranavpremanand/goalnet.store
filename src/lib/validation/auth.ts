@@ -27,7 +27,12 @@ export const signUpSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({ email: emailField });
+export const googleCredentialSchema = z.object({
+  credential: z.string().min(1, "Google credential is required").max(10000),
+  acceptTerms: z.boolean().optional().default(false),
+});
 
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type GoogleCredentialInput = z.infer<typeof googleCredentialSchema>;

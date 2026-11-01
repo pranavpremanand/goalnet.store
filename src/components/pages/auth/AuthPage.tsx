@@ -8,6 +8,7 @@ import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LuArrowLeft as ArrowLeft, LuEye as Eye, LuEyeOff as EyeOff, LuMail as Mail, LuPhone as Phone, LuCheck as Check } from "react-icons/lu";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
+import { GoogleSignInButton } from "@/components/pages/auth/GoogleSignInButton";
 import { signInUser, signUpUser } from "@/lib/auth-client";
 import { showApiError } from "@/lib/form-errors";
 import { forgotPasswordSchema, signInSchema, signUpSchema, type ForgotPasswordInput, type SignInInput, type SignUpInput } from "@/lib/validation/auth";
@@ -15,7 +16,7 @@ import { forgotPasswordSchema, signInSchema, signUpSchema, type ForgotPasswordIn
 type AuthMode = "login" | "signup" | "forgot-password";
 
 const copy: Record<AuthMode, { eyebrow: string; title: string; description: string; action: string }> = {
-  login: { eyebrow: "Welcome back", title: "Good to see you again.", description: "Sign in to see your orders, favorites, and the jerseys you have your eye on.", action: "Log in" },
+  login: { eyebrow: "Welcome back", title: "Good to see you again.", description: "Sign in to see your orders, favorites, and the products you have your eye on.", action: "Log in" },
   signup: { eyebrow: "Join the club", title: "Your next chapter starts here.", description: "Create an account for a better way to keep your colors close.", action: "Create account" },
   "forgot-password": { eyebrow: "Account help", title: "Let’s get you back in.", description: "Enter your email and we’ll show a local confirmation for the reset request.", action: "Continue" },
 };
@@ -53,7 +54,11 @@ function ServerMessage({ message }: { message?: string }) {
   return message ? <p className="border-l-4 border-red-600 bg-red-50 p-3 text-sm text-red-800" role="alert">{message}</p> : null;
 }
 
-function SignInForm({ redirectTo }: { redirectTo?: string }) {
+function AuthDivider() {
+  return <div aria-hidden="true" className="flex items-center gap-4 text-[10px] font-semibold uppercase text-muted"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>;
+}
+
+function SignInForm({ redirectTo, googleClientId, signupHref }: { redirectTo?: string; googleClientId: string; signupHref: string }) {
   const afterAuth = useAfterAuth(redirectTo);
   const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<SignInInput>({ resolver: zodResolver(signInSchema), defaultValues: { email: "", password: "" } });
 
@@ -73,13 +78,15 @@ function SignInForm({ redirectTo }: { redirectTo?: string }) {
       <PasswordField autoComplete="current-password" error={errors.password?.message} registration={register("password")} />
       <div className="flex justify-end text-xs"><Link className="font-semibold text-ink underline underline-offset-4" href="/forgot-password">Forgot password?</Link></div>
       <SubmitButton busy={isSubmitting} label={copy.login.action} />
+      <AuthDivider />
+      <GoogleSignInButton clientId={googleClientId} onSuccess={afterAuth} signupHref={signupHref} />
     </form>
   );
 }
 
-function SignUpForm({ redirectTo }: { redirectTo?: string }) {
+function SignUpForm({ redirectTo, googleClientId }: { redirectTo?: string; googleClientId: string }) {
   const afterAuth = useAfterAuth(redirectTo);
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<SignUpInput>({ resolver: zodResolver(signUpSchema), defaultValues: { name: "", email: "", password: "", acceptTerms: false } });
+  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<SignUpInput>({ resolver: zodResolver(signUpSchema), defaultValues: { name: "", email: "", password: "", acceptTerms: true } });
 
   async function onSubmit(values: SignUpInput) {
     try {
@@ -97,13 +104,12 @@ function SignUpForm({ redirectTo }: { redirectTo?: string }) {
       <label className="block text-xs font-semibold">Email address<input {...register("email")} aria-invalid={Boolean(errors.email)} autoComplete="email" className={inputClass} placeholder="you@example.com" type="email" /><FieldError message={errors.email?.message} /></label>
       <div>
         <PasswordField autoComplete="new-password" error={errors.password?.message} registration={register("password")} />
-        {!errors.password && <p className="mt-1.5 text-[11px] text-muted">At least 8 characters. Choose anything you like, just avoid easy-to-guess ones like 12345678.</p>}
-      </div>
-      <div>
-        <label className="flex items-start gap-2 text-xs text-muted"><input {...register("acceptTerms")} className="mt-0.5 size-4 accent-[#f2fa18]" type="checkbox" />I agree to the terms and privacy policy.</label>
-        <FieldError message={errors.acceptTerms?.message} />
+        {/* {!errors.password && <p className="mt-1.5 text-[11px] text-muted">At least 8 characters. Choose anything you like, just avoid easy-to-guess ones like 12345678.</p>} */}
       </div>
       <SubmitButton busy={isSubmitting} label={copy.signup.action} />
+      <p className="-mt-2 text-center text-xs leading-5 text-muted">By creating an account, you agree to our <Link className="font-semibold text-ink underline underline-offset-2" href="/terms">Terms of Service</Link> and acknowledge our <Link className="font-semibold text-ink underline underline-offset-2" href="/privacy-policy">Privacy Policy</Link>.</p>
+      <AuthDivider />
+      <GoogleSignInButton acceptTerms clientId={googleClientId} onSuccess={afterAuth} />
     </form>
   );
 }
@@ -122,7 +128,7 @@ function ForgotPasswordForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-export function AuthPage({ mode, redirectTo }: { mode: AuthMode; redirectTo?: string }) {
+export function AuthPage({ mode, redirectTo, googleClientId = "" }: { mode: AuthMode; redirectTo?: string; googleClientId?: string }) {
   const [resetRequested, setResetRequested] = useState(false);
   const content = copy[mode];
   const otherAuthHref = `${mode === "login" ? "/signup" : "/login"}${redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : ""}`;
@@ -139,8 +145,8 @@ export function AuthPage({ mode, redirectTo }: { mode: AuthMode; redirectTo?: st
               <p className="mt-10 text-xs font-bold uppercase text-muted">{content.eyebrow}</p>
               <h1 className="mt-2 font-display text-4xl font-semibold leading-tight sm:text-5xl">{content.title}</h1>
               <p className="mt-4 max-w-md font-copy text-sm leading-7 text-muted">{content.description}</p>
-              {mode === "login" && <SignInForm redirectTo={redirectTo} />}
-              {mode === "signup" && <SignUpForm redirectTo={redirectTo} />}
+              {mode === "login" && <SignInForm googleClientId={googleClientId} redirectTo={redirectTo} signupHref={otherAuthHref} />}
+              {mode === "signup" && <SignUpForm googleClientId={googleClientId} redirectTo={redirectTo} />}
               {mode === "forgot-password" && <ForgotPasswordForm onDone={() => setResetRequested(true)} />}
               {mode !== "forgot-password" && <p className="mt-7 text-center text-sm text-muted">{mode === "login" ? "New to GoalNet?" : "Already part of the club?"} <Link className="ml-1 font-bold text-ink underline underline-offset-4" href={otherAuthHref}>{mode === "login" ? "Create account" : "Log in"}</Link></p>}
               {mode === "forgot-password" && <p className="mt-6 flex items-center gap-2 text-xs text-muted"><Phone size={14} /> Need help? Contact our support team.</p>}

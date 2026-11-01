@@ -4,10 +4,13 @@ import type { ImageAsset, UploadAuth } from "@/lib/types/catalog";
 import type { UploadTarget } from "@/lib/validation/catalog";
 import { getImageKitConfig } from "@/server/config/env";
 import { BadRequestError, ServiceUnavailableError } from "@/server/errors";
+import * as categoryRepository from "@/server/repositories/category.repository";
+import * as heroSlideRepository from "@/server/repositories/hero-slide.repository";
+import * as productRepository from "@/server/repositories/product.repository";
 
 const API_BASE = "https://api.imagekit.io/v1";
 const UPLOAD_TOKEN_TTL_SECONDS = 30 * 60;
-const FOLDERS: Record<UploadTarget, string> = { category: "/goalnet/categories", product: "/goalnet/products" };
+const FOLDERS: Record<UploadTarget, string> = { category: "/goalnet/categories", product: "/goalnet/products", hero: "/goalnet/hero" };
 
 function requireConfig() {
   const config = getImageKitConfig();
@@ -68,7 +71,7 @@ export async function deleteImages(fileIds: string[]) {
   if (!config || fileIds.length === 0) return;
 
   await Promise.all(
-    fileIds.map(async (fileId) => {
+    [...new Set(fileIds)].map(async (fileId) => {
       try {
         const response = await fetch(`${API_BASE}/files/${encodeURIComponent(fileId)}`, {
           method: "DELETE",
@@ -81,4 +84,34 @@ export async function deleteImages(fileIds: string[]) {
       }
     }),
   );
+}
+
+async function isFileInUse(fileId: string) {
+  const [asCover, asProductImage, asHeroImage] = await Promise.all([
+    categoryRepository.isCoverImageFileUsed(fileId),
+    productRepository.isImageFileUsed(fileId),
+    heroSlideRepository.isHeroImageFileUsed(fileId),
+  ]);
+  return asCover || asProductImage || asHeroImage;
+}
+
+// Removes uploads that were never saved (admin removed the image, cancelled, or left the form).
+// Only files inside our own folder and not referenced by any record are ever deleted.
+export async function discardUnusedUploads(fileIds: string[]) {
+  const config = getImageKitConfig();
+  if (!config) return;
+
+  const deletable: string[] = [];
+  for (const fileId of new Set(fileIds)) {
+    if (await isFileInUse(fileId)) continue;
+    try {
+      const response = await fetch(`${API_BASE}/files/${encodeURIComponent(fileId)}/details`, { headers: { Authorization: basicAuth(config.privateKey) }, cache: "no-store", signal: AbortSignal.timeout(10000) });
+      if (!response.ok) continue;
+      const details = (await response.json()) as { filePath?: string };
+      if (details.filePath?.startsWith("/goalnet/")) deletable.push(fileId);
+    } catch (error) {
+      console.error(`Could not check upload ${fileId}`, error);
+    }
+  }
+  await deleteImages(deletable);
 }

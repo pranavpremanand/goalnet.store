@@ -1,4 +1,4 @@
-import type { AvailabilityStatus, JerseyType, LogoType, Size, TeamType } from "@/lib/catalog-constants";
+import type { AvailabilityStatus, JerseyType, LogoType, ProductType, SizeSystem, TeamType } from "@/lib/catalog-constants";
 
 export type ImageAsset = { url: string; fileId: string; alt: string };
 
@@ -20,15 +20,18 @@ export type ProductDto = {
   name: string;
   slug: string;
   description: string;
-  team: { name: string; type: TeamType };
+  productType: ProductType;
+  brand: string;
+  team: { name: string; type: TeamType | null };
   season: string;
   player: { name: string; number: number | null };
-  jerseyType: JerseyType;
+  jerseyType: JerseyType | null;
   logoType: LogoType;
   fabric: string;
   price: number;
   compareAtPrice: number | null;
-  variants: { size: Size; availabilityStatus: AvailabilityStatus }[];
+  sizeSystem: SizeSystem;
+  variants: { size: string; availabilityStatus: AvailabilityStatus }[];
   images: ImageAsset[];
   category: { id: string; name: string; slug: string };
   isActive: boolean;

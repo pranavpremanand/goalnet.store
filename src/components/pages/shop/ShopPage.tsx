@@ -5,67 +5,82 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { LuFilter as Filter, LuSlidersHorizontal as SlidersHorizontal, LuX as X } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
-import { featuredProducts } from "@/data/products";
+import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/catalog-constants";
+import type { StoreCategory, StoreProduct } from "@/lib/types/storefront";
 
-const categories = ["National jerseys", "Club jerseys", "Retro classics", "Special editions"];
 const priceBands = [
   { label: "Under ₹2,500", min: 0, max: 2500 },
   { label: "₹2,500 – ₹3,000", min: 2500, max: 3000 },
   { label: "Over ₹3,000", min: 3000, max: Infinity },
 ];
-const colors = ["White", "Blue", "Red", "Yellow"];
 
-export function ShopPage() {
+export function ShopPage({ products: allProducts, categories }: { products: StoreProduct[]; categories: StoreCategory[] }) {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("q") ?? "";
   const query = searchQuery.toLowerCase();
+  const initialCategory = categories.find((category) => category.slug === searchParams.get("category"))?.slug;
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
+  const [selectedTypes, setSelectedTypes] = useState<ProductType[]>([]);
   const [priceBand, setPriceBand] = useState("");
   const [sort, setSort] = useState("featured");
 
+  // Only offer product types that actually exist in the catalog.
+  const availableTypes = useMemo(() => [...new Set(allProducts.map((product) => product.productType))], [allProducts]);
+
   const products = useMemo(() => {
-    let results = featuredProducts.filter((product) => {
-      const matchesQuery = !query || `${product.name} ${product.category}`.toLowerCase().includes(query);
-      const matchesCategory = !selectedCategories.length || selectedCategories.includes(product.category);
-      const matchesColor = !selectedColors.length || selectedColors.includes(product.color);
+    let results = allProducts.filter((product) => {
+      const searchable = `${product.name} ${product.category.name} ${product.brand} ${product.teamName}`.toLowerCase();
+      const matchesQuery = !query || searchable.includes(query);
+      const matchesCategory = !selectedCategories.length || selectedCategories.includes(product.category.slug);
+      const matchesType = !selectedTypes.length || selectedTypes.includes(product.productType);
       const range = priceBands.find((band) => band.label === priceBand);
       const matchesPrice = !range || (product.price >= range.min && product.price <= range.max);
-      return matchesQuery && matchesCategory && matchesColor && matchesPrice;
+      return matchesQuery && matchesCategory && matchesType && matchesPrice;
     });
     if (sort === "low") results = [...results].sort((a, b) => a.price - b.price);
     if (sort === "high") results = [...results].sort((a, b) => b.price - a.price);
-    if (sort === "rent") results = results.filter((product) => product.availableForRent);
     return results;
-  }, [priceBand, query, selectedCategories, selectedColors, sort]);
+  }, [allProducts, priceBand, query, selectedCategories, selectedTypes, sort]);
 
-  function toggleValue(value: string, current: string[], setter: (value: string[]) => void) {
+  function toggleValue<T extends string>(value: T, current: T[], setter: (value: T[]) => void) {
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   }
 
   function clearFilters() {
     setSelectedCategories([]);
-    setSelectedColors([]);
+    setSelectedTypes([]);
     setPriceBand("");
   }
 
   const filterContent = (
     <div className="space-y-7">
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase">Category</h2>
-          <button className="text-[10px] uppercase text-muted" onClick={clearFilters} type="button">Clear</button>
+      {categories.length > 0 && (
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase">Category</h2>
+            <button className="text-[10px] uppercase text-muted" onClick={clearFilters} type="button">Clear</button>
+          </div>
+          <div className="space-y-2.5">
+            {categories.map((category) => (
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm" key={category.id}>
+                <input checked={selectedCategories.includes(category.slug)} className="size-4 accent-[#f2fa18]" onChange={() => toggleValue(category.slug, selectedCategories, setSelectedCategories)} type="checkbox" />
+                {category.name}
+              </label>
+            ))}
+          </div>
         </div>
-        <div className="space-y-2.5">
-          {categories.map((category) => (
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm" key={category}>
-              <input checked={selectedCategories.includes(category)} className="size-4 accent-[#f2fa18]" onChange={() => toggleValue(category, selectedCategories, setSelectedCategories)} type="checkbox" />
-              {category}
-            </label>
-          ))}
+      )}
+      {availableTypes.length > 1 && (
+        <div>
+          <h2 className="mb-3 text-xs font-bold uppercase">Type</h2>
+          <div className="flex flex-wrap gap-2">
+            {availableTypes.map((type) => (
+              <button aria-pressed={selectedTypes.includes(type)} className={`border px-3 py-1.5 text-xs transition ${selectedTypes.includes(type) ? "border-ink bg-ink text-white" : "border-line hover:border-ink"}`} key={type} onClick={() => toggleValue(type, selectedTypes, setSelectedTypes)} type="button">{PRODUCT_TYPE_LABELS[type]}</button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div>
         <h2 className="mb-3 text-xs font-bold uppercase">Price</h2>
         <div className="space-y-2.5">
@@ -77,14 +92,6 @@ export function ShopPage() {
           ))}
         </div>
       </div>
-      <div>
-        <h2 className="mb-3 text-xs font-bold uppercase">Color</h2>
-        <div className="flex flex-wrap gap-2">
-          {colors.map((color) => (
-            <button aria-pressed={selectedColors.includes(color)} className={`border px-3 py-1.5 text-xs transition ${selectedColors.includes(color) ? "border-ink bg-ink text-white" : "border-line hover:border-ink"}`} key={color} onClick={() => toggleValue(color, selectedColors, setSelectedColors)} type="button">{color}</button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -92,7 +99,7 @@ export function ShopPage() {
     <main className="mx-auto max-w-[1440px] px-5 py-9 sm:px-8 lg:px-14 lg:py-14">
       <div className="flex items-end justify-between gap-5 border-b border-line pb-6">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase text-muted"><Link href="/">Home</Link> / Jerseys</p>
+          <p className="mb-2 text-xs font-semibold uppercase text-muted"><Link href="/">Home</Link> / Shop</p>
           <h1 className="font-display text-4xl font-semibold sm:text-5xl">The collection</h1>
           <p className="mt-2 text-sm text-muted">For the colors you carry with you.</p>
         </div>
@@ -102,7 +109,7 @@ export function ShopPage() {
       </div>
       {query && <p className="mt-5 text-sm">Search results for <strong>“{searchQuery}”</strong></p>}
       <div className="mt-7 flex items-center justify-between gap-4">
-        <p className="text-sm text-muted">{products.length} jerseys</p>
+        <p className="text-sm text-muted">{products.length} {products.length === 1 ? "product" : "products"}</p>
         <label className="flex items-center gap-2 text-xs font-semibold uppercase">
           <SlidersHorizontal size={15} />
           <span className="hidden sm:inline">Sort by</span>
@@ -110,7 +117,6 @@ export function ShopPage() {
             <option value="featured">Featured</option>
             <option value="low">Price: low to high</option>
             <option value="high">Price: high to low</option>
-            <option value="rent">Available for rent</option>
           </select>
         </label>
       </div>
@@ -123,7 +129,11 @@ export function ShopPage() {
             </div>
           ) : (
             <div className="grid min-h-72 place-items-center border border-dashed border-line p-8 text-center">
-              <div><p className="font-display text-2xl font-semibold">No jerseys found</p><p className="mt-2 text-sm text-muted">Try adjusting your search or filters.</p><button className="mt-4 border-b border-ink pb-1 text-sm font-bold" onClick={clearFilters} type="button">Clear filters</button></div>
+              <div>
+                <p className="font-display text-2xl font-semibold">{allProducts.length === 0 ? "New products are on the way" : "No products found"}</p>
+                <p className="mt-2 text-sm text-muted">{allProducts.length === 0 ? "Check back soon." : "Try adjusting your search or filters."}</p>
+                {allProducts.length > 0 && <button className="mt-4 border-b border-ink pb-1 text-sm font-bold" onClick={clearFilters} type="button">Clear filters</button>}
+              </div>
             </div>
           )}
         </div>

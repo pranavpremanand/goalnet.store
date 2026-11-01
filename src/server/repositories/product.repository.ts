@@ -14,14 +14,17 @@ function toDto(doc: ProductDoc): ProductDto {
     name: doc.name,
     slug: doc.slug,
     description: doc.description,
-    team: { name: doc.team.name, type: doc.team.type },
+    productType: doc.productType ?? "jersey",
+    brand: doc.brand ?? "",
+    team: { name: doc.team?.name ?? "", type: doc.team?.type ?? null },
     season: doc.season,
     player: { name: doc.player.name, number: doc.player.number ?? null },
-    jerseyType: doc.jerseyType,
+    jerseyType: doc.jerseyType ?? null,
     logoType: doc.logoType,
     fabric: doc.fabric,
     price: doc.price,
     compareAtPrice: doc.compareAtPrice ?? null,
+    sizeSystem: doc.sizeSystem ?? "apparel",
     variants: doc.variants.map((variant) => ({ size: variant.size, availabilityStatus: variant.availabilityStatus })),
     images: doc.images.map((image) => ({ url: image.url, fileId: image.fileId, alt: image.alt })),
     category: doc.category ? { id: doc.category._id.toString(), name: doc.category.name, slug: doc.category.slug } : { id: "", name: "Unknown category", slug: "" },
@@ -43,7 +46,7 @@ export async function listProducts(filter: { page: number; limit: number; q: str
   const query: QueryFilter<ProductAttrs> = {};
   if (filter.q) {
     const pattern = new RegExp(escapeRegex(filter.q), "i");
-    query.$or = [{ name: pattern }, { slug: pattern }, { "team.name": pattern }];
+    query.$or = [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }];
   }
   if (filter.category) query.category = filter.category;
   if (filter.status !== "all") query.isActive = filter.status === "active";
@@ -63,6 +66,29 @@ export async function listProducts(filter: { page: number; limit: number; q: str
 export async function findProductById(id: string): Promise<ProductDto | null> {
   await connectToDatabase();
   const doc = await ProductModel.findById(id).populate("category", "name slug").lean<ProductDoc>();
+  return doc ? toDto(doc) : null;
+}
+
+type StorefrontFilter = { categoryIds: string[]; featuredOnly?: boolean; categoryId?: string; excludeId?: string; limit?: number };
+
+// Customer-facing queries only ever see active products that belong to an active category.
+export async function listActiveProducts(filter: StorefrontFilter): Promise<ProductDto[]> {
+  if (filter.categoryIds.length === 0) return [];
+  await connectToDatabase();
+
+  const query: QueryFilter<ProductAttrs> = { isActive: true, category: { $in: filter.categoryIds } };
+  if (filter.featuredOnly) query.isFeatured = true;
+  if (filter.categoryId) query.category = filter.categoryId;
+  if (filter.excludeId) query._id = { $ne: filter.excludeId };
+
+  const docs = await ProductModel.find(query).sort({ displayOrder: 1, createdAt: -1 }).limit(filter.limit ?? 200).populate("category", "name slug").lean<ProductDoc[]>();
+  return docs.map(toDto);
+}
+
+export async function findActiveProductBySlug(slug: string, categoryIds: string[]): Promise<ProductDto | null> {
+  if (categoryIds.length === 0) return null;
+  await connectToDatabase();
+  const doc = await ProductModel.findOne({ slug, isActive: true, category: { $in: categoryIds } }).populate("category", "name slug").lean<ProductDoc>();
   return doc ? toDto(doc) : null;
 }
 
@@ -97,4 +123,25 @@ export async function countProductsByCategory(): Promise<Map<string, number>> {
 export async function countProductsInCategory(categoryId: string) {
   await connectToDatabase();
   return ProductModel.countDocuments({ category: categoryId });
+}
+
+export async function moveProductsToCategory(fromCategoryId: string, toCategoryId: string) {
+  await connectToDatabase();
+  return (await ProductModel.updateMany({ category: fromCategoryId }, { $set: { category: toCategoryId } })).modifiedCount;
+}
+
+export async function listImageFileIdsInCategory(categoryId: string): Promise<string[]> {
+  await connectToDatabase();
+  const docs = await ProductModel.find({ category: categoryId }).select("images.fileId").lean<{ images: { fileId: string }[] }[]>();
+  return docs.flatMap((doc) => doc.images.map((image) => image.fileId));
+}
+
+export async function deleteProductsInCategory(categoryId: string) {
+  await connectToDatabase();
+  return (await ProductModel.deleteMany({ category: categoryId })).deletedCount;
+}
+
+export async function isImageFileUsed(fileId: string) {
+  await connectToDatabase();
+  return (await ProductModel.exists({ "images.fileId": fileId })) !== null;
 }

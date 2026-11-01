@@ -16,9 +16,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "GoalNet | Jerseys for the love of the game",
+  title: "GoalNet | Football for the love of the game",
   description:
-    "Football jerseys for the moments, teams, and stories that stay with you.",
+    "Football products for the moments, teams, and stories that stay with you.",
   icons: {
     icon: [
       { url: "/favicon.ico" },
