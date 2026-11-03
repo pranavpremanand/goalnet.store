@@ -7,15 +7,14 @@ import { useRouter } from "next/navigation";
 import { LuCheck as Check, LuMinus as Minus, LuPlus as Plus, LuShieldCheck as ShieldCheck, LuTrash2 as Trash2 } from "react-icons/lu";
 import { formatRupees } from "@/lib/format";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
-import { createOrder, useDemoStore, type OrderAddress } from "@/lib/demo-store";
+import { addSavedAddress, useDemoStore, type OrderAddress } from "@/lib/demo-store";
 import { signOutUser } from "@/lib/auth-client";
+import { PROTECTION_FEE, SHIPPING_FEE } from "@/lib/order-pricing";
+import { createCheckoutSession, openRazorpayCheckout, verifyPayment } from "@/lib/razorpay-client";
 import { CheckoutMethodSelection } from "./CheckoutMethodSelection";
-import { PaymentDialog } from "./PaymentDialog";
 
 type PincodeLookup = { status: "idle" | "loading" | "success" | "error" | "blocked"; message: string };
 
-const SHIPPING_FEE = 80;
-const PROTECTION_FEE = 499;
 const inputClass = "mt-1.5 w-full border border-line p-3 text-sm outline-none focus:border-ink";
 
 export function CheckoutPage() {
@@ -25,6 +24,7 @@ export function CheckoutPage() {
   const [guest, setGuest] = useState(false);
   const [placedRef, setPlacedRef] = useState("");
   const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState("");
   const [protect, setProtect] = useState(false);
   const [draft, setDraft] = useState<Partial<OrderAddress>>({});
   const [choice, setChoice] = useState<number | "new">(0);
@@ -84,29 +84,49 @@ export function CheckoutPage() {
     if (pin.length === 6) void checkPincode(pin);
   }
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!useSaved && pincodeLookup.status === "blocked") return;
+    if (paying || (!useSaved && pincodeLookup.status === "blocked")) return;
     setPaying(true);
-  }
+    setPayError("");
 
-  function completePayment() {
-    const order = createOrder(
-      {
-        shipping,
-        billingAddress: billingDifferent ? billing.trim() : null,
-        lines: items.map((item) => ({ id: item.id, name: item.name, image: item.image, imageAlt: item.imageAlt, size: item.size, quantity: item.quantity, price: item.price })),
-        subtotal: total,
-        shippingFee: SHIPPING_FEE,
-        protection: protect ? PROTECTION_FEE : 0,
-        total: totalDue,
+    // The server re-prices the bag from the catalog; only product ids, sizes and quantities are trusted from here.
+    const created = await createCheckoutSession({
+      items: items.map((item) => ({ productId: item.id, size: item.size, quantity: item.quantity })),
+      shipping,
+      billingAddress: billingDifferent ? billing.trim() : null,
+      protect,
+    });
+    if (!created.ok) {
+      setPayError(created.error);
+      setPaying(false);
+      return;
+    }
+
+    const session = created.data;
+    function finish() {
+      if (saveForLater && !useSaved) addSavedAddress(shipping);
+      setPlacedRef(session.orderNumber);
+      router.push(`/order-confirmation/${session.accessToken}`);
+      clearCart();
+    }
+
+    await openRazorpayCheckout({
+      session,
+      prefill: { name: shipping.name, email: shipping.email, contact: shipping.phone },
+      onDismiss: () => setPaying(false),
+      onFailure: setPayError,
+      onSuccess: async (response) => {
+        const verified = await verifyPayment(session.accessToken, response);
+        // A network or server hiccup still lands on the confirmation page, which keeps checking until the payment is confirmed.
+        if (verified.ok || verified.status === 0 || verified.status >= 500) {
+          finish();
+          return;
+        }
+        setPayError(`${verified.error} Reference: ${session.orderNumber}.`);
+        setPaying(false);
       },
-      { saveAddress: saveForLater && !useSaved },
-    );
-    setPaying(false);
-    setPlacedRef(order.ref);
-    router.push(`/order-confirmation/${order.ref}`);
-    clearCart();
+    });
   }
 
   if (placedRef) {
@@ -116,7 +136,6 @@ export function CheckoutPage() {
   if (!items.length) {
     return (
       <main className="mx-auto flex min-h-[65vh] max-w-3xl flex-col items-center justify-center px-5 py-16 text-center">
-        <div className="grid size-20 place-items-center bg-brand"><span className="font-display text-3xl font-black">0</span></div>
         <p className="mt-6 text-xs font-bold uppercase text-muted">Your next favorite is waiting</p>
         <h1 className="mt-2 font-display text-4xl font-semibold">Your bag is empty.</h1>
         <p className="mt-3 max-w-md font-copy text-sm leading-6 text-muted">Explore the collection and add an item to get matchday ready.</p>
@@ -194,12 +213,12 @@ export function CheckoutPage() {
             <div className="flex justify-between border-t border-line pt-4 text-base font-bold"><span>Total</span><span>{formatRupees(totalDue)}</span></div>
           </div>
           <p className="mt-3 text-xs leading-5 text-muted">Orders with multiple items may have an additional shipping charge. Any applicable charge will be shown before confirmation.</p>
-          <button className="mt-6 min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50" disabled={stage === "method" || (!useSaved && pincodeLookup.status === "blocked")} form="checkout-form" type="submit">Pay {formatRupees(totalDue)}</button>
+          <button className="mt-6 min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50" disabled={paying || stage === "method" || (!useSaved && pincodeLookup.status === "blocked")} form="checkout-form" type="submit">{paying ? "Processing…" : `Pay ${formatRupees(totalDue)}`}</button>
+          {payError && <p aria-live="polite" className="mt-3 text-sm text-red-700" role="alert">{payError}</p>}
           {stage === "method" && <p className="mt-2 text-center text-xs text-muted">Choose how to continue to enter your delivery details.</p>}
-          <p className="mt-3 text-center text-[11px] text-muted">Demo checkout only. No payment will be collected.</p>
+          <p className="mt-3 text-center text-[11px] text-muted">Secure payment by Razorpay. UPI, cards, net banking and wallets accepted.</p>
         </section>
       </div>
-      {paying && <PaymentDialog amount={totalDue} email={shipping.email} onCancel={() => setPaying(false)} onPaid={completePayment} />}
     </main>
   );
 }

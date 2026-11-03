@@ -13,7 +13,7 @@ import type { SignInInput, SignUpInput } from "@/lib/validation/auth";
 const EMAIL_TAKEN = "An account with this email already exists. Try signing in instead.";
 const googleClient = new OAuth2Client();
 
-export type AuthUser = Pick<UserRecord, "id" | "name" | "email" | "role">;
+export type AuthUser = UserRecord;
 export type AuthResult = { user: AuthUser; sessionToken: string; expiresAt: Date };
 
 // Compared against when the email is unknown so response time does not reveal which emails exist.
@@ -23,7 +23,7 @@ async function startSession(user: UserRecord, userAgent?: string | null): Promis
   const sessionToken = generateSessionToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await createSession({ userId: user.id, tokenHash: hashSessionToken(sessionToken), expiresAt, userAgent: userAgent?.slice(0, 300) });
-  return { user: { id: user.id, name: user.name, email: user.email, role: user.role }, sessionToken, expiresAt };
+  return { user, sessionToken, expiresAt };
 }
 
 export async function signUp(input: Pick<SignUpInput, "name" | "email" | "password">, userAgent?: string | null) {
@@ -98,6 +98,6 @@ export async function signOut(sessionToken: string | undefined) {
 export async function getUserFromSessionToken(sessionToken: string | undefined): Promise<AuthUser | null> {
   if (!sessionToken) return null;
   const userId = await findActiveSessionUserId(hashSessionToken(sessionToken));
-  const user = userId ? await findUserById(userId) : null;
-  return user ? { id: user.id, name: user.name, email: user.email, role: user.role } : null;
+  if (!userId) return null;
+  return findUserById(userId);
 }

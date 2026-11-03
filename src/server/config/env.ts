@@ -21,6 +21,17 @@ export function getDeliveryConfig() {
   };
 }
 
+export function getRazorpayConfig() {
+  const keyId = readEnv("RAZORPAY_KEY_ID");
+  const keySecret = readEnv("RAZORPAY_KEY_SECRET");
+  return {
+    keyId,
+    keySecret,
+    webhookSecret: readEnv("RAZORPAY_WEBHOOK_SECRET"),
+    baseUrl: (readEnv("RAZORPAY_API_BASE_URL") ?? "https://api.razorpay.com").replace(/\/+$/, ""),
+  };
+}
+
 export function getImageKitConfig() {
   const publicKey = readEnv("IMAGEKIT_PUBLIC_KEY");
   const privateKey = readEnv("IMAGEKIT_PRIVATE_KEY");

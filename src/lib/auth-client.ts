@@ -2,7 +2,30 @@ import type { SignInInput, SignUpInput } from "@/lib/validation/auth";
 import { apiRequest as request } from "@/lib/api-client";
 import { signIn as storeSignIn, signOut as storeSignOut } from "@/lib/demo-store";
 
-export type AuthUser = { id: string; name: string; email: string; role: "customer" | "admin" };
+export type SavedAddressDto = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  pin: string;
+  state: string;
+  city: string;
+  address: string;
+  apartment: string;
+};
+
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: "customer" | "admin";
+  hasPassword?: boolean;
+  isGoogleUser?: boolean;
+  addresses?: SavedAddressDto[];
+  favorites?: string[];
+  createdAt?: string;
+};
 
 export async function signUpUser(input: SignUpInput) {
   const { user } = await request<{ user: AuthUser }>("/api/auth/signup", { method: "POST", body: JSON.stringify(input) });

@@ -67,81 +67,88 @@ export const shippingPolicy: LegalDocument = {
 export const returnsPolicy: LegalDocument = {
   title: "Returns & Refunds Policy",
   intro: [
-    "At GOALNET, we want customers to receive the products they ordered in the expected condition.",
-    "Please read this policy before placing an order. It explains when a return or refund request may be accepted and how to contact us if something goes wrong.",
+    "This policy explains when GOALNET accepts returns and how approved return shipping and refunds are handled.",
+    "Returns are accepted only for products that arrive damaged, defective or incorrect. All requests are subject to verification and approval.",
   ],
   related: [
     { label: "Shipping & Delivery Policy", href: "/shipping-policy" },
     { label: "Cancellation Policy", href: "/cancellation-policy" },
   ],
   sections: [
-    { heading: "1. Eligible Return Situations", blocks: [
-      { type: "paragraph", text: "Subject to verification and applicable consumer protection laws, we accept return or replacement requests for the following situations:" },
-      { type: "subheading", text: "Wrong Product Delivered" },
-      { type: "paragraph", text: "If you receive a product that differs from the product ordered, contact us within 48 hours of delivery." },
-      { type: "paragraph", text: "We'll review the order details and the product received to determine whether an incorrect item was supplied." },
-      { type: "subheading", text: "Product Received Damaged" },
-      { type: "paragraph", text: "If your product arrives visibly damaged, contact us within 48 hours of delivery." },
-      { type: "paragraph", text: "Please provide clear photographs and the requested unboxing evidence so we can assess the condition in which the product arrived." },
-      { type: "subheading", text: "Manufacturing or Product Defects" },
-      { type: "paragraph", text: "If you discover a product defect, contact us as soon as reasonably possible with photographs or videos showing the issue." },
-      { type: "paragraph", text: "We'll assess the claim and determine the appropriate remedy in accordance with applicable law and the circumstances of the case." },
+    { heading: "1. Return Eligibility", blocks: [
+      { type: "unordered-list", items: [
+        "Returns are accepted only for products that arrive damaged, defective or incorrect.",
+        "Returns are not accepted for change of mind, personal preferences or incorrect size selection by the customer.",
+        "Report damage, defects or an incorrect product within 24 hours of delivery.",
+        "Provide your order ID, the reason for the return and clear photos or videos showing the issue.",
+        "All return requests are subject to verification and approval by GOALNET.",
+      ] },
     ] },
-    { heading: "2. Unboxing Video and Supporting Evidence", blocks: [
-      { type: "paragraph", text: "To help us verify claims involving damaged or incorrect products, customers should record a continuous unboxing video before opening or removing the product from its original packaging." },
-      { type: "paragraph", text: "Where possible, the video should clearly show:" },
-      { type: "unordered-list", items: ["The unopened parcel and its condition.", "The shipping label, without publicly exposing unnecessary personal information.", "The opening of the parcel.", "The product received and any visible damage or discrepancy."] },
-      { type: "paragraph", text: "Please retain the original packaging until the issue has been resolved." },
-      { type: "paragraph", text: "We may also request photographs, order details or other reasonable information needed to investigate a claim." },
-      { type: "paragraph", text: "Unboxing videos are strongly requested as evidence for damaged or incorrect deliveries. If a video is unavailable, we'll assess the other evidence and circumstances rather than treating the absence of a video as an automatic waiver of rights that cannot legally be excluded." },
-      { type: "paragraph", text: "Providing evidence does not automatically guarantee approval. Each claim will be reviewed fairly, consistently and in accordance with applicable law." },
+    { heading: "2. Return Request Process", blocks: [
+      { type: "ordered-list", items: [
+        "Contact GOALNET through Instagram DM or WhatsApp.",
+        "Provide your order ID and explain the issue.",
+        "Share clear photos or videos of the product showing the issue.",
+        "GOALNET reviews the request and confirms whether the return is approved.",
+        "Once approved, choose one of the return shipping options below.",
+      ] },
+      { type: "paragraph", text: "Please wait for approval and return instructions before sending the product." },
     ] },
-    { heading: "3. Reporting Timeframe", blocks: [
-      { type: "paragraph", text: "Please report a wrong or damaged delivery within 48 hours of receiving the parcel so that we can investigate the issue promptly." },
-      { type: "paragraph", text: "Include:" },
-      { type: "unordered-list", items: ["Your order number.", "A description of the issue.", "Clear photographs of the product and packaging.", "The unboxing video, if available."] },
-      { type: "paragraph", text: "If you discover a defect that could not reasonably have been identified immediately upon delivery, contact us as soon as you discover it. Applicable statutory rights will not be excluded by this reporting timeframe." },
+    { heading: "3. Return Shipping Options", blocks: [
+      { type: "subheading", text: "Option A — GOALNET Arranges Return Pickup" },
+      { type: "unordered-list", items: [
+        "GOALNET arranges a reverse courier pickup from your delivery address.",
+        "Pack the product securely and make it ready for collection.",
+        "GOALNET shares pickup confirmation and tracking details when available.",
+        "You do not need to book a courier independently.",
+      ] },
+      { type: "subheading", text: "Option B — Customer Arranges Return Shipping" },
+      { type: "unordered-list", items: [
+        "After approving the request, GOALNET shares the return address.",
+        "Book a courier of your choice and pack the product securely.",
+        "Share the courier receipt and tracking number with GOALNET.",
+        "GOALNET reimburses reasonable return shipping costs after receiving proof of payment and verifying the return shipment.",
+      ] },
     ] },
-    { heading: "4. Situations Not Normally Eligible for Returns", blocks: [
-      { type: "paragraph", text: "Unless required by applicable law, returns are not normally accepted solely because:" },
-      { type: "unordered-list", items: ["A customer changes their mind after ordering.", "A customer selects a size that doesn't fit as expected, despite receiving the size ordered.", "The customer no longer wants the product.", "The product has been used, washed, altered or damaged after delivery by the customer."] },
-      { type: "paragraph", text: "Please consult our Size Guide and product information before ordering." },
-      { type: "paragraph", text: "These conditions do not affect a customer's rights where the product is defective, misdescribed, incorrect or otherwise subject to a remedy under applicable law." },
+    { heading: "4. Product Return Conditions", blocks: [
+      { type: "unordered-list", items: [
+        "Send the return to the address provided by GOALNET.",
+        "Return the product with its original tags and packaging wherever possible.",
+        "The product must not be washed, intentionally damaged or altered.",
+        "If the reported damage makes the original packaging or normal return condition impossible, GOALNET will assess the situation accordingly.",
+      ] },
     ] },
-    { heading: "5. How to Request a Return", blocks: [
-      { type: "paragraph", text: "To request assistance:" },
-      { type: "ordered-list", items: ["Email contactgoalnet@gmail.com within the applicable reporting period.", "Use the subject line Return Request — [Order Number].", "Explain whether the product was incorrect, damaged or defective.", "Attach the available photographs, unboxing video and other supporting evidence.", "Wait for our response and instructions before sending anything back."] },
-      { type: "paragraph", text: "Please do not send a product to an address that has not been provided or confirmed by our support team." },
+    { heading: "5. Inspection and Refund", blocks: [
+      { type: "unordered-list", items: [
+        "GOALNET inspects the returned product after receiving it.",
+        "If the reported issue is verified, the customer is eligible for the applicable refund.",
+        "Refund processing begins after the returned product has been received and inspected.",
+        "The customer will be informed about the refund status and expected processing time.",
+        "Refunds will be issued through the original payment method or another mutually agreed payment method.",
+      ] },
     ] },
-    { heading: "6. Review and Verification", blocks: [
-      { type: "paragraph", text: "We'll review the order information and evidence provided." },
-      { type: "paragraph", text: "Where necessary, we may request additional information to understand the issue. Claims that cannot be substantiated may be declined after a fair review, subject to applicable law." },
-      { type: "paragraph", text: "We'll communicate the outcome and any next steps to the customer." },
+    { heading: "6. Return Shipping Charges", blocks: [
+      { type: "unordered-list", items: [
+        "GOALNET bears reasonable return shipping costs for verified damaged, defective or incorrect products.",
+        "For Option A, GOALNET arranges and pays for the reverse pickup.",
+        "For Option B, the customer initially pays the courier charge; GOALNET reimburses the reasonable cost after receiving proof of payment and verifying the return shipment.",
+        "Customers are not required to bear return shipping costs for verified product issues.",
+      ] },
     ] },
-    { heading: "7. Replacement or Refund", blocks: [
-      { type: "paragraph", text: "Where a claim is approved, our preferred resolution is:" },
-      { type: "ordered-list", items: ["Replacement: We'll arrange a replacement if the appropriate product is available.", "Refund: If a replacement cannot reasonably be provided, we'll arrange a refund where appropriate.", "Other legally required remedies: Where applicable law provides a different or additional remedy, those rights will be respected."] },
-      { type: "paragraph", text: "The available resolution will depend on the issue, product availability and applicable legal requirements." },
+    { heading: "7. Important Notes", blocks: [
+      { type: "unordered-list", items: [
+        "Inspect your order upon delivery.",
+        "The 24-hour reporting period helps GOALNET investigate and resolve issues promptly. It does not remove any statutory consumer rights.",
+        "GOALNET reserves the right to verify every return request before approving it.",
+        "This policy does not cover returns for change of mind or incorrect size selection.",
+      ] },
     ] },
-    { heading: "8. Return Shipping Costs", blocks: [
-      { type: "paragraph", text: "For an approved claim involving a wrong, damaged or defective product, GOALNET will cover reasonable return shipping costs where a return shipment is required." },
-      { type: "paragraph", text: "Please contact us before arranging a return so we can provide instructions." },
-      { type: "paragraph", text: "Customers should not incur return shipping costs without first contacting us, except where necessary to exercise a right available under applicable law." },
-    ] },
-    { heading: "9. Refund Processing", blocks: [
-      { type: "paragraph", text: "Once a refund is approved, we'll communicate the refund method and expected processing timeframe." },
-      { type: "paragraph", text: "Refunds will generally be made to the original payment method where supported by the payment provider. If that is not possible, we'll contact the customer to arrange an appropriate alternative, subject to applicable requirements." },
-      { type: "paragraph", text: "The time taken for the amount to appear in the customer's account may depend on the payment provider or bank." },
-      { type: "paragraph", text: "Any refund will include the amounts required to be refunded under applicable law." },
-    ] },
-    { heading: "10. Exchanges for Size or Preference", blocks: [
-      { type: "paragraph", text: "Please review the Size Guide and product details carefully before placing an order." },
-      { type: "paragraph", text: "Size exchanges or returns for preference-related reasons are not routinely offered. However, if the supplied product differs from the order or is otherwise eligible for a remedy under applicable law, please contact us." },
-    ] },
-    { heading: "11. Contact Us", blocks: [
-      { type: "paragraph", text: "For return, replacement and refund enquiries: contactgoalnet@gmail.com" },
-      { type: "paragraph", text: "Subject: Return Request — [Order Number]" },
-      { type: "paragraph", text: "We'll review your request and guide you through the next steps." },
+    { heading: "8. Customer Support", blocks: [
+      { type: "unordered-list", items: [
+        "Instagram: @goalnetofficial",
+        "Email: contactgoalnet@gmail.com",
+        "Website: https://goalnet.in",
+      ] },
     ] },
   ],
 };
@@ -308,7 +315,7 @@ export const termsConditions: LegalDocument = {
     { heading: "10. Returns, Replacements and Refunds", blocks: [
       { type: "paragraph", text: "Returns and refunds are handled under our Returns & Refunds Policy." },
       { type: "paragraph", text: "Customers should inspect delivered products and report incorrect or damaged deliveries promptly." },
-      { type: "paragraph", text: "Evidence such as photographs, an unboxing video and order information may be requested to investigate a claim. Evidence requirements will be applied consistently with applicable consumer protection laws." },
+      { type: "paragraph", text: "Evidence such as clear photographs or videos and order information may be requested to investigate a claim. Evidence requirements will be applied consistently with applicable consumer protection laws." },
       { type: "paragraph", text: "Nothing in our returns policy removes any statutory remedy available to a customer." },
     ] },
     { heading: "11. Customer Accounts", blocks: [

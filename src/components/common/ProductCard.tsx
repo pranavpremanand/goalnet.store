@@ -28,7 +28,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
             Featured
           </span>
         )}
-        <button
+        {/* <button
           aria-label={liked ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
           aria-pressed={liked}
           className={`absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-full bg-white/95 transition hover:bg-brand ${liked ? "text-red-600" : "text-ink"}`}
@@ -36,7 +36,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
           type="button"
         >
           <Heart fill={liked ? "currentColor" : "none"} size={17} />
-        </button>
+        </button> */}
         <Link
           aria-label={`View ${product.name}`}
           className="absolute bottom-3 right-3 z-10 grid size-10 translate-y-2 place-items-center bg-brand opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100"

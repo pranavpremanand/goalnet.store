@@ -69,7 +69,7 @@ export async function findProductById(id: string): Promise<ProductDto | null> {
   return doc ? toDto(doc) : null;
 }
 
-type StorefrontFilter = { categoryIds: string[]; featuredOnly?: boolean; categoryId?: string; excludeId?: string; limit?: number };
+type StorefrontFilter = { categoryIds: string[]; featuredOnly?: boolean; categoryId?: string; excludeId?: string; ids?: string[]; limit?: number };
 
 // Customer-facing queries only ever see active products that belong to an active category.
 export async function listActiveProducts(filter: StorefrontFilter): Promise<ProductDto[]> {
@@ -80,6 +80,7 @@ export async function listActiveProducts(filter: StorefrontFilter): Promise<Prod
   if (filter.featuredOnly) query.isFeatured = true;
   if (filter.categoryId) query.category = filter.categoryId;
   if (filter.excludeId) query._id = { $ne: filter.excludeId };
+  if (filter.ids) query._id = { $in: filter.ids };
 
   const docs = await ProductModel.find(query).sort({ displayOrder: 1, createdAt: -1 }).limit(filter.limit ?? 200).populate("category", "name slug").lean<ProductDoc[]>();
   return docs.map(toDto);

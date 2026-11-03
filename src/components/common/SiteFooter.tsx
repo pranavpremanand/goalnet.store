@@ -70,7 +70,7 @@ export function SiteFooter() {
           <a
             aria-label="Instagram"
             className="mt-5 grid size-9 place-items-center border border-white/25 hover:border-brand hover:text-brand"
-            href="https://www.instagram.com/"
+            href="https://www.instagram.com/goalnetofficial/"
             rel="noreferrer"
             target="_blank"
           >

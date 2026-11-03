@@ -1,4 +1,4 @@
-import type { AvailabilityStatus, ProductType, SizeSystem } from "@/lib/catalog-constants";
+import type { AvailabilityStatus, JerseyType, ProductType, SizeSystem } from "@/lib/catalog-constants";
 
 // What the customer-facing pages need to show a product; admin-only fields are left out.
 export type StoreProduct = {
@@ -12,6 +12,7 @@ export type StoreProduct = {
   teamName: string;
   season: string;
   material: string;
+  jerseyType?: JerseyType | null;
   price: number;
   compareAtPrice: number | null;
   image: string;

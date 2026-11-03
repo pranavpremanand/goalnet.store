@@ -16,6 +16,7 @@ function toStoreProduct(product: ProductDto): StoreProduct {
     teamName: product.team.name,
     season: product.season,
     material: product.fabric,
+    jerseyType: product.jerseyType ?? null,
     price: product.price,
     compareAtPrice: product.compareAtPrice,
     image: main?.url ?? "",
@@ -45,6 +46,12 @@ export async function listStoreProducts(): Promise<StoreProduct[]> {
 export async function getStoreProduct(slug: string): Promise<StoreProduct | null> {
   const product = await productRepository.findActiveProductBySlug(slug, await activeCategoryIds());
   return product ? toStoreProduct(product) : null;
+}
+
+export async function listStoreProductsByIds(ids: string[]): Promise<StoreProduct[]> {
+  if (!ids || ids.length === 0) return [];
+  const products = await productRepository.listActiveProducts({ categoryIds: await activeCategoryIds(), ids });
+  return products.map(toStoreProduct);
 }
 
 // Shows featured products; before any are marked featured, the newest products fill the section.

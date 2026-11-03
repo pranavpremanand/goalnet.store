@@ -27,15 +27,14 @@ export type LegalDocument = {
 const supportEmail = "contactgoalnet@gmail.com";
 
 export function LinkedContent({ text }: { text: string }) {
-  const pieces = text.split(supportEmail);
+  const tokens = /(contactgoalnet@gmail\.com|@goalnetofficial|https:\/\/goalnet\.in)/g;
+  const pieces = text.split(tokens);
   return pieces.map((piece, index) => (
     <span key={`${piece}-${index}`}>
-      {piece}
-      {index < pieces.length - 1 && (
-        <a className="font-semibold text-ink underline underline-offset-4" href={`mailto:${supportEmail}`}>
-          {supportEmail}
-        </a>
-      )}
+      {piece === supportEmail ? <a className="font-semibold text-ink underline underline-offset-4" href={`mailto:${supportEmail}`}>{piece}</a>
+        : piece === "@goalnetofficial" ? <a className="font-semibold text-ink underline underline-offset-4" href="https://www.instagram.com/goalnetofficial/" rel="noreferrer" target="_blank">{piece}</a>
+          : piece === "https://goalnet.in" ? <a className="font-semibold text-ink underline underline-offset-4" href={piece} rel="noreferrer" target="_blank">{piece}</a>
+            : piece}
     </span>
   ));
 }
