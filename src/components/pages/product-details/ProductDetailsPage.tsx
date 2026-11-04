@@ -57,7 +57,7 @@ export function ProductDetailsPage({
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [notice, setNotice] = useState("");
   const [expanded, setExpanded] = useState("Description");
-  const { addItem } = useLocalCart();
+  const { addItem, isPending: cartPending } = useLocalCart();
   const sizeChart =
     product.productType === "jersey" && product.jerseyType
       ? SIZE_CHARTS[product.jerseyType]
@@ -80,7 +80,7 @@ export function ProductDetailsPage({
     ["Material", product.material],
   ].filter(([, value]) => value);
 
-  function addToBag() {
+  async function addToBag() {
     if (!size) {
       setNotice(
         product.sizeSystem === "one-size"
@@ -89,7 +89,11 @@ export function ProductDetailsPage({
       );
       return;
     }
-    addItem(product, size);
+    const result = await addItem(product, size);
+    if (!result.ok) {
+      setNotice(result.error);
+      return;
+    }
     setNotice(
       `${product.name}, ${sizeLabel}${product.sizeSystem === "one-size" ? "" : "size "}${size}, added to your bag.`,
     );
@@ -288,10 +292,11 @@ export function ProductDetailsPage({
           <div className="mt-7 grid sm:grid-cols-[1.3fr_0.7fr] gap-2">
             <button
               className="min-h-12 bg-brand px-5 text-sm font-bold uppercase transition hover:bg-[#d8df0d]"
+              disabled={cartPending}
               onClick={addToBag}
               type="button"
             >
-              Add to bag
+              {cartPending ? "Adding…" : "Add to bag"}
             </button>
             <button
               className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold"

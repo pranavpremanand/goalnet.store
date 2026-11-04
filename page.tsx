@@ -6,7 +6,7 @@ export const metadata = { title: "Order Status | GoalNet", robots: { index: fals
 
 async function Status({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  return <OrderStatusPage order={await getOrderByToken(token)} />;
+  return <OrderStatusPage accessToken={token} order={await getOrderByToken(token)} />;
 }
 
 export default function Page({ params }: { params: Promise<{ token: string }> }) {

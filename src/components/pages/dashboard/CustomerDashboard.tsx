@@ -84,7 +84,7 @@ export function CustomerDashboard({
     .toUpperCase();
 
   // Orders
-  const myOrders = placedOrders;
+  const [myOrders, setMyOrders] = useState(placedOrders);
   const latest = myOrders[0];
   const progress = latest
     ? { "pending-payment": 0, confirmed: 25, packed: 50, shipped: 75, delivered: 100, cancelled: 0 }[latest.status]
@@ -409,7 +409,7 @@ export function CustomerDashboard({
         {page === "dashboard" && (
           <div className="mt-6 space-y-7">
             <section className="relative overflow-hidden bg-ink p-6 text-white sm:p-9">
-              <div className="absolute right-0 top-0 h-full w-1/3 bg-brand [clip-path:polygon(45%_0,100%_0,100%_100%,0_100%)]" />
+              <div className="absolute right-0 top-0 h-full w-1/3 bg-brand [clip-path:polygon(0_0,100%_0,100%_60%,0_0)] sm:[clip-path:polygon(45%_0,100%_0,100%_100%,0_100%)]" />
               <div className="relative max-w-xl">
                 <p className="text-xs font-bold uppercase text-brand">The game keeps moving</p>
                 <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">
@@ -437,7 +437,7 @@ export function CustomerDashboard({
               </div>
             </section>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            {/* <div className="grid gap-4 sm:grid-cols-3">
               <div className="border border-line p-5">
                 <Package size={19} />
                 <p className="mt-4 text-xs uppercase text-muted">Orders placed</p>
@@ -453,7 +453,7 @@ export function CustomerDashboard({
                 <p className="mt-4 text-xs uppercase text-muted">GoalNet credit</p>
                 <p className="mt-1 font-display text-2xl font-semibold">₹0</p>
               </div>
-            </div>
+            </div> */}
 
             <section>
               <div className="mb-4 flex items-center justify-between">
@@ -501,7 +501,13 @@ export function CustomerDashboard({
                 </button>
                 {expandedPlaced === order.ref && (
                   <div className="border-t border-line p-4 sm:p-5">
-                    <OrderDetails order={order} />
+                    <OrderDetails
+                      allowAccountCancellation
+                      onOrderUpdated={(updatedOrder) => {
+                        setMyOrders((orders) => orders.map((item) => item.id === updatedOrder.id ? updatedOrder : item));
+                      }}
+                      order={order}
+                    />
                   </div>
                 )}
               </article>

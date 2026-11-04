@@ -18,7 +18,7 @@ const inputClass = "mt-1.5 w-full border border-line p-3 text-sm outline-none fo
 
 export function CheckoutPage() {
   const router = useRouter();
-  const { items, total, updateQuantity, removeItem, clearCart } = useLocalCart();
+  const { items, total, updateQuantity, removeItem, clearCart, refreshCart, isLoading: cartLoading, isPending: cartPending, error: cartError } = useLocalCart();
   const { session } = useDemoStore();
   const [guest, setGuest] = useState(false);
   const [placedRef, setPlacedRef] = useState("");
@@ -39,6 +39,7 @@ export function CheckoutPage() {
   const prefill: Partial<OrderAddress> = session ? { name: session.name, email: session.email, phone: session.phone } : {};
   const stage = session || guest ? "details" : "method";
   const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  const hasUnavailableItems = items.some((item) => !item.available);
 
   function value(field: keyof OrderAddress) {
     return draft[field] ?? prefill[field] ?? "";
@@ -144,9 +145,8 @@ export function CheckoutPage() {
     setPaying(true);
     setPayError("");
 
-    // The server re-prices the bag from the catalog; only product ids, sizes and quantities are trusted from here.
+    // The server reads the persisted cart and reprices it from the current catalog.
     const created = await createCheckoutSession({
-      items: items.map((item) => ({ productId: item.id, size: item.size, quantity: item.quantity })),
       shipping,
       billingAddress: billingDifferent ? billing.trim() : null,
     });
@@ -184,6 +184,14 @@ export function CheckoutPage() {
 
   if (placedRef) {
     return <main className="mx-auto grid min-h-[65vh] max-w-3xl place-items-center px-5 text-center"><p aria-live="polite" className="font-display text-2xl font-semibold">Payment received. Preparing your confirmation…</p></main>;
+  }
+
+  if (!items.length && cartLoading) {
+    return <main className="mx-auto grid min-h-[65vh] max-w-3xl place-items-center px-5 text-center"><p className="text-sm text-muted">Loading your bag…</p></main>;
+  }
+
+  if (!items.length && cartError) {
+    return <main className="mx-auto flex min-h-[65vh] max-w-3xl flex-col items-center justify-center px-5 text-center"><p className="text-sm text-red-700">{cartError}</p><button className="mt-4 border border-ink px-5 py-3 text-sm font-bold uppercase" onClick={() => void refreshCart()} type="button">Try again</button></main>;
   }
 
   if (!items.length) {
@@ -257,14 +265,16 @@ export function CheckoutPage() {
 
         <section>
           <div className="flex items-center justify-between border-b border-line pb-4"><h2 className="font-display text-2xl font-semibold">Review your order</h2><span className="text-xs text-muted">{items.reduce((sum, item) => sum + item.quantity, 0)} items</span></div>
-          <div className="divide-y divide-line">{items.map((item) => <div className="flex gap-4 py-5" key={`${item.id}-${item.size}`}><div className="relative aspect-4/5 w-20.5 shrink-0 bg-canvas"><Image alt={item.imageAlt} className="object-cover" fill sizes="82px" src={item.image} /></div><div className="min-w-0 flex-1"><Link className="font-semibold" href={`/product-info/${item.slug}`}>{item.name}</Link><p className="mt-1 text-xs text-muted">Size {item.size}</p><div className="mt-3 flex items-center gap-2"><button aria-label="Decrease quantity" className="grid size-7 place-items-center border border-line" onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)} type="button"><Minus size={13} /></button><span className="w-5 text-center text-sm">{item.quantity}</span><button aria-label="Increase quantity" className="grid size-7 place-items-center border border-line" onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)} type="button"><Plus size={13} /></button><button aria-label="Remove item" className="ml-2 text-muted hover:text-red-600" onClick={() => removeItem(item.id, item.size)} type="button"><Trash2 size={15} /></button></div></div><p className="shrink-0 text-sm font-bold">{formatRupees(item.price * item.quantity)}</p></div>)}</div>
+          <div className="divide-y divide-line">{items.map((item) => <div className="flex gap-4 py-5" key={`${item.id}-${item.size}`}><div className="relative aspect-4/5 w-20.5 shrink-0 bg-canvas"><Image alt={item.imageAlt} className="object-cover" fill sizes="82px" src={item.image} /></div><div className="min-w-0 flex-1"><Link className="font-semibold" href={`/product-info/${item.slug}`}>{item.name}</Link><p className="mt-1 text-xs text-muted">Size {item.size}</p>{!item.available && <p className="mt-1 text-xs text-red-700">This item is no longer available. Remove it to continue.</p>}<div className="mt-3 flex items-center gap-2"><button aria-label="Decrease quantity" className="grid size-7 place-items-center border border-line disabled:opacity-50" disabled={cartPending || !item.available} onClick={() => { void updateQuantity(item.id, item.size, item.quantity - 1); }} type="button"><Minus size={13} /></button><span className="w-5 text-center text-sm">{item.quantity}</span><button aria-label="Increase quantity" className="grid size-7 place-items-center border border-line disabled:opacity-50" disabled={cartPending || !item.available} onClick={() => { void updateQuantity(item.id, item.size, item.quantity + 1); }} type="button"><Plus size={13} /></button><button aria-label="Remove item" className="ml-2 text-muted hover:text-red-600 disabled:opacity-50" disabled={cartPending} onClick={() => { void removeItem(item.id, item.size); }} type="button"><Trash2 size={15} /></button></div></div><p className="shrink-0 text-sm font-bold">{formatRupees(item.price * item.quantity)}</p></div>)}</div>
           <div className="space-y-3 border-t border-line pt-4 text-sm">
             <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>{formatRupees(total)}</span></div>
             <div className="flex justify-between"><span className="text-muted">Shipping</span><span className="inline-flex items-center gap-2">{shippingFee === null ? (pincodeLookup.status === "loading" ? "Calculating…" : "Enter a PIN to calculate") : formatRupees(shippingFee)}{!quoteIsCurrent && shippingFee !== null && <span className="text-xs text-muted">{pincodeLookup.status === "loading" ? "Updating…" : "Previous quote"}</span>}</span></div>
             <div className="flex justify-between border-t border-line pt-4 text-base font-bold"><span>Total</span><span>{formatRupees(totalDue)}</span></div>
           </div>
-          <p className="mt-3 text-xs leading-5 text-muted">Orders with multiple items may have an additional shipping charge. Any applicable charge will be shown before confirmation.</p>
-          <button className="mt-6 min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50" disabled={paying || stage === "method" || pincodeLookup.status !== "success" || !quoteIsCurrent} form="checkout-form" type="submit">{paying ? "Processing…" : quoteActionLabel}</button>
+          {/* <p className="mt-3 text-xs leading-5 text-muted">Orders with multiple items may have an additional shipping charge. Any applicable charge will be shown before confirmation.</p> */}
+          {(cartError || hasUnavailableItems) && <p aria-live="polite" className="mt-3 text-sm text-red-700" role="alert">{cartError || "Remove unavailable items before placing your order."}</p>}
+          {cartError && <button className="mt-2 text-xs font-bold uppercase underline" disabled={cartLoading} onClick={() => void refreshCart()} type="button">{cartLoading ? "Refreshing bag…" : "Refresh bag"}</button>}
+          <button className="mt-6 min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50" disabled={paying || cartPending || cartLoading || Boolean(cartError) || hasUnavailableItems || stage === "method" || pincodeLookup.status !== "success" || !quoteIsCurrent} form="checkout-form" type="submit">{paying ? "Processing…" : quoteActionLabel}</button>
           {payError && <p aria-live="polite" className="mt-3 text-sm text-red-700" role="alert">{payError}</p>}
           {stage === "method" && <p className="mt-2 text-center text-xs text-muted">Choose how to continue to enter your delivery details.</p>}
           <p className="mt-3 text-center text-[11px] text-muted">Secure payment by Razorpay. UPI, cards, net banking and wallets accepted.</p>

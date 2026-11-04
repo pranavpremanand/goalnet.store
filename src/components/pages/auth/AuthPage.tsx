@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LuArrowLeft as ArrowLeft, LuEye as Eye, LuEyeOff as EyeOff, LuMail as Mail, LuPhone as Phone, LuCheck as Check } from "react-icons/lu";
@@ -41,9 +40,10 @@ function PasswordField({ autoComplete, error, registration }: { autoComplete: st
 }
 
 function useAfterAuth(redirectTo?: string) {
-  const router = useRouter();
   const { itemCount } = useLocalCart();
-  return () => router.push(redirectTo ?? (itemCount > 0 ? "/checkout" : "/dashboard/dashboard"));
+  return () => {
+    window.location.assign(redirectTo ?? (itemCount > 0 ? "/checkout" : "/dashboard/dashboard"));
+  };
 }
 
 function SubmitButton({ busy, label }: { busy: boolean; label: string }) {

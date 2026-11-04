@@ -43,6 +43,10 @@ export async function listStoreProducts(): Promise<StoreProduct[]> {
   return products.map(toStoreProduct);
 }
 
+export async function searchStoreProducts(query: string) {
+  return productRepository.searchActiveProducts(query, await activeCategoryIds());
+}
+
 export async function getStoreProduct(slug: string): Promise<StoreProduct | null> {
   const product = await productRepository.findActiveProductBySlug(slug, await activeCategoryIds());
   return product ? toStoreProduct(product) : null;

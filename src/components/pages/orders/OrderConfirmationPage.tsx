@@ -91,7 +91,7 @@ export function OrderConfirmationPage({
       </div>
 
       <div className="mt-10 border border-line p-5 sm:p-8">
-        <OrderDetails order={order} />
+        <OrderDetails accessToken={token} order={order} />
       </div>
 
       {order.isAccountOrder ? (

@@ -81,6 +81,12 @@ export async function findPaidByNumberAndEmail(orderNumber: string, email: strin
   return doc ? toDto(doc) : null;
 }
 
+export async function findPaidByNumberForUser(orderNumber: string, userId: string) {
+  await connectToDatabase();
+  const doc = await OrderModel.findOne({ orderNumber, userId, paymentStatus: "paid" }).lean<OrderDoc>();
+  return doc ? toDto(doc) : null;
+}
+
 // Atomic, so a verify call and a webhook arriving together cannot both confirm the order.
 export async function markPaid(id: string, paymentId: string) {
   await connectToDatabase();
@@ -137,8 +143,24 @@ export async function findById(id: string) {
   return doc ? toDto(doc) : null;
 }
 
+export async function findByIdForUser(id: string, userId: string) {
+  await connectToDatabase();
+  const doc = await OrderModel.findOne({ _id: id, userId }).lean<OrderDoc>();
+  return doc ? toDto(doc) : null;
+}
+
+export async function cancelBeforePacking(id: string) {
+  await connectToDatabase();
+  const doc = await OrderModel.findOneAndUpdate(
+    { _id: id, status: "confirmed", paymentStatus: "paid" },
+    { $set: { status: "cancelled" } },
+    { returnDocument: "after" },
+  ).lean<OrderDoc>();
+  return doc ? toDto(doc) : null;
+}
+
 export async function updateFulfilment(id: string, data: { status: OrderStatus; tracking: { carrier: string; awb: string } | null }) {
   await connectToDatabase();
-  const doc = await OrderModel.findOneAndUpdate({ _id: id }, { $set: data }, { returnDocument: "after" }).lean<OrderDoc>();
+  const doc = await OrderModel.findOneAndUpdate({ _id: id, status: { $ne: "cancelled" } }, { $set: data }, { returnDocument: "after" }).lean<OrderDoc>();
   return doc ? toDto(doc) : null;
 }

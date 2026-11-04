@@ -1,7 +1,5 @@
 import { z } from "zod";
-import { MAX_LINE_QUANTITY } from "@/lib/order-pricing";
 import { ORDER_STATUSES } from "@/lib/types/orders";
-import { objectIdSchema } from "@/lib/validation/catalog";
 
 const trimmed = (label: string, min: number, max: number) =>
   z.string().trim().min(min, `Enter ${label}`).max(max, `${label} is too long`);
@@ -18,10 +16,6 @@ export const orderAddressSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-  items: z
-    .array(z.object({ productId: objectIdSchema, size: z.string().trim().min(1).max(20), quantity: z.number().int().min(1).max(MAX_LINE_QUANTITY) }))
-    .min(1, "Your bag is empty")
-    .max(20, "Too many items in one order"),
   shipping: orderAddressSchema,
   billingAddress: z.string().trim().min(5, "Enter the billing address").max(500, "Billing address is too long").nullable(),
 });
@@ -35,8 +29,16 @@ export const verifyPaymentSchema = z.object({
 
 export const orderLookupSchema = z.object({
   orderNumber: z.string().trim().min(4).max(30),
-  email: z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address")),
+  email: z.preprocess(
+    (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
+    z.string().trim().toLowerCase().pipe(z.email("Enter a valid email address")).optional(),
+  ),
 });
+
+export const orderCancellationSchema = z.union([
+  z.object({ accessToken: z.string().min(20).max(100) }),
+  z.object({ orderId: z.string().regex(/^[a-f\d]{24}$/i, "Invalid order") }),
+]);
 
 export const orderUpdateSchema = z.object({
   status: z.enum(ORDER_STATUSES.filter((status) => status !== "pending-payment") as ["confirmed", "packed", "shipped", "delivered", "cancelled"]),
@@ -55,5 +57,6 @@ export const orderListQuerySchema = z.object({
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export type VerifyPaymentInput = z.infer<typeof verifyPaymentSchema>;
 export type OrderLookupInput = z.infer<typeof orderLookupSchema>;
+export type OrderCancellationInput = z.infer<typeof orderCancellationSchema>;
 export type OrderUpdateInput = z.infer<typeof orderUpdateSchema>;
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;

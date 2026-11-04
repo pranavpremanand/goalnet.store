@@ -159,7 +159,13 @@ export function AdminOrders({ result, filters }: Props) {
                 </td>
                 <td className="px-4 py-4">
                   {order.paymentStatus === "paid" && (
-                    <button className="border border-line px-3 py-2 text-[10px] font-bold uppercase hover:border-ink" onClick={() => open(order)} type="button">
+                    <button
+                      className="border border-line px-3 py-2 text-[10px] font-bold uppercase hover:border-ink disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-line"
+                      disabled={order.status === "cancelled"}
+                      onClick={() => open(order)}
+                      title={order.status === "cancelled" ? "Cancelled orders cannot be updated." : undefined}
+                      type="button"
+                    >
                       Update
                     </button>
                   )}

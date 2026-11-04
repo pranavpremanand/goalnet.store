@@ -104,6 +104,60 @@ export async function listActiveProducts(filter: StorefrontFilter): Promise<Prod
   return docs.map(toDto);
 }
 
+export type ProductSearchRecord = {
+  id: string;
+  slug: string;
+  name: string;
+  brand: string;
+  teamName: string;
+  season: string;
+  price: number;
+  image: string;
+  imageAlt: string;
+};
+
+type ProductSearchDoc = {
+  _id: Types.ObjectId;
+  slug: string;
+  name: string;
+  brand?: string;
+  team?: { name?: string };
+  season?: string;
+  price: number;
+  images?: { url?: string; alt?: string }[];
+};
+
+export async function searchActiveProducts(queryText: string, categoryIds: string[], limit = 8): Promise<ProductSearchRecord[]> {
+  if (categoryIds.length === 0) return [];
+  await connectToDatabase();
+
+  const pattern = new RegExp(escapeRegex(queryText), "i");
+  const docs = await ProductModel.find({
+    isActive: true,
+    category: { $in: categoryIds },
+    $or: [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }, { season: pattern }],
+  })
+    .select("name slug brand team.name season price images.url images.alt displayOrder createdAt")
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .limit(limit)
+    .lean<ProductSearchDoc[]>();
+
+  return docs.map((doc) => {
+    const image = doc.images?.[0];
+    return {
+      id: doc._id.toString(),
+      slug: doc.slug,
+      name: doc.name,
+      brand: doc.brand ?? "",
+      teamName: doc.team?.name ?? "",
+      season: doc.season ?? "",
+      price: doc.price,
+      image: image?.url ?? "",
+      imageAlt: image?.alt || doc.name,
+    };
+  });
+}
+
 export async function findActiveProductBySlug(slug: string, categoryIds: string[]): Promise<ProductDto | null> {
   if (categoryIds.length === 0) return null;
   await connectToDatabase();

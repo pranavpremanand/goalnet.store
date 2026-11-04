@@ -1,13 +1,15 @@
 ﻿import { randomInt } from "node:crypto";
+import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-constants";
 import type { CheckoutSession, OrderDto, OrderStatus } from "@/lib/types/orders";
-import type { CreateOrderInput, OrderLookupInput, OrderListQuery, OrderUpdateInput, VerifyPaymentInput } from "@/lib/validation/orders";
-import { BadRequestError, NotFoundError, UpstreamError } from "@/server/errors";
+import type { CreateOrderInput, OrderCancellationInput, OrderLookupInput, OrderListQuery, OrderUpdateInput, VerifyPaymentInput } from "@/lib/validation/orders";
+import { BadRequestError, ConflictError, NotFoundError, UpstreamError } from "@/server/errors";
 import { generateSessionToken, hashSessionToken } from "@/server/lib/token";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as orderRepository from "@/server/repositories/order.repository";
 import * as productRepository from "@/server/repositories/product.repository";
 import type { AuthUser } from "@/server/services/auth.service";
 import { getDeliveryQuote } from "@/server/services/delivery.service";
+import { getCart, type CartIdentity } from "@/server/services/cart.service";
 import * as razorpay from "@/server/services/razorpay.service";
 
 const ORDER_NUMBER_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -21,17 +23,20 @@ async function generateOrderNumber() {
   throw new Error("Could not generate a unique order number");
 }
 
-// Prices always come from the database; the browser only says what it wants and in which size.
-async function priceLines(items: CreateOrderInput["items"]) {
-  const merged = new Map<string, CreateOrderInput["items"][number]>();
+// Cart lines are repriced from the current product catalog before an order is created.
+type CartOrderLine = { productId: string; size: string; quantity: number };
+
+async function priceLines(items: CartOrderLine[]) {
+  const merged = new Map<string, CartOrderLine>();
   for (const item of items) {
     const key = `${item.productId}:${item.size}`;
     const existing = merged.get(key);
-    merged.set(key, { ...item, quantity: Math.min(10, (existing?.quantity ?? 0) + item.quantity) });
+    merged.set(key, { ...item, quantity: Math.min(MAX_CART_LINE_QUANTITY, (existing?.quantity ?? 0) + item.quantity) });
   }
 
   const categoryIds = (await categoryRepository.listCategories({ activeOnly: true })).map((category) => category.id);
-  const products = await productRepository.listActiveProducts({ categoryIds, ids: [...new Set(items.map((item) => item.productId))], limit: 50 });
+  const productIds = [...new Set(items.map((item) => item.productId))];
+  const products = await productRepository.listActiveProducts({ categoryIds, ids: productIds, limit: productIds.length });
   const byId = new Map(products.map((product) => [product.id, product]));
 
   return [...merged.values()].map((item) => {
@@ -55,8 +60,14 @@ async function priceLines(items: CreateOrderInput["items"]) {
   });
 }
 
-export async function createCheckoutOrder(input: CreateOrderInput, user: AuthUser | null): Promise<CheckoutSession> {
-  const lines = await priceLines(input.items);
+export async function createCheckoutOrder(input: CreateOrderInput, user: AuthUser | null, cartIdentity: CartIdentity): Promise<CheckoutSession> {
+  const cart = await getCart(cartIdentity);
+  if (cart.items.length === 0) throw new BadRequestError("Your bag is empty.");
+  const unavailableItem = cart.items.find((item) => !item.available);
+  if (unavailableItem) {
+    throw new BadRequestError(`${unavailableItem.name} in size ${unavailableItem.size} is no longer available. Remove it from your bag.`);
+  }
+  const lines = await priceLines(cart.items.map((item) => ({ productId: item.id, size: item.size, quantity: item.quantity })));
   const quantity = lines.reduce((sum, line) => sum + line.quantity, 0);
   const deliveryQuote = await getDeliveryQuote(input.shipping.pin, quantity);
   if (!deliveryQuote.serviceable || deliveryQuote.shippingFee === null) {
@@ -157,10 +168,34 @@ export async function getOrderByToken(token: string) {
   return orderRepository.findByTokenHash(hashSessionToken(token));
 }
 
-export async function lookupOrder(input: OrderLookupInput) {
-  const order = await orderRepository.findPaidByNumberAndEmail(input.orderNumber.toUpperCase(), input.email);
+export async function lookupOrder(input: OrderLookupInput, user: AuthUser | null) {
+  const orderNumber = input.orderNumber.toUpperCase();
+  let order: OrderDto | null;
+  if (input.email) {
+    order = await orderRepository.findPaidByNumberAndEmail(orderNumber, input.email);
+  } else {
+    if (!user) throw new BadRequestError("Enter the checkout email for a guest order, or sign in to look up an order linked to your account.");
+    order = await orderRepository.findPaidByNumberForUser(orderNumber, user.id);
+  }
   if (!order) throw new NotFoundError("We couldn't find an order with those details. Check the order number and email.");
   return order;
+}
+
+export async function cancelOrder(input: OrderCancellationInput, user: AuthUser | null) {
+  const order = "accessToken" in input
+    ? await orderRepository.findByTokenHash(hashSessionToken(input.accessToken))
+    : user
+      ? await orderRepository.findByIdForUser(input.orderId, user.id)
+      : null;
+  if (!order) throw new NotFoundError("We couldn't find that order.");
+  if (order.status === "cancelled") return order;
+  if (order.status !== "confirmed" || order.paymentStatus !== "paid") {
+    throw new ConflictError("This order can only be cancelled before packing.");
+  }
+
+  const cancelled = await orderRepository.cancelBeforePacking(order.id);
+  if (!cancelled) throw new ConflictError("This order can no longer be cancelled because its status has changed.");
+  return cancelled;
 }
 
 export async function listMyOrders(userId: string) {
@@ -175,6 +210,7 @@ export async function listAdminOrders(query: OrderListQuery) {
 export async function updateOrder(id: string, input: OrderUpdateInput) {
   const order = await orderRepository.findById(id);
   if (!order) throw new NotFoundError("Order not found.");
+  if (order.status === "cancelled") throw new ConflictError("Cancelled orders cannot be updated.");
   if (order.paymentStatus !== "paid") throw new BadRequestError("Only paid orders can be updated.");
   const status: OrderStatus = input.status;
   if (status === "shipped" && !input.tracking && !order.tracking) throw new BadRequestError("Add tracking details before marking an order as shipped.");

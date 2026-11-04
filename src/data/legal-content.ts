@@ -373,23 +373,20 @@ export const termsConditions: LegalDocument = {
 export const cancellationPolicy: LegalDocument = {
   title: "Cancellation Policy",
   intro: [
-    "At GOALNET, we aim to process every order accurately and efficiently. This policy explains how customers can request cancellation and what happens after an order has been dispatched.",
+    "At GOALNET, we aim to process every order accurately and efficiently. This policy explains how customers can cancel an order before it is packed and what happens after an order has been dispatched.",
   ],
   related: [
     { label: "Returns & Refunds Policy", href: "/returns-refunds" },
     { label: "Terms & Conditions", href: "/terms" },
   ],
   sections: [
-    { heading: "1. Cancelling an Order Before Dispatch", blocks: [
-      { type: "paragraph", text: "Customers may request cancellation before their order has been dispatched." },
-      { type: "paragraph", text: "To request cancellation, email contactgoalnet@gmail.com with the subject: Cancellation Request — [Order Number]" },
-      { type: "paragraph", text: "Please include the email address or phone number associated with your order." },
-      { type: "paragraph", text: "Cancellation requests are subject to verification of the order status. Sending a request does not automatically mean the cancellation has been completed." },
-      { type: "paragraph", text: "We recommend contacting us as soon as possible if you need to cancel an order." },
+    { heading: "1. Cancelling an Order Before Packing", blocks: [
+      { type: "paragraph", text: "Customers can cancel a confirmed order from its order status page or from My Orders while the order has not yet been packed." },
+      { type: "paragraph", text: "The cancellation is completed only after the order status has been successfully updated. If the order has already been packed, cancellation is no longer available through the website." },
+      { type: "paragraph", text: "We recommend cancelling as soon as possible if you no longer want the order." },
     ] },
-    { heading: "2. Orders That Have Already Been Dispatched", blocks: [
-      { type: "paragraph", text: "Once an order has been dispatched, cancellation is not available under our standard cancellation process." },
-      { type: "paragraph", text: "If your order has already been dispatched, please contact us if:" },
+    { heading: "2. Orders That Have Already Been Packed or Dispatched", blocks: [
+      { type: "paragraph", text: "Once an order has been packed, cancellation is no longer available through the website. If your order has already been dispatched, please contact us if:" },
       { type: "unordered-list", items: ["You believe the wrong product was sent.", "Your product arrives damaged or defective.", "You have another concern that may qualify for a remedy under applicable law."] },
       { type: "paragraph", text: "Eligible claims will be handled in accordance with our Returns & Refunds Policy and applicable legal requirements." },
       { type: "paragraph", text: "Nothing in this policy excludes any cancellation, return or refund right that cannot legally be excluded." },

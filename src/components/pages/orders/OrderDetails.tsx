@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import { LuCheck as Check } from "react-icons/lu";
 import { formatRupees } from "@/lib/format";
 import { ORDER_STATUS_LABELS, type OrderDto, type OrderStatus } from "@/lib/types/orders";
@@ -20,29 +23,72 @@ export function OrderTimeline({ status }: { status: OrderStatus }) {
   );
 }
 
-export function OrderDetails({ order }: { order: OrderDto }) {
-  const placed = new Date(order.placedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  const { shipping } = order;
-  const paid = order.paymentStatus === "paid";
+export function OrderDetails({ order, accessToken, allowAccountCancellation = false, onOrderUpdated }: { order: OrderDto; accessToken?: string; allowAccountCancellation?: boolean; onOrderUpdated?: (order: OrderDto) => void }) {
+  const [currentOrder, setCurrentOrder] = useState(order);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancellationDialog, setShowCancellationDialog] = useState(false);
+  const [cancellationError, setCancellationError] = useState("");
+  const [cancellationNotice, setCancellationNotice] = useState("");
+  const placed = new Date(currentOrder.placedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const { shipping } = currentOrder;
+  const paid = currentOrder.paymentStatus === "paid";
+
+  async function cancelOrder() {
+    setCancelling(true);
+    setCancellationError("");
+    setCancellationNotice("");
+    try {
+      const response = await fetch("/api/orders/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(accessToken ? { accessToken } : { orderId: currentOrder.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "We couldn't cancel this order. Please try again.");
+      const updatedOrder = result.order as OrderDto;
+      setCurrentOrder(updatedOrder);
+      onOrderUpdated?.(updatedOrder);
+      setShowCancellationDialog(false);
+      setCancellationNotice("Your order has been cancelled. Any applicable refund will be handled under our cancellation policy.");
+    } catch (error) {
+      setCancellationError(error instanceof Error ? error.message : "We couldn't cancel this order. Please try again.");
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <div className="space-y-8">
       <section>
-        <p className="text-xs text-muted">Order {order.ref} · Placed {placed}</p>
-        <div className="mt-5"><OrderTimeline status={order.status} /></div>
-        {order.status !== "cancelled" && (
+        <p className="text-xs text-muted">Order {currentOrder.ref} · Placed {placed}</p>
+        <div className="mt-5"><OrderTimeline status={currentOrder.status} /></div>
+        {currentOrder.status !== "cancelled" && (
           <p className="mt-6 border-l-4 border-brand bg-canvas p-4 font-copy text-sm leading-6 text-muted">
-            {order.tracking
-              ? <>Shipped with {order.tracking.carrier}. Tracking number: <span className="font-semibold text-ink">{order.tracking.awb}</span></>
+            {currentOrder.tracking
+              ? <>Shipped with {currentOrder.tracking.carrier}. Tracking number: <span className="font-semibold text-ink">{currentOrder.tracking.awb}</span></>
               : "Tracking details will appear here once your order is dispatched. Orders are generally processed in 2–3 business days."}
           </p>
+        )}
+        {cancellationNotice && <p aria-live="polite" className="mt-4 text-sm text-green-800">{cancellationNotice}</p>}
+        {cancellationError && <p aria-live="polite" className="mt-4 text-sm text-red-700">{cancellationError}</p>}
+        {currentOrder.status === "confirmed" && paid && (accessToken || allowAccountCancellation) && (
+          <button
+            className="mt-4 min-h-11 border border-red-700 px-5 text-xs font-bold uppercase text-red-700 hover:bg-red-50 disabled:opacity-50"
+            onClick={() => {
+              setCancellationError("");
+              setShowCancellationDialog(true);
+            }}
+            type="button"
+          >
+            Cancel order
+          </button>
         )}
       </section>
 
       <section>
         <h3 className="border-b border-line pb-3 font-display text-xl font-semibold">Order summary</h3>
         <ul className="divide-y divide-line">
-          {order.lines.map((line) => (
+          {currentOrder.lines.map((line) => (
             <li className="flex gap-4 py-4" key={`${line.productId}-${line.size}`}>
               <div className="relative aspect-4/5 w-16 shrink-0 bg-canvas">{line.image && <Image alt={line.imageAlt} className="object-cover" fill sizes="64px" src={line.image} />}</div>
               <div className="min-w-0 flex-1"><p className="font-semibold">{line.name}</p><p className="mt-1 text-xs text-muted">Size {line.size} · Qty {line.quantity}</p></div>
@@ -51,9 +97,9 @@ export function OrderDetails({ order }: { order: OrderDto }) {
           ))}
         </ul>
         <div className="space-y-2 border-t border-line pt-4 text-sm">
-          <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>{formatRupees(order.subtotal)}</span></div>
-          <div className="flex justify-between"><span className="text-muted">Shipping</span><span>{formatRupees(order.shippingFee)}</span></div>
-          <div className="flex justify-between border-t border-line pt-3 text-base font-bold"><span>{paid ? "Total paid" : "Total"}</span><span>{formatRupees(order.total)}</span></div>
+          <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>{formatRupees(currentOrder.subtotal)}</span></div>
+          <div className="flex justify-between"><span className="text-muted">Shipping</span><span>{formatRupees(currentOrder.shippingFee)}</span></div>
+          <div className="flex justify-between border-t border-line pt-3 text-base font-bold"><span>{paid ? "Total paid" : "Total"}</span><span>{formatRupees(currentOrder.total)}</span></div>
         </div>
       </section>
 
@@ -66,11 +112,54 @@ export function OrderDetails({ order }: { order: OrderDto }) {
         </div>
         <div>
           <h3 className="text-xs font-bold uppercase text-muted">Billing address</h3>
-          <p className="mt-2 text-sm leading-6 text-muted">{order.billingAddress ?? "Same as delivery address"}</p>
+          <p className="mt-2 text-sm leading-6 text-muted">{currentOrder.billingAddress ?? "Same as delivery address"}</p>
           <h3 className="mt-4 text-xs font-bold uppercase text-muted">Payment</h3>
-          <p className="mt-2 break-all text-sm text-muted">{paid ? `Paid online · ${order.paymentId ?? ""}` : "Awaiting payment confirmation"}</p>
+          <p className="mt-2 break-all text-sm text-muted">{paid ? `Paid online · ${currentOrder.paymentId ?? ""}` : "Awaiting payment confirmation"}</p>
         </div>
       </section>
+
+      {showCancellationDialog && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4 backdrop-blur-[2px]"
+          onClick={() => {
+            if (!cancelling) setShowCancellationDialog(false);
+          }}
+        >
+          <section
+            aria-labelledby="cancel-order-title"
+            aria-modal="true"
+            className="w-full max-w-md border border-line bg-paper p-6 shadow-2xl sm:p-8"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <span className="grid size-12 place-items-center bg-red-50 text-xl font-semibold text-red-700" aria-hidden="true">!</span>
+            <p className="mt-5 text-xs font-bold uppercase tracking-wider text-red-700">Order cancellation</p>
+            <h2 className="mt-2 font-display text-2xl font-semibold" id="cancel-order-title">Cancel this order?</h2>
+            <p className="mt-3 font-copy text-sm leading-6 text-muted">
+              Your order {currentOrder.ref} will be cancelled. This can’t be undone. Any applicable refund will be handled under our cancellation policy.
+            </p>
+            {cancellationError && <p aria-live="polite" className="mt-4 border-l-2 border-red-700 bg-red-50 p-3 text-sm text-red-800">{cancellationError}</p>}
+            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                className="min-h-11 border border-line px-5 text-xs font-bold uppercase hover:border-ink disabled:opacity-50"
+                disabled={cancelling}
+                onClick={() => setShowCancellationDialog(false)}
+                type="button"
+              >
+                Keep my order
+              </button>
+              <button
+                className="min-h-11 bg-red-700 px-5 text-xs font-bold uppercase text-white hover:bg-red-800 disabled:opacity-50"
+                disabled={cancelling}
+                onClick={cancelOrder}
+                type="button"
+              >
+                {cancelling ? "Cancelling…" : "Yes, cancel order"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
