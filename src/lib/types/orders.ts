@@ -46,7 +46,6 @@ export type OrderDto = {
   lines: OrderLine[];
   subtotal: number;
   shippingFee: number;
-  protection: number;
   total: number;
   paymentId: string | null;
   tracking: OrderTracking | null;

@@ -15,8 +15,8 @@ export const shippingPolicy: LegalDocument = {
       { type: "paragraph", text: "Delivery availability may depend on the destination and the courier service operating in that area. If a location cannot be served, we'll inform the customer where reasonably possible." },
     ] },
     { heading: "2. Shipping Charges", blocks: [
-      { type: "paragraph", text: "Our standard shipping charge is ₹80 per order, subject to the parcel size, weight and delivery destination." },
-      { type: "paragraph", text: "For orders containing multiple items, shipping is calculated based on the combined parcel and applicable courier charges. An additional shipping charge may apply where necessary. Any applicable charge will be communicated to the customer before the order is confirmed." },
+      { type: "paragraph", text: "Shipping charges are calculated using the parcel weight and delivery destination. The applicable charge is displayed at checkout before the customer places the order." },
+      { type: "paragraph", text: "Orders containing multiple items are charged based on their combined quantity and applicable courier tariff." },
       { type: "paragraph", text: "Shipping charges, if applicable, will be displayed separately at checkout." },
       { type: "paragraph", text: "Any free-shipping offer or promotional shipping rate will be subject to the conditions stated in that offer." },
     ] },
@@ -28,7 +28,7 @@ export const shippingPolicy: LegalDocument = {
       { type: "paragraph", text: "If an unexpected delay materially affects your order, we'll make reasonable efforts to communicate the update." },
     ] },
     { heading: "4. Estimated Delivery Time", blocks: [
-      { type: "paragraph", text: "The estimated delivery time is generally 5–10 business days after dispatch, depending on the destination and courier service." },
+      { type: "paragraph", text: "The estimated delivery time is generally 7–14 business days after dispatch, depending on the destination and courier service." },
       { type: "paragraph", text: "This is an estimate, not a guaranteed delivery date. Remote locations, courier disruptions, weather conditions, public holidays and other circumstances outside our reasonable control may affect delivery." },
       { type: "paragraph", text: "The order's processing period is additional to the estimated transit period." },
     ] },
@@ -303,7 +303,7 @@ export const termsConditions: LegalDocument = {
     ] },
     { heading: "8. Order Processing and Delivery", blocks: [
       { type: "paragraph", text: "Orders are generally processed within 2–3 business days after successful payment confirmation." },
-      { type: "paragraph", text: "Estimated delivery is generally 5–10 business days after dispatch, depending on the destination and courier service." },
+      { type: "paragraph", text: "Estimated delivery is generally 7–14 business days after dispatch, depending on the destination and courier service." },
       { type: "paragraph", text: "These are estimates, not guarantees. Delays may occur because of circumstances outside our reasonable control." },
       { type: "paragraph", text: "Shipping charges, multiple-item orders and delivery procedures are explained in our Shipping & Delivery Policy." },
     ] },

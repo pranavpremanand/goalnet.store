@@ -47,7 +47,7 @@ const productSchema = new Schema<ProductAttrs>(
     },
     jerseyType: { type: String, enum: JERSEY_TYPES, default: null },
     logoType: { type: String, enum: LOGO_TYPES, default: "unknown" },
-    fabric: { type: String, default: "DotNet breathable fabric", trim: true },
+    fabric: { type: String, default: "Breathable Polyster Dot Knit Fabric", trim: true },
     price: { type: Number, required: true, min: 0 },
     compareAtPrice: { type: Number, default: null, min: 0 },
     sizeSystem: { type: String, enum: SIZE_SYSTEMS, default: "apparel" },

@@ -53,7 +53,6 @@ export function OrderDetails({ order }: { order: OrderDto }) {
         <div className="space-y-2 border-t border-line pt-4 text-sm">
           <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>{formatRupees(order.subtotal)}</span></div>
           <div className="flex justify-between"><span className="text-muted">Shipping</span><span>{formatRupees(order.shippingFee)}</span></div>
-          {order.protection > 0 && <div className="flex justify-between"><span className="text-muted">Product protection</span><span>{formatRupees(order.protection)}</span></div>}
           <div className="flex justify-between border-t border-line pt-3 text-base font-bold"><span>{paid ? "Total paid" : "Total"}</span><span>{formatRupees(order.total)}</span></div>
         </div>
       </section>

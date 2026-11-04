@@ -1,13 +1,13 @@
-import { randomInt } from "node:crypto";
-import { PROTECTION_FEE, SHIPPING_FEE } from "@/lib/order-pricing";
+﻿import { randomInt } from "node:crypto";
 import type { CheckoutSession, OrderDto, OrderStatus } from "@/lib/types/orders";
 import type { CreateOrderInput, OrderLookupInput, OrderListQuery, OrderUpdateInput, VerifyPaymentInput } from "@/lib/validation/orders";
-import { BadRequestError, NotFoundError } from "@/server/errors";
+import { BadRequestError, NotFoundError, UpstreamError } from "@/server/errors";
 import { generateSessionToken, hashSessionToken } from "@/server/lib/token";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as orderRepository from "@/server/repositories/order.repository";
 import * as productRepository from "@/server/repositories/product.repository";
 import type { AuthUser } from "@/server/services/auth.service";
+import { getDeliveryQuote } from "@/server/services/delivery.service";
 import * as razorpay from "@/server/services/razorpay.service";
 
 const ORDER_NUMBER_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -57,9 +57,18 @@ async function priceLines(items: CreateOrderInput["items"]) {
 
 export async function createCheckoutOrder(input: CreateOrderInput, user: AuthUser | null): Promise<CheckoutSession> {
   const lines = await priceLines(input.items);
+  const quantity = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const deliveryQuote = await getDeliveryQuote(input.shipping.pin, quantity);
+  if (!deliveryQuote.serviceable || deliveryQuote.shippingFee === null) {
+    throw new BadRequestError("We can't deliver to this PIN code. Please check the PIN code or use another address.");
+  }
+  const verifiedCity = deliveryQuote.city || deliveryQuote.district;
+  if (!verifiedCity || !deliveryQuote.state) {
+    throw new UpstreamError("The pincode service did not return a verified city and state. Please try again.");
+  }
+
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
-  const protection = input.protect ? PROTECTION_FEE : 0;
-  const total = subtotal + SHIPPING_FEE + protection;
+  const total = subtotal + deliveryQuote.shippingFee;
 
   const accessToken = generateSessionToken();
   const orderNumber = await generateOrderNumber();
@@ -67,12 +76,11 @@ export async function createCheckoutOrder(input: CreateOrderInput, user: AuthUse
     orderNumber,
     accessTokenHash: hashSessionToken(accessToken),
     userId: user?.id,
-    shipping: input.shipping,
+    shipping: { ...input.shipping, city: verifiedCity, state: deliveryQuote.state },
     billingAddress: input.billingAddress,
     lines,
     subtotal,
-    shippingFee: SHIPPING_FEE,
-    protection,
+    shippingFee: deliveryQuote.shippingFee,
     total,
   });
 

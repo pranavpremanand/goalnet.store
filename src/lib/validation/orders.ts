@@ -24,7 +24,6 @@ export const createOrderSchema = z.object({
     .max(20, "Too many items in one order"),
   shipping: orderAddressSchema,
   billingAddress: z.string().trim().min(5, "Enter the billing address").max(500, "Billing address is too long").nullable(),
-  protect: z.boolean(),
 });
 
 export const verifyPaymentSchema = z.object({

@@ -32,7 +32,6 @@ function toDto(doc: OrderDoc): OrderDto {
     })),
     subtotal: doc.subtotal,
     shippingFee: doc.shippingFee,
-    protection: doc.protection,
     total: doc.total,
     paymentId: doc.razorpay?.paymentId ?? null,
     tracking: doc.tracking ? { carrier: doc.tracking.carrier, awb: doc.tracking.awb } : null,
@@ -109,7 +108,12 @@ export async function listOrders(filter: { page: number; limit: number; q: strin
   const query: QueryFilter<OrderAttrs> = filter.status === "all" ? { paymentStatus: "paid" } : { status: filter.status };
   if (filter.q) {
     const pattern = new RegExp(escapeRegex(filter.q), "i");
-    query.$or = [{ orderNumber: pattern }, { "shipping.name": pattern }, { "shipping.email": pattern }];
+    query.$or = [
+      { orderNumber: pattern },
+      { "shipping.name": pattern },
+      { "shipping.email": pattern },
+      { billingAddress: pattern },
+    ];
   }
   const [docs, total] = await Promise.all([
     OrderModel.find(query)

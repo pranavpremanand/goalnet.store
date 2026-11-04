@@ -10,7 +10,8 @@ export interface OrderAttrs {
   lines: { productId: Types.ObjectId; slug: string; name: string; image: string; imageAlt: string; size: string; quantity: number; price: number }[];
   subtotal: number;
   shippingFee: number;
-  protection: number;
+  /** Kept for backward-compatibility with existing orders; always 0 for new orders. */
+  protection?: number;
   total: number;
   status: OrderStatus;
   paymentStatus: "created" | "paid" | "failed";
@@ -52,7 +53,7 @@ const orderSchema = new Schema<OrderAttrs>(
     ],
     subtotal: { type: Number, required: true, min: 0 },
     shippingFee: { type: Number, required: true, min: 0 },
-    protection: { type: Number, required: true, min: 0 },
+    protection: { type: Number, default: 0, min: 0 },
     total: { type: Number, required: true, min: 0 },
     status: { type: String, enum: ORDER_STATUSES, default: "pending-payment", index: true },
     paymentStatus: { type: String, enum: ["created", "paid", "failed"], default: "created" },

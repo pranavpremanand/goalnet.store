@@ -13,32 +13,32 @@ import {
 import { ProductCard } from "@/components/common/ProductCard";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { ProductImageZoom } from "@/components/pages/product-details/ProductImageZoom";
-import { PRODUCT_TYPE_LABELS } from "@/lib/catalog-constants";
+import { PRODUCT_TYPE_LABELS, type JerseyType } from "@/lib/catalog-constants";
 import { formatRupees } from "@/lib/format";
 import type { StoreProduct } from "@/lib/types/storefront";
 
 const FALLBACK_DESCRIPTION =
   "Product material, fit and construction may vary by design. Please check the product details for the available information before ordering.";
 
-type PincodeLookup = { status: "idle" | "loading" | "success" | "error" | "blocked"; message: string };
+type PincodeLookup = {
+  status: "idle" | "loading" | "success" | "error" | "blocked";
+  message: string;
+};
 
-const SIZE_CHARTS = [
-  { id: "half-sleeve", label: "Half Sleeve", image: "/images/size-charts/half-sleeve.png" },
-  { id: "five-sleeve", label: "Five Sleeve / Oversized", image: "/images/size-charts/five-sleeve.png" },
-  { id: "full-sleeve", label: "Full Sleeve", image: "/images/size-charts/full-sleeve.png" },
-];
-
-function getDefaultChartId(product: StoreProduct) {
-  const jt = (product.jerseyType || "").toLowerCase();
-  const name = product.name.toLowerCase();
-  if (jt.includes("full") || name.includes("full sleeve") || name.includes("full-sleeve")) {
-    return "full-sleeve";
-  }
-  if (jt.includes("five") || jt.includes("oversized") || name.includes("five sleeve") || name.includes("oversized")) {
-    return "five-sleeve";
-  }
-  return "half-sleeve";
-}
+const SIZE_CHARTS: Record<JerseyType, { label: string; image: string }> = {
+  "half-sleeve": {
+    label: "Half Sleeve",
+    image: "/images/size-charts/half-sleeve.png",
+  },
+  "five-sleeve": {
+    label: "Five Sleeve",
+    image: "/images/size-charts/five-sleeve.png",
+  },
+  "full-sleeve": {
+    label: "Full Sleeve",
+    image: "/images/size-charts/full-sleeve.png",
+  },
+};
 
 export function ProductDetailsPage({
   product,
@@ -50,12 +50,18 @@ export function ProductDetailsPage({
   const [size, setSize] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const [deliveryCode, setDeliveryCode] = useState("");
-  const [pincodeLookup, setPincodeLookup] = useState<PincodeLookup>({ status: "idle", message: "" });
+  const [pincodeLookup, setPincodeLookup] = useState<PincodeLookup>({
+    status: "idle",
+    message: "",
+  });
   const [showSizeGuide, setShowSizeGuide] = useState(false);
-  const [activeChart, setActiveChart] = useState(() => getDefaultChartId(product));
   const [notice, setNotice] = useState("");
   const [expanded, setExpanded] = useState("Description");
   const { addItem } = useLocalCart();
+  const sizeChart =
+    product.productType === "jersey" && product.jerseyType
+      ? SIZE_CHARTS[product.jerseyType]
+      : null;
   const description = product.description || FALLBACK_DESCRIPTION;
   const selected = product.sizes.find((option) => option.size === size);
   const sizeLabel =
@@ -90,17 +96,36 @@ export function ProductDetailsPage({
   }
 
   async function checkPincode(pin: string) {
-    setPincodeLookup({ status: "loading", message: "Checking delivery availability…" });
+    setPincodeLookup({
+      status: "loading",
+      message: "Checking delivery availability…",
+    });
     try {
-      const response = await fetch(`/api/delivery/pincode?pincode=${encodeURIComponent(pin)}`, { cache: "no-store" });
-      const result = await response.json() as { serviceable?: boolean; city?: string; district?: string; state?: string; error?: string };
+      const response = await fetch(
+        `/api/delivery/pincode?pincode=${encodeURIComponent(pin)}`,
+        { cache: "no-store" },
+      );
+      const result = (await response.json()) as {
+        serviceable?: boolean;
+        city?: string;
+        district?: string;
+        state?: string;
+        error?: string;
+      };
 
       if (!response.ok) {
-        setPincodeLookup({ status: "error", message: result.error ?? "Delivery availability could not be checked." });
+        setPincodeLookup({
+          status: "error",
+          message:
+            result.error ?? "Delivery availability could not be checked.",
+        });
         return;
       }
       if (!result.serviceable) {
-        setPincodeLookup({ status: "blocked", message: "This pincode is not listed for prepaid delivery." });
+        setPincodeLookup({
+          status: "blocked",
+          message: "India Post does not list a delivery post office for this PIN code.",
+        });
         return;
       }
 
@@ -111,7 +136,10 @@ export function ProductDetailsPage({
         message: `Delivery available${locality ? ` to ${locality}` : ""}. Final serviceability is subject to courier confirmation.`,
       });
     } catch {
-      setPincodeLookup({ status: "error", message: "The delivery service could not be reached. Please try again." });
+      setPincodeLookup({
+        status: "error",
+        message: "The delivery service could not be reached. Please try again.",
+      });
     }
   }
 
@@ -126,7 +154,10 @@ export function ProductDetailsPage({
     if (deliveryCode.length === 6) {
       void checkPincode(deliveryCode);
     } else {
-      setPincodeLookup({ status: "error", message: "Enter a valid 6-digit pincode." });
+      setPincodeLookup({
+        status: "error",
+        message: "Enter a valid 6-digit pincode.",
+      });
     }
   }
 
@@ -155,7 +186,8 @@ export function ProductDetailsPage({
           <span className="text-ink">{product.name}</span>
         </p>
       </div>
-      <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-7 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14 lg:px-14 lg:py-10">
+      {/* <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-7 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14 lg:px-14 lg:py-10"> */}
+      <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-7 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:px-14 lg:py-10">
         <div>
           <ProductImageZoom
             alt={product.images[activeImage]?.alt ?? product.imageAlt}
@@ -171,7 +203,7 @@ export function ProductDetailsPage({
                 <button
                   aria-label={`Show product image ${index + 1}`}
                   aria-pressed={activeImage === index}
-                  className={`relative aspect-[4/3] overflow-hidden bg-canvas ${activeImage === index ? "outline outline-2 outline-ink" : "opacity-70 hover:opacity-100"}`}
+                  className={`relative aspect-[4/5] overflow-hidden bg-canvas ${activeImage === index ? "outline outline-2 outline-brand" : "opacity-70 hover:opacity-100"}`}
                   key={`${image.url}-${index}`}
                   onClick={() => setActiveImage(index)}
                   type="button"
@@ -215,13 +247,15 @@ export function ProductDetailsPage({
                   ? "Option"
                   : `Select ${sizeLabel}size`}
               </h2>
-              <button
-                className="border-b border-muted text-xs text-muted hover:text-ink transition"
-                onClick={() => setShowSizeGuide(true)}
-                type="button"
-              >
-                Size guide
-              </button>
+              {sizeChart && (
+                <button
+                  className="border-b border-muted text-xs text-muted hover:text-ink transition"
+                  onClick={() => setShowSizeGuide(true)}
+                  type="button"
+                >
+                  Size guide
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {product.sizes.map((option) => {
@@ -251,7 +285,7 @@ export function ProductDetailsPage({
               </p>
             )}
           </div>
-          <div className="mt-7 grid grid-cols-1 gap-2">
+          <div className="mt-7 grid sm:grid-cols-[1.3fr_0.7fr] gap-2">
             <button
               className="min-h-12 bg-brand px-5 text-sm font-bold uppercase transition hover:bg-[#d8df0d]"
               onClick={addToBag}
@@ -259,14 +293,22 @@ export function ProductDetailsPage({
             >
               Add to bag
             </button>
+            <button
+              className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold"
+              onClick={shareProduct}
+              type="button"
+            >
+              <Share2 size={16} /> Share
+            </button>
           </div>
-          <button
+
+          {/* <button
             className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold"
             onClick={shareProduct}
             type="button"
           >
             <Share2 size={16} /> Share
-          </button>
+          </button> */}
           {notice && (
             <p
               aria-live="polite"
@@ -314,7 +356,7 @@ export function ProductDetailsPage({
             )}
             <p className="mt-3 text-xs text-muted">
               Processing generally takes 2–3 business days. Delivery is
-              estimated at 5–10 business days after dispatch; serviceability
+              estimated at 7–14 business days after dispatch; serviceability
               varies by location.
             </p>
           </div>
@@ -349,10 +391,10 @@ export function ProductDetailsPage({
                   )}
                   {expanded === title && title === "Shipping and delivery" && (
                     <p className="pb-4 font-copy text-xs leading-6 text-muted">
-                      Standard shipping is ₹80 per order. Additional shipping
-                      may apply to multi-item orders and will be shown before
-                      confirmation. Orders are generally processed in 2–3
-                      business days; delivery is estimated at 5–10 business days
+                      Delivery availability and shipping charges are confirmed
+                      at checkout based on your delivery PIN and order. Orders
+                      are generally processed in 2–3
+                      business days; delivery is estimated at 7–14 business days
                       after dispatch.
                     </p>
                   )}
@@ -385,25 +427,29 @@ export function ProductDetailsPage({
       )}
 
       {/* Size Guide Modal */}
-      {showSizeGuide && (
+      {showSizeGuide && sizeChart && (
         <div
           className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"
           onClick={() => setShowSizeGuide(false)}
         >
           <div
             aria-modal="true"
-            className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto bg-paper p-5 sm:p-7 shadow-2xl border border-line"
+            className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto bg-paper p-5 shadow-2xl border border-line"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
           >
-            <div className="flex items-center justify-between border-b border-line pb-4">
+            <div className="relative flex items-center justify-between border-b border-line pb-2">
               <div>
-                <p className="text-xs font-bold uppercase text-muted">GoalNet Fit Guide</p>
-                <h3 className="font-display text-2xl font-bold mt-0.5">Jersey Size Chart</h3>
+                <p className="text-xs font-bold uppercase text-muted">
+                  GoalNet Fit Guide · {sizeChart.label}
+                </p>
+                {/* <h3 className="font-display text-2xl font-bold mt-0.5">
+                  Jersey Size Chart
+                </h3> */}
               </div>
               <button
                 aria-label="Close size guide"
-                className="p-1 text-muted hover:text-ink transition"
+                className="cursor-pointer p-1 text-muted hover:text-ink transition z-10"
                 onClick={() => setShowSizeGuide(false)}
                 type="button"
               >
@@ -411,34 +457,15 @@ export function ProductDetailsPage({
               </button>
             </div>
 
-            {/* Sleeve Type Tabs */}
-            <div className="mt-4 flex flex-wrap gap-2 border-b border-line pb-3">
-              {SIZE_CHARTS.map((chart) => (
-                <button
-                  className={`px-3 py-1.5 text-xs font-semibold uppercase transition rounded-sm ${
-                    activeChart === chart.id
-                      ? "bg-brand text-ink font-bold shadow-sm"
-                      : "bg-canvas text-muted hover:text-ink"
-                  }`}
-                  key={chart.id}
-                  onClick={() => setActiveChart(chart.id)}
-                  type="button"
-                >
-                  {chart.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Chart Image Display */}
-            <div className="mt-4 overflow-hidden rounded border border-line bg-white p-2">
-              <div className="relative aspect-[4/3] w-full sm:aspect-[16/10]">
+            <div className="mt-3 overflow-hidden rounded border border-line bg-white p-2">
+              <div className="relative aspect-square w-full">
                 <Image
-                  alt={SIZE_CHARTS.find((c) => c.id === activeChart)?.label ?? "Size chart"}
+                  alt={`${sizeChart.label} size chart`}
                   className="object-contain"
                   fill
                   priority
                   sizes="(max-width: 768px) 100vw, 680px"
-                  src={SIZE_CHARTS.find((c) => c.id === activeChart)?.image ?? "/images/size-charts/half-sleeve.png"}
+                  src={sizeChart.image}
                 />
               </div>
             </div>

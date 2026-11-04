@@ -14,11 +14,8 @@ export function getGoogleClientId() {
   return readEnv("GOOGLE_CLIENT_ID");
 }
 
-export function getDeliveryConfig() {
-  return {
-    token: readEnv("DELHIVERY_API_TOKEN"),
-    baseUrl: readEnv("DELHIVERY_API_BASE_URL") ?? "https://track.delhivery.com",
-  };
+export function getShippingOriginPin() {
+  return readEnv("INDIA_POST_ORIGIN_PIN") ?? "676107";
 }
 
 export function getRazorpayConfig() {

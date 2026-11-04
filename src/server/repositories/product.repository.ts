@@ -1,4 +1,5 @@
 import type { QueryFilter, Types } from "mongoose";
+import type { JerseyType } from "@/lib/catalog-constants";
 import type { ProductDto } from "@/lib/types/catalog";
 import { connectToDatabase } from "@/server/db/connect";
 import { ProductModel, type ProductAttrs } from "@/server/models/product.model";
@@ -7,6 +8,23 @@ export type ProductData = Omit<ProductAttrs, "category" | "createdAt" | "updated
 
 type PopulatedCategory = { _id: Types.ObjectId; name: string; slug: string } | null;
 type ProductDoc = Omit<ProductAttrs, "category"> & { _id: Types.ObjectId; category: PopulatedCategory };
+
+function normalizeJerseyType(value: unknown): JerseyType | null {
+  switch (value) {
+    case "half-sleeve":
+      return "half-sleeve";
+    case "five-sleeve":
+    case "oversized-five-sleeve":
+    case "five-sleeve-collar":
+      return "five-sleeve";
+    case "full-sleeve":
+    case "full-sleeve-collar":
+    case "full-sleeve-round-neck":
+      return "full-sleeve";
+    default:
+      return null;
+  }
+}
 
 function toDto(doc: ProductDoc): ProductDto {
   return {
@@ -19,7 +37,7 @@ function toDto(doc: ProductDoc): ProductDto {
     team: { name: doc.team?.name ?? "", type: doc.team?.type ?? null },
     season: doc.season,
     player: { name: doc.player.name, number: doc.player.number ?? null },
-    jerseyType: doc.jerseyType ?? null,
+    jerseyType: normalizeJerseyType(doc.jerseyType),
     logoType: doc.logoType,
     fabric: doc.fabric,
     price: doc.price,

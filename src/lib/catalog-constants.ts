@@ -1,6 +1,6 @@
 export const PRODUCT_TYPES = ["jersey", "kit", "boots", "accessory", "other"] as const;
 export const TEAM_TYPES = ["club", "national"] as const;
-export const JERSEY_TYPES = ["half-sleeve", "oversized-five-sleeve", "five-sleeve-collar", "full-sleeve-collar", "full-sleeve-round-neck"] as const;
+export const JERSEY_TYPES = ["half-sleeve", "five-sleeve", "full-sleeve"] as const;
 export const LOGO_TYPES = ["sublimation", "embroidered", "unknown"] as const;
 export const SIZE_SYSTEMS = ["apparel", "uk", "eu", "one-size"] as const;
 export const AVAILABILITY_STATUSES = ["available", "unavailable", "supplier-confirmation-required"] as const;
@@ -33,10 +33,8 @@ export const DEFAULT_SIZE_SYSTEM: Record<ProductType, SizeSystem> = { jersey: "a
 export const TEAM_TYPE_LABELS: Record<TeamType, string> = { club: "Club", national: "National team" };
 export const JERSEY_TYPE_LABELS: Record<JerseyType, string> = {
   "half-sleeve": "Half sleeve",
-  "oversized-five-sleeve": "Oversized five sleeve",
-  "five-sleeve-collar": "Five sleeve with collar",
-  "full-sleeve-collar": "Full sleeve with collar",
-  "full-sleeve-round-neck": "Full sleeve round neck",
+  "five-sleeve": "Five sleeve",
+  "full-sleeve": "Full sleeve",
 };
 export const LOGO_TYPE_LABELS: Record<LogoType, string> = { sublimation: "Sublimation", embroidered: "Embroidered", unknown: "Not specified" };
 export const AVAILABILITY_LABELS: Record<AvailabilityStatus, string> = {

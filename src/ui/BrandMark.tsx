@@ -23,7 +23,7 @@ export function BrandMark({
         }
         height={887}
         priority
-        src={inverse ? "logo-white.png" : "/logo.png"}
+        src={inverse ? "/logo-white.png" : "/logo.png"}
         unoptimized
         width={1774}
       />
