@@ -103,17 +103,9 @@ export function HomeNavbar() {
 
   return (
     <>
-      <div className="flex min-h-9 items-center justify-center bg-ink px-4 text-center text-[11px] font-semibold uppercase text-white sm:text-xs">
-        <Link
-          className="inline-flex items-center gap-2 hover:text-brand"
-          href="/shipping-policy"
-        >
-          Shipping calculated by PIN at checkout{" "}
-          <span className="hidden text-white/60 sm:inline">
-            · See delivery details
-          </span>
-        </Link>
-      </div>
+      {/* <div className="flex min-h-9 items-center justify-center bg-ink px-4 text-center text-[11px] font-semibold uppercase text-white sm:text-xs">
+        <p>For the love of the game.</p>
+      </div> */}
       <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
         <nav
           aria-label="Main navigation"

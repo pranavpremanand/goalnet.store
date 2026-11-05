@@ -13,5 +13,5 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const query = parsed.success ? parsed.data : productListQuerySchema.parse({});
 
   const [result, categories] = await Promise.all([productService.listProducts(query), categoryService.listCategories()]);
-  return <AdminProducts categories={categories} filters={{ q: query.q, category: query.category, status: query.status }} result={result} />;
+  return <AdminProducts categories={categories} filters={{ q: query.q, category: query.category, status: query.status }} key={JSON.stringify([query.q, query.category, query.status, query.page])} result={result} />;
 }

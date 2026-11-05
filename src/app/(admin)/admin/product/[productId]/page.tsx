@@ -20,5 +20,5 @@ export default async function Page({ params }: { params: Promise<{ productId: st
     }),
     categoryService.listCategories(),
   ]);
-  return <AdminProductForm categories={categories} product={product} />;
+  return <AdminProductForm categories={categories} key={product.id} product={product} />;
 }

@@ -71,18 +71,6 @@ export function OrderDetails({ order, accessToken, allowAccountCancellation = fa
         )}
         {cancellationNotice && <p aria-live="polite" className="mt-4 text-sm text-green-800">{cancellationNotice}</p>}
         {cancellationError && <p aria-live="polite" className="mt-4 text-sm text-red-700">{cancellationError}</p>}
-        {currentOrder.status === "confirmed" && paid && (accessToken || allowAccountCancellation) && (
-          <button
-            className="mt-4 min-h-11 border border-red-700 px-5 text-xs font-bold uppercase text-red-700 hover:bg-red-50 disabled:opacity-50"
-            onClick={() => {
-              setCancellationError("");
-              setShowCancellationDialog(true);
-            }}
-            type="button"
-          >
-            Cancel order
-          </button>
-        )}
       </section>
 
       <section>
@@ -117,6 +105,18 @@ export function OrderDetails({ order, accessToken, allowAccountCancellation = fa
           <p className="mt-2 break-all text-sm text-muted">{paid ? `Paid online · ${currentOrder.paymentId ?? ""}` : "Awaiting payment confirmation"}</p>
         </div>
       </section>
+      {/* {currentOrder.status === "confirmed" && paid && (accessToken || allowAccountCancellation) && (
+          <button
+            className="min-h-11 border border-red-700 px-5 text-xs font-bold uppercase text-red-700 hover:bg-red-50 disabled:opacity-50"
+            onClick={() => {
+              setCancellationError("");
+              setShowCancellationDialog(true);
+            }}
+            type="button"
+          >
+            Cancel order
+          </button>
+        )} */}
 
       {showCancellationDialog && (
         <div

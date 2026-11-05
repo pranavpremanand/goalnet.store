@@ -9,10 +9,34 @@ import {
 
 export function ContactForm() {
   const [sent, setSent] = useState(false);
+  const [emailDelivered, setEmailDelivered] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
-  function submitMessage(event: React.FormEvent<HTMLFormElement>) {
+  async function submitMessage(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSent(true);
+    if (sending) return;
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    setSending(true);
+    setError("");
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(formData.entries())),
+      });
+      const result = (await response.json()) as { emailDelivered?: boolean; error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Your message could not be sent. Please try again.");
+      setEmailDelivered(Boolean(result.emailDelivered));
+      setSent(true);
+      form.reset();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Your message could not be sent. Please try again.");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -37,11 +61,16 @@ export function ContactForm() {
             <div>
               <p className="font-semibold">Message received</p>
               <p className="mt-1 text-sm text-muted">
-                Thanks for reaching out. We’ll get back to you soon.
+                {emailDelivered
+                  ? "Thanks for reaching out. We’ll get back to you soon."
+                  : "Your message was saved, but we couldn’t send our email notification. You can also reach us at contactgoalnet@gmail.com."}
               </p>
               <button
                 className="mt-3 text-xs font-bold uppercase underline"
-                onClick={() => setSent(false)}
+                onClick={() => {
+                  setSent(false);
+                  setError("");
+                }}
                 type="button"
               >
                 Send another
@@ -89,11 +118,13 @@ export function ContactForm() {
                 required
               />
             </label>
+            {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
             <button
-              className="inline-flex min-h-12 items-center bg-brand px-7 text-sm font-bold uppercase transition hover:bg-[#d8df0d]"
+              className="inline-flex min-h-12 items-center bg-brand px-7 text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={sending}
               type="submit"
             >
-              Send message
+              {sending ? "Sending..." : "Send message"}
             </button>
           </form>
         )}

@@ -1,6 +1,7 @@
-import type { QueryFilter, Types } from "mongoose";
+import { Types, type QueryFilter } from "mongoose";
 import type { JerseyType } from "@/lib/catalog-constants";
 import type { ProductDto } from "@/lib/types/catalog";
+import type { StorePriceBand } from "@/lib/types/storefront";
 import { connectToDatabase } from "@/server/db/connect";
 import { ProductModel, type ProductAttrs } from "@/server/models/product.model";
 
@@ -102,6 +103,43 @@ export async function listActiveProducts(filter: StorefrontFilter): Promise<Prod
 
   const docs = await ProductModel.find(query).sort({ displayOrder: 1, createdAt: -1 }).limit(filter.limit ?? 200).populate("category", "name slug").lean<ProductDoc[]>();
   return docs.map(toDto);
+}
+
+export async function listActivePriceBands(categoryIds: string[]): Promise<StorePriceBand[]> {
+  if (categoryIds.length === 0) return [];
+  await connectToDatabase();
+
+  const [bounds] = await ProductModel.aggregate<{ minPrice: number; maxPrice: number }>([
+    {
+      $match: {
+        isActive: true,
+        category: { $in: categoryIds.map((id) => new Types.ObjectId(id)) },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        minPrice: { $min: "$price" },
+        maxPrice: { $max: "$price" },
+      },
+    },
+  ]);
+
+  if (!bounds) return [];
+
+  const minBandStart = Math.floor(bounds.minPrice / 100) * 100;
+  const maxBandStart = Math.floor(bounds.maxPrice / 100) * 100;
+  const requiredStep = Math.max(100, Math.ceil((maxBandStart - minBandStart + 1) / 10));
+  const magnitude = 10 ** Math.floor(Math.log10(requiredStep));
+  const step = [1, 2, 5, 10].map((multiple) => multiple * magnitude).find((candidate) => candidate >= requiredStep) ?? requiredStep;
+  const firstBandStart = Math.floor(bounds.minPrice / step) * step;
+  const lastBandStart = Math.floor(bounds.maxPrice / step) * step;
+  const bandCount = Math.max(5, Math.floor((lastBandStart - firstBandStart) / step) + 1);
+
+  return Array.from({ length: bandCount }, (_, index) => {
+    const minPrice = firstBandStart + index * step;
+    return { minPrice, maxPrice: minPrice + step - 1 };
+  });
 }
 
 export type ProductSearchRecord = {

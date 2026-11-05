@@ -1,36 +1,35 @@
-import { apiHandler } from "@/server/http/handler";
+import { apiHandler, readJson } from "@/server/http/handler";
 import { requireUser } from "@/server/auth/current-user";
 import { BadRequestError } from "@/server/errors";
 import { addUserAddress } from "@/server/repositories/user.repository";
+import { addressSchema, MAX_SAVED_ADDRESSES } from "@/lib/validation/account";
+
+export const GET = apiHandler(async () => {
+  const user = await requireUser();
+  return Response.json({ addresses: user.addresses });
+});
 
 export const POST = apiHandler(async (request) => {
   const user = await requireUser();
-  const body = await request.json().catch(() => null);
-
-  const name = String(body?.name ?? "").trim();
-  const email = String(body?.email ?? "").trim();
-  const phone = String(body?.phone ?? "").trim();
-  const pin = String(body?.pin ?? "").trim();
-  const state = String(body?.state ?? "").trim();
-  const city = String(body?.city ?? "").trim();
-  const address = String(body?.address ?? "").trim();
-  const apartment = String(body?.apartment ?? "").trim();
-
-  if (!name || !email || !phone || !pin || !state || !city || !address) {
-    throw new BadRequestError("All required address fields must be provided.");
+  const address = await readJson(request, addressSchema);
+  const duplicateAddress = user.addresses.find((saved) =>
+    saved.name === address.name &&
+    saved.email === address.email &&
+    saved.phone === address.phone &&
+    saved.pin === address.pin &&
+    saved.state === address.state &&
+    saved.city === address.city &&
+    saved.address === address.address &&
+    saved.apartment === address.apartment
+  );
+  if (!duplicateAddress && user.addresses.length >= MAX_SAVED_ADDRESSES) {
+    throw new BadRequestError(`You can save up to ${MAX_SAVED_ADDRESSES} addresses.`);
   }
 
-  const addresses = await addUserAddress(user.id, {
-    name,
-    email,
-    phone,
-    pin,
-    state,
-    city,
-    address,
-    apartment,
-  });
+  const addresses = duplicateAddress
+    ? user.addresses
+    : await addUserAddress(user.id, address);
+  const savedAddressId = duplicateAddress?.id ?? addresses?.[addresses.length - 1]?.id;
 
-  return Response.json({ addresses }, { status: 201 });
+  return Response.json({ addresses, savedAddressId }, { status: 201 });
 });
-

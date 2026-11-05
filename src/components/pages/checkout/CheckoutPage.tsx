@@ -3,21 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { LuMinus as Minus, LuPlus as Plus, LuTrash2 as Trash2 } from "react-icons/lu";
 import { formatRupees } from "@/lib/format";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
-import { addSavedAddress, useDemoStore, type OrderAddress } from "@/lib/demo-store";
+import { useDemoStore, type OrderAddress } from "@/lib/demo-store";
+import { apiRequest } from "@/lib/api-client";
 import { signOutUser } from "@/lib/auth-client";
 import { createCheckoutSession, openRazorpayCheckout, verifyPayment } from "@/lib/razorpay-client";
 import { CheckoutMethodSelection } from "./CheckoutMethodSelection";
 
 type PincodeLookup = { status: "idle" | "loading" | "success" | "error" | "blocked"; message: string };
+type SavedCheckoutAddress = OrderAddress & { id: string };
 
 const inputClass = "mt-1.5 w-full border border-line p-3 text-sm outline-none focus:border-ink";
 
 export function CheckoutPage() {
-  const router = useRouter();
   const { items, total, updateQuantity, removeItem, clearCart, refreshCart, isLoading: cartLoading, isPending: cartPending, error: cartError } = useLocalCart();
   const { session } = useDemoStore();
   const [guest, setGuest] = useState(false);
@@ -26,6 +26,9 @@ export function CheckoutPage() {
   const [payError, setPayError] = useState("");
   const [draft, setDraft] = useState<Partial<OrderAddress>>({});
   const [choice, setChoice] = useState<number | "new">(0);
+  const [savedAddressState, setSavedAddressState] = useState<{ email: string; addresses: SavedCheckoutAddress[] } | null>(null);
+  const [savedAddressError, setSavedAddressError] = useState<{ email: string; message: string } | null>(null);
+  const [savedAddressReload, setSavedAddressReload] = useState(0);
   const [billingDifferent, setBillingDifferent] = useState(false);
   const [billing, setBilling] = useState("");
   const [saveForLater, setSaveForLater] = useState(true);
@@ -33,13 +36,40 @@ export function CheckoutPage() {
   const [shippingQuote, setShippingQuote] = useState<{ pin: string; quantity: number; fee: number } | null>(null);
   const lookupRequestId = useRef(0);
 
-  const saved = session?.addresses ?? [];
+  const saved = session && savedAddressState?.email === session.email ? savedAddressState.addresses : [];
+  const savedAddressesError = session && savedAddressError?.email === session.email ? savedAddressError.message : "";
+  const hasLoadedSavedAddresses = Boolean(session && savedAddressState?.email === session.email);
+  const savedAddressesLoading = Boolean(session && !hasLoadedSavedAddresses && !savedAddressesError);
   const savedChoice = typeof choice === "number" ? saved[choice] : undefined;
   const useSaved = Boolean(savedChoice);
   const prefill: Partial<OrderAddress> = session ? { name: session.name, email: session.email, phone: session.phone } : {};
   const stage = session || guest ? "details" : "method";
   const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
   const hasUnavailableItems = items.some((item) => !item.available);
+
+  useEffect(() => {
+    const email = session?.email ?? "";
+    if (!email) return;
+
+    let active = true;
+    async function fetchAddresses() {
+      try {
+        const result = await apiRequest<{ addresses: SavedCheckoutAddress[] }>("/api/account/addresses");
+        if (!active) return;
+        setSavedAddressState({ email, addresses: result.addresses });
+        setSavedAddressError(null);
+        setChoice(result.addresses.length ? 0 : "new");
+      } catch (error) {
+        if (!active) return;
+        setSavedAddressError({ email, message: error instanceof Error ? error.message : "Saved addresses could not be loaded." });
+      }
+    }
+
+    void fetchAddresses();
+    return () => {
+      active = false;
+    };
+  }, [session?.email, savedAddressReload]);
 
   function value(field: keyof OrderAddress) {
     return draft[field] ?? prefill[field] ?? "";
@@ -135,6 +165,17 @@ export function CheckoutPage() {
     setShippingQuote(null);
   }
 
+  function selectAddress(nextChoice: number | "new") {
+    const nextAddress = typeof nextChoice === "number" ? saved[nextChoice] : undefined;
+    const nextPin = nextAddress?.pin ?? String(draft.pin ?? prefill.pin ?? "");
+    if (nextPin !== currentPin) {
+      lookupRequestId.current += 1;
+      setPincodeLookup({ status: "idle", message: "" });
+      setShippingQuote(null);
+    }
+    setChoice(nextChoice);
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (paying) return;
@@ -144,6 +185,25 @@ export function CheckoutPage() {
     }
     setPaying(true);
     setPayError("");
+
+    if (session && saveForLater && !useSaved) {
+      try {
+        const result = await apiRequest<{ addresses: SavedCheckoutAddress[]; savedAddressId: string }>("/api/account/addresses", {
+          method: "POST",
+          body: JSON.stringify(shipping),
+        });
+        setSavedAddressState({ email: session.email, addresses: result.addresses });
+        const savedAddressIndex = result.addresses.findIndex((address) => address.id === result.savedAddressId);
+        if (savedAddressIndex < 0) {
+          throw new Error("The address was saved, but checkout could not select it. Reload checkout to refresh your saved addresses.");
+        }
+        setChoice(savedAddressIndex);
+      } catch (error) {
+        setPayError(error instanceof Error ? error.message : "The address could not be saved to your account.");
+        setPaying(false);
+        return;
+      }
+    }
 
     // The server reads the persisted cart and reprices it from the current catalog.
     const created = await createCheckoutSession({
@@ -156,27 +216,26 @@ export function CheckoutPage() {
       return;
     }
 
-    const session = created.data;
-    function finish() {
-      if (saveForLater && !useSaved) addSavedAddress(shipping);
-      setPlacedRef(session.orderNumber);
-      router.push(`/order-confirmation/${session.accessToken}`);
-      clearCart();
+    const checkoutSession = created.data;
+    async function finish() {
+      setPlacedRef(checkoutSession.orderNumber);
+      await clearCart();
+      window.location.replace(`/order-confirmation/${checkoutSession.accessToken}`);
     }
 
     await openRazorpayCheckout({
-      session,
+      session: checkoutSession,
       prefill: { name: shipping.name, email: shipping.email, contact: shipping.phone },
       onDismiss: () => setPaying(false),
       onFailure: setPayError,
       onSuccess: async (response) => {
-        const verified = await verifyPayment(session.accessToken, response);
+        const verified = await verifyPayment(checkoutSession.accessToken, response);
         // A network or server hiccup still lands on the confirmation page, which keeps checking until the payment is confirmed.
         if (verified.ok || verified.status === 0 || verified.status >= 500) {
           finish();
           return;
         }
-        setPayError(`${verified.error} Reference: ${session.orderNumber}.`);
+        setPayError(`${verified.error} Reference: ${checkoutSession.orderNumber}.`);
         setPaying(false);
       },
     });
@@ -222,23 +281,30 @@ export function CheckoutPage() {
                 {session ? <>Signed in as <span className="font-semibold text-ink">{session.name}</span> ({session.email})<button className="font-bold uppercase underline" onClick={() => void signOutUser()} type="button">Sign out</button></> : <>Checking out as a guest. No account or password needed.<button className="font-bold uppercase underline" onClick={() => setGuest(false)} type="button">Change</button></>}
               </p>
 
+              {savedAddressesLoading && <p className="mt-5 text-sm text-muted" role="status">Loading your saved delivery addresses…</p>}
+              {savedAddressesError && (
+                <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-red-700" role="alert">
+                  <span>{savedAddressesError}</span>
+                  <button className="font-bold underline" onClick={() => setSavedAddressReload((current) => current + 1)} type="button">Try again</button>
+                </div>
+              )}
               {saved.length > 0 && (
                 <fieldset className="mt-5 grid gap-3">
                   <legend className="sr-only">Saved addresses</legend>
                   {saved.map((address, index) => (
-                    <label className={`flex cursor-pointer items-start gap-3 border p-4 ${choice === index ? "border-ink bg-canvas" : "border-line"}`} key={`${address.pin}-${index}`}>
-                      <input checked={choice === index} className="mt-1 accent-[#f2fa18]" name="saved-address" onChange={() => { lookupRequestId.current += 1; setChoice(index); setPincodeLookup({ status: "idle", message: "" }); setShippingQuote(null); }} type="radio" />
-                      <span className="text-sm"><span className="block font-semibold">{address.name}</span><span className="mt-1 block text-muted">{[address.apartment, address.address].filter(Boolean).join(", ")}, {address.city}, {address.state} {address.pin}</span><span className="mt-1 block text-muted">{address.phone} · {address.email}</span></span>
+                    <label className={`flex cursor-pointer items-start gap-3 border p-4 ${choice === index ? "border-ink bg-canvas" : "border-line"}`} key={address.id}>
+                      <input checked={choice === index} className="mt-1 accent-[#f2fa18]" name="saved-address" onChange={() => selectAddress(index)} type="radio" />
+                      <span className="text-sm"><span className="block font-semibold">{address.name}{index === 0 && <span className="ml-2 text-[10px] font-bold uppercase text-muted">Default address</span>}</span><span className="mt-1 block text-muted">{[address.apartment, address.address].filter(Boolean).join(", ")}, {address.city}, {address.state} {address.pin}</span><span className="mt-1 block text-muted">{address.phone} · {address.email}</span></span>
                     </label>
                   ))}
                   <label className={`flex cursor-pointer items-center gap-3 border p-4 text-sm font-semibold ${choice === "new" ? "border-ink bg-canvas" : "border-line"}`}>
-                    <input checked={choice === "new"} className="accent-[#f2fa18]" name="saved-address" onChange={() => { lookupRequestId.current += 1; setChoice("new"); setPincodeLookup({ status: "idle", message: "" }); setShippingQuote(null); }} type="radio" />
+                    <input checked={choice === "new"} className="accent-[#f2fa18]" name="saved-address" onChange={() => selectAddress("new")} type="radio" />
                     Use a new address
                   </label>
                 </fieldset>
               )}
 
-              {!useSaved && (
+              {!useSaved && !(session && savedAddressesLoading) && (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <label className="text-xs font-semibold">Full name<input autoComplete="name" className={inputClass} onChange={(event) => setField("name", event.target.value)} required value={value("name")} /></label>
                   <label className="text-xs font-semibold">Mobile number<input autoComplete="tel" className={inputClass} inputMode="tel" onChange={(event) => setField("phone", event.target.value)} pattern="[+0-9 ()\-]{10,15}" required title="Enter a valid mobile number" value={value("phone")} /></label>

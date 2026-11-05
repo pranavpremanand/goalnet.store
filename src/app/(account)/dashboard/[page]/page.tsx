@@ -48,6 +48,7 @@ async function DashboardRoute({ params }: { params: Promise<{ page: string }> })
     <CustomerDashboard
       favoriteProducts={favoriteProducts}
       initialTickets={tickets}
+      key={page}
       page={page}
       placedOrders={placedOrders}
       suggestedProducts={suggestedProducts}

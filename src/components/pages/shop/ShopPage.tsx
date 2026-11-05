@@ -4,44 +4,42 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { LuFilter as Filter, LuSlidersHorizontal as SlidersHorizontal, LuX as X } from "react-icons/lu";
+import { formatRupees } from "@/lib/format";
 import { ProductCard } from "@/components/common/ProductCard";
-import { PRODUCT_TYPE_LABELS, type ProductType } from "@/lib/catalog-constants";
-import type { StoreCategory, StoreProduct } from "@/lib/types/storefront";
+import type { StoreCategory, StorePriceBand, StoreProduct } from "@/lib/types/storefront";
 
-const priceBands = [
-  { label: "Under ₹2,500", min: 0, max: 2500 },
-  { label: "₹2,500 – ₹3,000", min: 2500, max: 3000 },
-  { label: "Over ₹3,000", min: 3000, max: Infinity },
-];
-
-export function ShopPage({ products: allProducts, categories }: { products: StoreProduct[]; categories: StoreCategory[] }) {
-  const searchParams = useSearchParams();
-  const searchQuery = searchParams.get("q") ?? "";
+function ShopContent({
+  products: allProducts,
+  categories,
+  priceBands,
+  searchQuery,
+  initialCategory,
+}: {
+  products: StoreProduct[];
+  categories: StoreCategory[];
+  priceBands: StorePriceBand[];
+  searchQuery: string;
+  initialCategory?: string;
+}) {
   const query = searchQuery.toLowerCase();
-  const initialCategory = categories.find((category) => category.slug === searchParams.get("category"))?.slug;
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
-  const [selectedTypes, setSelectedTypes] = useState<ProductType[]>([]);
-  const [priceBand, setPriceBand] = useState("");
+  const [selectedPriceBand, setSelectedPriceBand] = useState<string | null>(null);
   const [sort, setSort] = useState("featured");
-
-  // Only offer product types that actually exist in the catalog.
-  const availableTypes = useMemo(() => [...new Set(allProducts.map((product) => product.productType))], [allProducts]);
+  const selectedPrice = priceBands.find((band) => `${band.minPrice}-${band.maxPrice}` === selectedPriceBand);
 
   const products = useMemo(() => {
     let results = allProducts.filter((product) => {
       const searchable = `${product.name} ${product.category.name} ${product.brand} ${product.teamName}`.toLowerCase();
       const matchesQuery = !query || searchable.includes(query);
       const matchesCategory = !selectedCategories.length || selectedCategories.includes(product.category.slug);
-      const matchesType = !selectedTypes.length || selectedTypes.includes(product.productType);
-      const range = priceBands.find((band) => band.label === priceBand);
-      const matchesPrice = !range || (product.price >= range.min && product.price <= range.max);
-      return matchesQuery && matchesCategory && matchesType && matchesPrice;
+      const matchesPrice = !selectedPrice || (product.price >= selectedPrice.minPrice && product.price <= selectedPrice.maxPrice);
+      return matchesQuery && matchesCategory && matchesPrice;
     });
     if (sort === "low") results = [...results].sort((a, b) => a.price - b.price);
     if (sort === "high") results = [...results].sort((a, b) => b.price - a.price);
     return results;
-  }, [allProducts, priceBand, query, selectedCategories, selectedTypes, sort]);
+  }, [allProducts, query, selectedCategories, selectedPrice, sort]);
 
   function toggleValue<T extends string>(value: T, current: T[], setter: (value: T[]) => void) {
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
@@ -49,8 +47,7 @@ export function ShopPage({ products: allProducts, categories }: { products: Stor
 
   function clearFilters() {
     setSelectedCategories([]);
-    setSelectedTypes([]);
-    setPriceBand("");
+    setSelectedPriceBand(null);
   }
 
   const filterContent = (
@@ -71,27 +68,31 @@ export function ShopPage({ products: allProducts, categories }: { products: Stor
           </div>
         </div>
       )}
-      {availableTypes.length > 1 && (
+      {priceBands.length > 0 && (
         <div>
-          <h2 className="mb-3 text-xs font-bold uppercase">Type</h2>
-          <div className="flex flex-wrap gap-2">
-            {availableTypes.map((type) => (
-              <button aria-pressed={selectedTypes.includes(type)} className={`border px-3 py-1.5 text-xs transition ${selectedTypes.includes(type) ? "border-ink bg-ink text-white" : "border-line hover:border-ink"}`} key={type} onClick={() => toggleValue(type, selectedTypes, setSelectedTypes)} type="button">{PRODUCT_TYPE_LABELS[type]}</button>
-            ))}
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase">Price</h2>
+            {selectedPriceBand && <button className="text-[10px] uppercase text-muted" onClick={() => setSelectedPriceBand(null)} type="button">Clear</button>}
+          </div>
+          <div className="space-y-2.5">
+            {priceBands.map((band) => {
+              const value = `${band.minPrice}-${band.maxPrice}`;
+              return (
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm" key={value}>
+                  <input
+                    checked={selectedPriceBand === value}
+                    className="size-4 accent-[#f2fa18]"
+                    name="price"
+                    onChange={() => setSelectedPriceBand(selectedPriceBand === value ? null : value)}
+                    type="radio"
+                  />
+                  {formatRupees(band.minPrice)} – {formatRupees(band.maxPrice)}
+                </label>
+              );
+            })}
           </div>
         </div>
       )}
-      <div>
-        <h2 className="mb-3 text-xs font-bold uppercase">Price</h2>
-        <div className="space-y-2.5">
-          {priceBands.map((band) => (
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm" key={band.label}>
-              <input checked={priceBand === band.label} className="size-4 accent-[#f2fa18]" name="price" onChange={() => setPriceBand(priceBand === band.label ? "" : band.label)} type="radio" />
-              {band.label}
-            </label>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -148,5 +149,23 @@ export function ShopPage({ products: allProducts, categories }: { products: Stor
         </div>
       )}
     </main>
+  );
+}
+
+export function ShopPage({ products, categories, priceBands }: { products: StoreProduct[]; categories: StoreCategory[]; priceBands: StorePriceBand[] }) {
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const initialCategory = categories.find((category) => category.slug === categoryParam)?.slug;
+  const searchQuery = searchParams.get("q") ?? "";
+
+  return (
+    <ShopContent
+      categories={categories}
+      initialCategory={initialCategory}
+      key={searchParams.toString()}
+      priceBands={priceBands}
+      products={products}
+      searchQuery={searchQuery}
+    />
   );
 }

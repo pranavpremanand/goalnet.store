@@ -20,6 +20,25 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Contact form email
+
+The contact form stores submissions in MongoDB and sends notifications to `contactgoalnet@gmail.com`. Configure these server-only environment variables to enable email delivery:
+
+```env
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+```
+
+`SMTP_FROM` is optional and defaults to `SMTP_USER`. For Gmail, use an app password rather than your account password. Without SMTP configuration, form messages are still saved and visible in the admin contact messages page, but notification emails are not delivered.
+
+## Order notification email
+
+Order notifications use Resend after successful payment confirmation (including the Razorpay webhook fallback) and after a customer cancellation. Set `RESEND_API_KEY` in the server environment and optionally set `RESEND_FROM_EMAIL` to a sender address on a verified Resend domain. The default `onboarding@resend.dev` sender is for Resend testing only. Notification records prevent duplicate messages when Razorpay retries webhook events.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

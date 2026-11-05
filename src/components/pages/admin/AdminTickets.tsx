@@ -37,6 +37,7 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
         setTickets(data.tickets);
         if (selectedTicketId && !data.tickets.some((t: TicketDto) => t.id === selectedTicketId)) {
           setSelectedTicketId(data.tickets[0]?.id ?? null);
+          setReplyText("");
         }
       }
     } catch {
@@ -45,6 +46,11 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
       setRefreshing(false);
     }
   }, [filterStatus, search, selectedTicketId]);
+
+  function selectTicket(ticketId: string) {
+    if (ticketId !== selectedTicketId) setReplyText("");
+    setSelectedTicketId(ticketId);
+  }
 
   function handleFilterClick(status: string) {
     setFilterStatus(status);
@@ -187,7 +193,7 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
                       isSelected ? "bg-brand/10 border-l-4 border-l-ink" : "hover:bg-canvas"
                     }`}
                     key={t.id}
-                    onClick={() => setSelectedTicketId(t.id)}
+                    onClick={() => selectTicket(t.id)}
                     type="button"
                   >
                     <div className="flex items-center justify-between gap-2">

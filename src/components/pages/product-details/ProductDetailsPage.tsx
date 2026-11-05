@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  LuCircleAlert as CircleAlert,
   LuArrowRight as ArrowRight,
   LuCheck as Check,
   LuShare2 as Share2,
@@ -24,6 +25,8 @@ type PincodeLookup = {
   status: "idle" | "loading" | "success" | "error" | "blocked";
   message: string;
 };
+
+type Notice = { type: "success" | "error"; message: string };
 
 const SIZE_CHARTS: Record<JerseyType, { label: string; image: string }> = {
   "half-sleeve": {
@@ -55,7 +58,7 @@ export function ProductDetailsPage({
     message: "",
   });
   const [showSizeGuide, setShowSizeGuide] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [expanded, setExpanded] = useState("Description");
   const { addItem, isPending: cartPending } = useLocalCart();
   const sizeChart =
@@ -82,21 +85,24 @@ export function ProductDetailsPage({
 
   async function addToBag() {
     if (!size) {
-      setNotice(
-        product.sizeSystem === "one-size"
-          ? "Select the option to add this item to your bag."
-          : "Choose a size to add this item to your bag.",
-      );
+      setNotice({
+        type: "error",
+        message:
+          product.sizeSystem === "one-size"
+            ? "Select the option to add this item to your bag."
+            : "Choose a size to add this item to your bag.",
+      });
       return;
     }
     const result = await addItem(product, size);
     if (!result.ok) {
-      setNotice(result.error);
+      setNotice({ type: "error", message: result.error });
       return;
     }
-    setNotice(
-      `${product.name}, ${sizeLabel}${product.sizeSystem === "one-size" ? "" : "size "}${size}, added to your bag.`,
-    );
+    setNotice({
+      type: "success",
+      message: `${product.name}, ${sizeLabel}${product.sizeSystem === "one-size" ? "" : "size "}${size}, added to your bag.`,
+    });
   }
 
   async function checkPincode(pin: string) {
@@ -170,7 +176,7 @@ export function ProductDetailsPage({
       await navigator.share({ title: product.name, url: window.location.href });
     } else {
       await navigator.clipboard?.writeText(window.location.href);
-      setNotice("Product link copied.");
+      setNotice({ type: "success", message: "Product link copied." });
     }
   }
 
@@ -272,7 +278,7 @@ export function ProductDetailsPage({
                     key={option.size}
                     onClick={() => {
                       setSize(option.size);
-                      setNotice("");
+                      setNotice(null);
                     }}
                     type="button"
                   >
@@ -316,15 +322,20 @@ export function ProductDetailsPage({
           </button> */}
           {notice && (
             <p
-              aria-live="polite"
-              className="mt-3 flex items-center gap-2 bg-canvas p-3 text-sm"
+              aria-live={notice.type === "error" ? "assertive" : "polite"}
+              className={`mt-3 flex items-center gap-2 bg-canvas p-3 text-sm ${notice.type === "error" ? "text-red-700" : "text-[#16812c]"}`}
+              role={notice.type === "error" ? "alert" : "status"}
             >
-              <Check className="shrink-0 text-[#16812c]" size={16} />
-              {notice}
+              {notice.type === "error" ? (
+                <CircleAlert className="shrink-0" size={16} />
+              ) : (
+                <Check className="shrink-0" size={16} />
+              )}
+              {notice.message}
               <button
                 aria-label="Dismiss message"
                 className="ml-auto"
-                onClick={() => setNotice("")}
+                onClick={() => setNotice(null)}
                 type="button"
               >
                 <X size={15} />

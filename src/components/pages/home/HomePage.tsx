@@ -1,9 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  LuArrowRight as ArrowRight,
-  LuQuote as Quote,
-} from "react-icons/lu";
+import { LuArrowRight as ArrowRight, LuQuote as Quote } from "react-icons/lu";
 import { HomeHero } from "@/components/pages/home/HomeHero";
 import { HomeCategories } from "@/components/pages/home/HomeCategories";
 import { HomeFeatured } from "@/components/pages/home/HomeFeatured";
@@ -63,7 +60,7 @@ export function HomePage() {
             src="/images/home-about.jpg"
           />
           <span className="absolute bottom-4 left-4 bg-brand px-3 py-2 text-[10px] font-bold uppercase">
-            Since the first whistle
+            Wear your side. Own your story.
           </span>
         </div>
         <div className="max-w-xl">
@@ -71,7 +68,7 @@ export function HomePage() {
             About GOALNET
           </p>
           <h2 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
-            Where Football Lives Beyond 90 Minutes.
+            Greatness is a journey. Wear every chapter.
           </h2>
           <p className="mt-6 font-copy text-sm leading-7 text-muted">
             Football is more than a game. It&apos;s about the clubs we support,

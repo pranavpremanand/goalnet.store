@@ -6,5 +6,5 @@ export const metadata = { title: "New product | GoalNet Admin" };
 
 export default async function Page() {
   await requireAdminPage();
-  return <AdminProductForm categories={await categoryService.listCategories()} />;
+  return <AdminProductForm categories={await categoryService.listCategories()} key="new-product" />;
 }

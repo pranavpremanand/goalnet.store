@@ -1,5 +1,5 @@
 import type { ProductDto } from "@/lib/types/catalog";
-import type { StoreCategory, StoreProduct } from "@/lib/types/storefront";
+import type { StoreCategory, StorePriceBand, StoreProduct } from "@/lib/types/storefront";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as productRepository from "@/server/repositories/product.repository";
 
@@ -41,6 +41,10 @@ export async function listStoreCategories(): Promise<StoreCategory[]> {
 export async function listStoreProducts(): Promise<StoreProduct[]> {
   const products = await productRepository.listActiveProducts({ categoryIds: await activeCategoryIds() });
   return products.map(toStoreProduct);
+}
+
+export async function listStorePriceBands(): Promise<StorePriceBand[]> {
+  return productRepository.listActivePriceBands(await activeCategoryIds());
 }
 
 export async function searchStoreProducts(query: string) {

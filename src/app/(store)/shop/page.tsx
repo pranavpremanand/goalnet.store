@@ -1,12 +1,16 @@
 import { Suspense } from "react";
 import { ShopPage } from "@/components/pages/shop/ShopPage";
-import { listStoreCategories, listStoreProducts } from "@/server/services/storefront.service";
+import { listStoreCategories, listStorePriceBands, listStoreProducts } from "@/server/services/storefront.service";
 
 export const metadata = { title: "Shop | GoalNet" };
 
 async function Shop() {
-  const [products, categories] = await Promise.all([listStoreProducts(), listStoreCategories()]);
-  return <ShopPage categories={categories} products={products} />;
+  const [products, categories, priceBands] = await Promise.all([
+    listStoreProducts(),
+    listStoreCategories(),
+    listStorePriceBands(),
+  ]);
+  return <ShopPage categories={categories} priceBands={priceBands} products={products} />;
 }
 
 export default function Page() {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LuBoxes as Boxes, LuCircleHelp as CircleHelp, LuClipboardList as ClipboardList, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuPanelsTopLeft as PanelsTopLeft, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
+import { LuBoxes as Boxes, LuCircleHelp as CircleHelp, LuClipboardList as ClipboardList, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuMail as Mail, LuPanelsTopLeft as PanelsTopLeft, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
 import { signOutUser } from "@/lib/auth-client";
 
 const items = [
@@ -13,6 +13,7 @@ const items = [
   { href: "/admin/hero", label: "Homepage hero", icon: PanelsTopLeft },
   { href: "/admin/manage-orders", label: "Orders", icon: Boxes },
   { href: "/admin/tickets", label: "Support tickets", icon: CircleHelp },
+  { href: "/admin/contact-messages", label: "Contact messages", icon: Mail },
 ];
 
 export function AdminSidebar() {

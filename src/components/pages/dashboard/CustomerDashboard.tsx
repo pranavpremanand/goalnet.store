@@ -146,6 +146,7 @@ export function CustomerDashboard({
         setTickets(data.tickets);
         if (selectedTicketId && !data.tickets.some((t: TicketDto) => t.id === selectedTicketId)) {
           setSelectedTicketId(data.tickets[0]?.id ?? null);
+          setChatReply("");
         }
       }
     } catch {
@@ -300,6 +301,8 @@ export function CustomerDashboard({
         setTickets((curr) => [data.ticket, ...curr]);
         setSelectedTicketId(data.ticket.id);
         setShowNewTicketForm(false);
+        setTicketSubject("Order status");
+        setTicketOrderRef(latest?.ref ?? "");
         setTicketMessage("");
         setNotice("Ticket created! A support representative will respond shortly.");
       } else {
@@ -338,6 +341,22 @@ export function CustomerDashboard({
     } finally {
       setSendingReply(false);
     }
+  }
+
+  function resetTicketDraft() {
+    setTicketSubject("Order status");
+    setTicketOrderRef(latest?.ref ?? "");
+    setTicketMessage("");
+  }
+
+  function toggleNewTicketForm() {
+    resetTicketDraft();
+    setShowNewTicketForm((previous) => !previous);
+  }
+
+  function selectTicket(ticketId: string) {
+    if (ticketId !== selectedTicketId) setChatReply("");
+    setSelectedTicketId(ticketId);
   }
 
   const pageTitle: Record<string, string> = {
@@ -462,7 +481,7 @@ export function CustomerDashboard({
                   See all
                 </Link>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {(favorites.length > 0 ? favorites : suggestedProducts).slice(0, 3).map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -777,7 +796,7 @@ export function CustomerDashboard({
                 </button>
                 <button
                   className="flex items-center gap-1.5 bg-brand px-4 py-2 text-xs font-bold uppercase text-ink hover:bg-brand/90 transition"
-                  onClick={() => setShowNewTicketForm((prev) => !prev)}
+                  onClick={toggleNewTicketForm}
                   type="button"
                 >
                   <Plus size={15} /> {showNewTicketForm ? "View conversations" : "Create ticket"}
@@ -840,7 +859,10 @@ export function CustomerDashboard({
                   {tickets.length > 0 && (
                     <button
                       className="border border-line px-5 py-3 text-xs font-bold uppercase hover:bg-canvas"
-                      onClick={() => setShowNewTicketForm(false)}
+                      onClick={() => {
+                        resetTicketDraft();
+                        setShowNewTicketForm(false);
+                      }}
                       type="button"
                     >
                       Cancel
@@ -858,7 +880,7 @@ export function CustomerDashboard({
                 <p className="mt-1 text-sm">Need help with an order, delivery, or product? Open a ticket to chat with support.</p>
                 <button
                   className="mt-4 bg-brand px-5 py-2.5 text-xs font-bold uppercase text-ink hover:bg-brand/90 transition"
-                  onClick={() => setShowNewTicketForm(true)}
+                  onClick={toggleNewTicketForm}
                   type="button"
                 >
                   Create your first ticket
@@ -880,7 +902,7 @@ export function CustomerDashboard({
                           isSelected ? "bg-brand/10 border-l-4 border-l-ink" : "hover:bg-canvas"
                         }`}
                         key={t.id}
-                        onClick={() => setSelectedTicketId(t.id)}
+                        onClick={() => selectTicket(t.id)}
                         type="button"
                       >
                         <div className="flex items-center justify-between gap-1">

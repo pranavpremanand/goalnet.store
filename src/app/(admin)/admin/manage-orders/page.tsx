@@ -10,5 +10,5 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const raw = await searchParams;
   const parsed = orderListQuerySchema.safeParse(Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])));
   const query = parsed.success ? parsed.data : orderListQuerySchema.parse({});
-  return <AdminOrders filters={{ q: query.q, status: query.status }} result={await listAdminOrders(query)} />;
+  return <AdminOrders filters={{ q: query.q, status: query.status }} key={JSON.stringify([query.q, query.status])} result={await listAdminOrders(query)} />;
 }

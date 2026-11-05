@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   LuCheck as Check,
   LuCopy as Copy,
-  LuMail as Mail,
 } from "react-icons/lu";
 import type { OrderDto } from "@/lib/types/orders";
 import { OrderDetails } from "@/components/pages/orders/OrderDetails";
@@ -75,8 +74,7 @@ export function OrderConfirmationPage({
         </p>
         {paid ? (
           <p className="mx-auto mt-4 flex max-w-md items-start justify-center gap-2 font-copy text-sm leading-6 text-muted">
-            A confirmation will be emailed to {order.shipping.email} once the
-            email service is connected. Keep your order number handy.
+            Your order details are below. Keep your order number handy.
           </p>
         ) : (
           <p

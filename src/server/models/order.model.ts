@@ -1,6 +1,9 @@
 import { Schema, model, models, type Model, type Types } from "mongoose";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/types/orders";
 
+export type OrderNotificationEvent = "created" | "cancelled";
+export type OrderNotificationStatus = "sending" | "sent" | "failed";
+
 export interface OrderAttrs {
   orderNumber: string;
   accessTokenHash: string;
@@ -18,6 +21,10 @@ export interface OrderAttrs {
   razorpay: { orderId?: string; paymentId?: string };
   paidAt?: Date;
   tracking?: { carrier: string; awb: string } | null;
+  emailNotifications?: {
+    created?: { status: OrderNotificationStatus; updatedAt: Date };
+    cancelled?: { status: OrderNotificationStatus; updatedAt: Date };
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +70,16 @@ const orderSchema = new Schema<OrderAttrs>(
     },
     paidAt: { type: Date },
     tracking: { type: { _id: false, carrier: String, awb: String }, default: null },
+    emailNotifications: {
+      created: {
+        status: { type: String, enum: ["sending", "sent", "failed"] },
+        updatedAt: { type: Date },
+      },
+      cancelled: {
+        status: { type: String, enum: ["sending", "sent", "failed"] },
+        updatedAt: { type: Date },
+      },
+    },
   },
   { timestamps: true },
 );

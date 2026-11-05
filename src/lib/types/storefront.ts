@@ -27,4 +27,6 @@ export type StoreProduct = {
 
 export type StoreCategory = { id: string; name: string; slug: string };
 
+export type StorePriceBand = { minPrice: number; maxPrice: number };
+
 export type CartProduct = Pick<StoreProduct, "id" | "slug" | "name" | "image" | "imageAlt" | "price">;

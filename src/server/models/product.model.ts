@@ -78,7 +78,7 @@ const productSchema = new Schema<ProductAttrs>(
   { timestamps: true },
 );
 
-productSchema.index({ category: 1, isActive: 1 });
+productSchema.index({ category: 1, isActive: 1, price: 1 });
 productSchema.index({ isFeatured: 1, isActive: 1 });
 
 export const ProductModel = (models.Product as Model<ProductAttrs> | undefined) ?? model<ProductAttrs>("Product", productSchema);

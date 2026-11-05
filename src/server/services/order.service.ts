@@ -1,4 +1,4 @@
-﻿import { randomInt } from "node:crypto";
+import { randomInt } from "node:crypto";
 import { MAX_CART_LINE_QUANTITY } from "@/lib/cart-constants";
 import type { CheckoutSession, OrderDto, OrderStatus } from "@/lib/types/orders";
 import type { CreateOrderInput, OrderCancellationInput, OrderLookupInput, OrderListQuery, OrderUpdateInput, VerifyPaymentInput } from "@/lib/validation/orders";
@@ -11,6 +11,7 @@ import type { AuthUser } from "@/server/services/auth.service";
 import { getDeliveryQuote } from "@/server/services/delivery.service";
 import { getCart, type CartIdentity } from "@/server/services/cart.service";
 import * as razorpay from "@/server/services/razorpay.service";
+import { sendOrderNotification } from "@/server/services/order-email.service";
 
 const ORDER_NUMBER_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -158,7 +159,12 @@ export async function handleWebhook(rawBody: string, signature: string | null) {
       console.error("Razorpay webhook amount mismatch", order.ref, payment.amount);
       return;
     }
-    if (order.paymentStatus !== "paid") await orderRepository.markPaid(order.id, payment.id);
+    const paidOrder = order.paymentStatus !== "paid"
+      ? await orderRepository.markPaid(order.id, payment.id)
+      : order;
+    if (paidOrder && !(await sendOrderNotification(paidOrder, "created"))) {
+      throw new UpstreamError("The order email notification could not be delivered.");
+    }
   } else if (event.event === "payment.failed") {
     await orderRepository.markPaymentFailed(order.id);
   }
