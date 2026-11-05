@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { LuCheck as Check, LuCircleHelp as CircleHelp, LuCornerDownLeft as Send, LuRefreshCw as RefreshCw, LuSearch as Search, LuUser as User, LuX as X } from "react-icons/lu";
+import { LoadingSpinner } from "@/components/common/Loading";
 import type { TicketDto } from "@/server/repositories/ticket.repository";
 
 const STATUS_LABELS: Record<string, { label: string; class: string }> = {
@@ -19,6 +20,7 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [notice, setNotice] = useState("");
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +93,8 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
   }
 
   async function handleStatusChange(status: string) {
-    if (!selectedTicket) return;
+    if (!selectedTicket || updatingStatus) return;
+    setUpdatingStatus(true);
     try {
       const res = await fetch(`/api/admin/tickets/${selectedTicket.id}/status`, {
         method: "PATCH",
@@ -105,6 +108,8 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
       }
     } catch {
       alert("Failed to update status");
+    } finally {
+      setUpdatingStatus(false);
     }
   }
 
@@ -181,7 +186,11 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
           </div>
 
           <div className="max-h-[620px] min-h-[300px] divide-y divide-line overflow-y-auto">
-            {filteredTickets.length === 0 ? (
+            {refreshing ? (
+              <div aria-busy="true" className="grid min-h-[300px] place-items-center text-sm text-muted">
+                <LoadingSpinner label="Loading tickets" />
+              </div>
+            ) : filteredTickets.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted">No tickets found.</div>
             ) : (
               filteredTickets.map((t) => {
@@ -246,8 +255,10 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
               {/* Status Selector */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-muted">Status:</span>
+                {updatingStatus && <LoadingSpinner className="text-muted" label="Updating" />}
                 <select
                   className="border border-line bg-white p-1.5 text-xs font-semibold"
+                  disabled={updatingStatus}
                   onChange={(e) => handleStatusChange(e.target.value)}
                   value={selectedTicket.status}
                 >
@@ -311,7 +322,7 @@ export function AdminTickets({ initialTickets }: { initialTickets: TicketDto[] }
                   type="submit"
                 >
                   <Send size={15} />
-                  <span>Send</span>
+                  {sending ? <LoadingSpinner label="Sending" /> : <span>Send</span>}
                 </button>
               </div>
             </form>

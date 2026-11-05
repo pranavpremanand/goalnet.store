@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api-client";
 import { signInWithGoogle } from "@/lib/auth-client";
+import { LoadingSpinner } from "@/components/common/Loading";
 
 type GoogleCredentialResponse = { credential?: string };
 type GoogleButtonOptions = { type: "standard"; theme: "outline"; size: "large"; text: "continue_with"; shape: "rectangular"; logo_alignment: "left"; width: number };
@@ -87,7 +88,7 @@ export function GoogleSignInButton({ clientId, acceptTerms = false, signupHref =
     <div>
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onError={() => setError("Google sign-in could not load. Check your connection and try again.")} onReady={initialize} />
       <div aria-busy={busy} className={`flex min-h-10 justify-center overflow-hidden ${busy ? "pointer-events-none opacity-50" : ""}`} ref={buttonRef} />
-      {busy && <p className="mt-2 text-center text-xs text-muted">Signing in with Google…</p>}
+      {busy && <p className="mt-2 flex justify-center text-xs text-muted"><LoadingSpinner label="Signing in with Google…" /></p>}
       {error && <p aria-live="polite" className="mt-2 text-center text-xs text-red-700" role="alert">{error}</p>}
       {needsSignup && <p className="mt-2 text-center text-xs"><Link className="font-semibold text-ink underline underline-offset-2" href={signupHref}>Create Account</Link></p>}
     </div>

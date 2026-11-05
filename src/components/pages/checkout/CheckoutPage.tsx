@@ -10,6 +10,7 @@ import { useDemoStore, type OrderAddress } from "@/lib/demo-store";
 import { apiRequest } from "@/lib/api-client";
 import { signOutUser } from "@/lib/auth-client";
 import { createCheckoutSession, openRazorpayCheckout, verifyPayment } from "@/lib/razorpay-client";
+import { CheckoutLoadingSkeleton, LoadingSpinner } from "@/components/common/Loading";
 import { CheckoutMethodSelection } from "./CheckoutMethodSelection";
 
 type PincodeLookup = { status: "idle" | "loading" | "success" | "error" | "blocked"; message: string };
@@ -246,7 +247,7 @@ export function CheckoutPage() {
   }
 
   if (!items.length && cartLoading) {
-    return <main className="mx-auto grid min-h-[65vh] max-w-3xl place-items-center px-5 text-center"><p className="text-sm text-muted">Loading your bag…</p></main>;
+    return <CheckoutLoadingSkeleton />;
   }
 
   if (!items.length && cartError) {
@@ -340,7 +341,7 @@ export function CheckoutPage() {
           {/* <p className="mt-3 text-xs leading-5 text-muted">Orders with multiple items may have an additional shipping charge. Any applicable charge will be shown before confirmation.</p> */}
           {(cartError || hasUnavailableItems) && <p aria-live="polite" className="mt-3 text-sm text-red-700" role="alert">{cartError || "Remove unavailable items before placing your order."}</p>}
           {cartError && <button className="mt-2 text-xs font-bold uppercase underline" disabled={cartLoading} onClick={() => void refreshCart()} type="button">{cartLoading ? "Refreshing bag…" : "Refresh bag"}</button>}
-          <button className="mt-6 min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50" disabled={paying || cartPending || cartLoading || Boolean(cartError) || hasUnavailableItems || stage === "method" || pincodeLookup.status !== "success" || !quoteIsCurrent} form="checkout-form" type="submit">{paying ? "Processing…" : quoteActionLabel}</button>
+          <button aria-busy={paying} className="mt-6 inline-flex min-h-12 w-full items-center justify-center bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50" disabled={paying || cartPending || cartLoading || Boolean(cartError) || hasUnavailableItems || stage === "method" || pincodeLookup.status !== "success" || !quoteIsCurrent} form="checkout-form" type="submit">{paying ? <LoadingSpinner label="Processing…" /> : quoteActionLabel}</button>
           {payError && <p aria-live="polite" className="mt-3 text-sm text-red-700" role="alert">{payError}</p>}
           {stage === "method" && <p className="mt-2 text-center text-xs text-muted">Choose how to continue to enter your delivery details.</p>}
           <p className="mt-3 text-center text-[11px] text-muted">Secure payment by Razorpay. UPI, cards, net banking and wallets accepted.</p>

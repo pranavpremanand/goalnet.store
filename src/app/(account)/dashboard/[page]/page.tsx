@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { DashboardLoadingSkeleton } from "@/components/common/Loading";
 import { notFound, redirect } from "next/navigation";
 import { CustomerDashboard } from "@/components/pages/dashboard/CustomerDashboard";
 import { getCurrentUser } from "@/server/auth/current-user";
@@ -59,7 +60,7 @@ async function DashboardRoute({ params }: { params: Promise<{ page: string }> })
 
 export default function Page({ params }: { params: Promise<{ page: string }> }) {
   return (
-    <Suspense>
+    <Suspense fallback={<DashboardLoadingSkeleton />}>
       <DashboardRoute params={params} />
     </Suspense>
   );

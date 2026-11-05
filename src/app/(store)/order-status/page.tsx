@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { ContentLoadingSkeleton } from "@/components/common/Loading";
 import { OrderLookupPage } from "@/components/pages/orders/OrderStatusPage";
 import { getCurrentUser } from "@/server/auth/current-user";
 
@@ -11,7 +12,7 @@ async function OrderStatusLookup() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<main className="mx-auto min-h-[60vh] max-w-xl px-5 py-12 text-sm text-muted">Loading order tracking…</main>}>
+    <Suspense fallback={<ContentLoadingSkeleton />}>
       <OrderStatusLookup />
     </Suspense>
   );

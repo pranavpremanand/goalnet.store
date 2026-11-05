@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { OrderLoadingSkeleton } from "@/components/common/Loading";
 import { OrderConfirmationPage } from "@/components/pages/orders/OrderConfirmationPage";
 import { getOrderByToken } from "@/server/services/order.service";
 
@@ -11,5 +12,5 @@ async function Confirmation({ params }: { params: Promise<{ token: string }> }) 
 }
 
 export default function Page({ params }: { params: Promise<{ token: string }> }) {
-  return <Suspense><Confirmation params={params} /></Suspense>;
+  return <Suspense fallback={<OrderLoadingSkeleton />}><Confirmation params={params} /></Suspense>;
 }

@@ -77,15 +77,22 @@ function ShopContent({
           <div className="space-y-2.5">
             {priceBands.map((band) => {
               const value = `${band.minPrice}-${band.maxPrice}`;
+              const isSelected = selectedPriceBand === value;
               return (
-                <label className="flex cursor-pointer items-center gap-2.5 text-sm" key={value}>
+                <label className={`flex cursor-pointer items-center gap-2.5 rounded px-1 py-1 text-sm ${isSelected ? "bg-brand/20 font-semibold" : ""}`} key={value}>
                   <input
-                    checked={selectedPriceBand === value}
-                    className="size-4 accent-[#f2fa18]"
+                    checked={isSelected}
+                    className="peer sr-only"
                     name="price"
-                    onChange={() => setSelectedPriceBand(selectedPriceBand === value ? null : value)}
+                    onChange={() => setSelectedPriceBand(value)}
                     type="radio"
                   />
+                  <span
+                    aria-hidden="true"
+                    className={`grid size-5 shrink-0 place-items-center rounded-full border ${isSelected ? "border-ink" : "border-muted"} peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink`}
+                  >
+                    {isSelected && <span className="size-2.5 rounded-full bg-ink" />}
+                  </span>
                   {formatRupees(band.minPrice)} – {formatRupees(band.maxPrice)}
                 </label>
               );

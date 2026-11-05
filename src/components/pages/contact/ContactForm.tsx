@@ -6,6 +6,7 @@ import {
   LuMail as Mail,
   LuMapPin as MapPin,
 } from "react-icons/lu";
+import { LoadingSpinner } from "@/components/common/Loading";
 
 export function ContactForm() {
   const [sent, setSent] = useState(false);
@@ -124,7 +125,7 @@ export function ContactForm() {
               disabled={sending}
               type="submit"
             >
-              {sending ? "Sending..." : "Send message"}
+              {sending ? <LoadingSpinner label="Sending…" /> : "Send message"}
             </button>
           </form>
         )}

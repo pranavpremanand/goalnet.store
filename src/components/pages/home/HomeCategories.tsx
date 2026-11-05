@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { LuArrowUpRight } from "react-icons/lu";
+import { SkeletonBlock } from "@/components/common/Loading";
 import { listActiveCategories } from "@/server/services/category.service";
 
 async function CategoryCards() {
@@ -58,7 +59,19 @@ async function CategoryCards() {
 
 export function HomeCategories() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <section aria-busy="true" aria-label="Loading collections" className="bg-paper py-14 sm:py-18">
+          <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-14">
+            <SkeletonBlock className="mb-3 h-3 w-32" />
+            <SkeletonBlock className="mb-8 h-9 w-56" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+              {Array.from({ length: 5 }, (_, index) => <SkeletonBlock className="aspect-4/5" key={index} />)}
+            </div>
+          </div>
+        </section>
+      }
+    >
       <CategoryCards />
     </Suspense>
   );

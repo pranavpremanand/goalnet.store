@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { CollectionLoadingSkeleton } from "@/components/common/Loading";
 import { ShopPage } from "@/components/pages/shop/ShopPage";
 import { listStoreCategories, listStorePriceBands, listStoreProducts } from "@/server/services/storefront.service";
 
@@ -16,11 +17,7 @@ async function Shop() {
 export default function Page() {
   return (
     <Suspense
-      fallback={
-        <main className="mx-auto min-h-[60vh] max-w-[1440px] px-5 py-12 text-sm text-muted">
-          Loading collection…
-        </main>
-      }
+      fallback={<CollectionLoadingSkeleton />}
     >
       <Shop />
     </Suspense>

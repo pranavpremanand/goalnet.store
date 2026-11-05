@@ -36,33 +36,6 @@ export function getImageKitConfig() {
   return publicKey && privateKey && urlEndpoint ? { publicKey, privateKey, urlEndpoint } : null;
 }
 
-export function getSmtpConfig() {
-  const host = readEnv("SMTP_HOST");
-  const portValue = readEnv("SMTP_PORT");
-  const user = readEnv("SMTP_USER");
-  const pass = readEnv("SMTP_PASS");
-  if (!host || !portValue || !user || !pass) return null;
-
-  const port = Number(portValue);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error("SMTP_PORT must be a valid port number");
-  }
-
-  const secureValue = readEnv("SMTP_SECURE");
-  if (secureValue && !["true", "false"].includes(secureValue.toLowerCase())) {
-    throw new Error("SMTP_SECURE must be true or false");
-  }
-
-  return {
-    host,
-    port,
-    secure: secureValue ? secureValue.toLowerCase() === "true" : port === 465,
-    user,
-    pass,
-    from: readEnv("SMTP_FROM") ?? user,
-  };
-}
-
 export function getResendConfig() {
   const apiKey = readEnv("RESEND_API_KEY");
   if (!apiKey) return null;

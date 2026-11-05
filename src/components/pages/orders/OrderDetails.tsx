@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { LuCheck as Check } from "react-icons/lu";
 import { formatRupees } from "@/lib/format";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { ORDER_STATUS_LABELS, type OrderDto, type OrderStatus } from "@/lib/types/orders";
 
 const steps: OrderStatus[] = ["confirmed", "packed", "shipped", "delivered"];
@@ -154,7 +155,7 @@ export function OrderDetails({ order, accessToken, allowAccountCancellation = fa
                 onClick={cancelOrder}
                 type="button"
               >
-                {cancelling ? "Cancelling…" : "Yes, cancel order"}
+                {cancelling ? <LoadingSpinner label="Cancelling…" /> : "Yes, cancel order"}
               </button>
             </div>
           </section>

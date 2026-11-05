@@ -71,9 +71,10 @@ export function HomePage() {
             Greatness is a journey. Wear every chapter.
           </h2>
           <p className="mt-6 font-copy text-sm leading-7 text-muted">
-            Football is more than a game. It&apos;s about the clubs we support,
-            the players who inspire us, the countries we stand behind, and the
-            kit that becomes part of our memories.
+            Football belongs to all of us. From the first kick in the street to
+            the last song in the stands, the game makes memories worth keeping.
+            We bring together club colors, national pride, and retro classics
+            made for the people who love it most.
           </p>
           {/* <h2 className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
             Greatness is a journey. Wear every chapter.

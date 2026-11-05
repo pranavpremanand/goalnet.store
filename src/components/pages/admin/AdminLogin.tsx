@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LuArrowLeft as ArrowLeft, LuEye as Eye, LuEyeOff as EyeOff } from "react-icons/lu";
 import { ApiError } from "@/lib/api-client";
 import { signInAdmin } from "@/lib/auth-client";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { signInSchema, type SignInInput } from "@/lib/validation/auth";
 
 const inputClass = "mt-2 w-full border border-line p-3 text-sm outline-none focus:border-ink aria-invalid:border-red-600";
@@ -45,7 +46,7 @@ export function AdminLogin() {
               </div>
               {errors.password && <span className="mt-1.5 block text-xs text-red-700" role="alert">{errors.password.message}</span>}
             </label>
-            <button className="min-h-12 w-full bg-brand text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? "Please wait…" : "Sign in"}</button>
+            <button aria-busy={isSubmitting} className="inline-flex min-h-12 w-full items-center justify-center bg-brand text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? <LoadingSpinner label="Please wait…" /> : "Sign in"}</button>
           </form>
         </div>
       </section>

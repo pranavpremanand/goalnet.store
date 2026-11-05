@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ProductLoadingSkeleton } from "@/components/common/Loading";
 import { ProductDetailsPage } from "@/components/pages/product-details/ProductDetailsPage";
 import { getStoreProduct, listRelatedProducts } from "@/server/services/storefront.service";
 
@@ -21,7 +22,7 @@ async function Product({ params }: Params) {
 
 export default function Page({ params }: Params) {
   return (
-    <Suspense fallback={<main className="mx-auto min-h-[60vh] max-w-[1440px] px-5 py-12 text-sm text-muted">Loading product…</main>}>
+    <Suspense fallback={<ProductLoadingSkeleton />}>
       <Product params={params} />
     </Suspense>
   );

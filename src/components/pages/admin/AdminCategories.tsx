@@ -12,6 +12,7 @@ import { showApiError } from "@/lib/form-errors";
 import type { CategoryDto } from "@/lib/types/catalog";
 import { categoryInputSchema, type CategoryInput } from "@/lib/validation/catalog";
 import { Field, FormError, adminInputClass } from "@/components/pages/admin/FormFields";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { ImageUploader } from "@/components/pages/admin/ImageUploader";
 import { useUploadSession } from "@/components/pages/admin/useUploadSession";
 
@@ -67,7 +68,7 @@ function DeleteCategoryDialog({ category, others, onClose, onDeleted }: { catego
           </div>
         )}
         {error && <p className="mt-3 border-l-4 border-red-600 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</p>}
-        <div className="mt-5 flex gap-3"><button className="min-h-11 bg-red-700 px-5 text-xs font-bold uppercase text-white disabled:opacity-60" disabled={deleting || blocked} onClick={() => void submit()} type="button">{deleting ? "Deleting…" : hasProducts && choice === "reassign" ? "Move products and delete" : hasProducts ? "Delete category and products" : "Delete"}</button><button className="min-h-11 border border-line px-5 text-xs font-bold uppercase" onClick={onClose} type="button">Cancel</button></div>
+        <div className="mt-5 flex gap-3"><button aria-busy={deleting} className="inline-flex min-h-11 items-center justify-center bg-red-700 px-5 text-xs font-bold uppercase text-white disabled:opacity-60" disabled={deleting || blocked} onClick={() => void submit()} type="button">{deleting ? <LoadingSpinner label="Deleting…" /> : hasProducts && choice === "reassign" ? "Move products and delete" : hasProducts ? "Delete category and products" : "Delete"}</button><button className="min-h-11 border border-line px-5 text-xs font-bold uppercase" onClick={onClose} type="button">Cancel</button></div>
       </section>
     </div>
   );
@@ -116,7 +117,7 @@ function CategoryDialog({ category, onClose, onSaved }: { category: CategoryDto 
             <label className="flex items-center gap-2 self-end pb-3 text-sm"><input {...register("isActive")} className="size-4 accent-[#f2fa18]" type="checkbox" />Active (visible on the store)</label>
           </div>
           <div className="flex gap-3">
-            <button className="min-h-11 bg-brand px-6 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? "Saving…" : "Save category"}</button>
+            <button aria-busy={isSubmitting} className="inline-flex min-h-11 items-center justify-center bg-brand px-6 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? <LoadingSpinner label="Saving…" /> : "Save category"}</button>
             <button className="min-h-11 border border-line px-6 text-xs font-bold uppercase" onClick={onClose} type="button">Cancel</button>
           </div>
         </form>

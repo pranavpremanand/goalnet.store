@@ -12,6 +12,7 @@ import {
   LuX as X,
 } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { ProductImageZoom } from "@/components/pages/product-details/ProductImageZoom";
 import { PRODUCT_TYPE_LABELS, type JerseyType } from "@/lib/catalog-constants";
@@ -302,7 +303,7 @@ export function ProductDetailsPage({
               onClick={addToBag}
               type="button"
             >
-              {cartPending ? "Adding…" : "Add to bag"}
+              {cartPending ? <LoadingSpinner label="Adding…" /> : "Add to bag"}
             </button>
             <button
               className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold"
@@ -362,7 +363,7 @@ export function ProductDetailsPage({
                 onClick={checkDelivery}
                 type="button"
               >
-                {pincodeLookup.status === "loading" ? "Checking…" : "Check"}
+                {pincodeLookup.status === "loading" ? <LoadingSpinner label="Checking…" /> : "Check"}
               </button>
             </div>
             {pincodeLookup.message && (

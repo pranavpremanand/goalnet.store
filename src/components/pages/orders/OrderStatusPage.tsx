@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { lookupOrder } from "@/lib/razorpay-client";
+import { LoadingSpinner } from "@/components/common/Loading";
 import type { OrderDto } from "@/lib/types/orders";
 import { OrderDetails } from "@/components/pages/orders/OrderDetails";
 
@@ -38,7 +39,7 @@ export function OrderLookupPage({ isAuthenticated }: { isAuthenticated: boolean 
         <label className="block text-xs font-semibold">Order number<input autoComplete="off" className="mt-2 w-full border border-line px-4 py-3 text-sm uppercase outline-none focus:border-ink" name="ref" onChange={() => setError("")} placeholder="GN-XXXXXXXX" required /></label>
         <label className="block text-xs font-semibold">Checkout email <span className="font-normal text-muted">(required for guests)</span><input autoComplete="email" className="mt-2 w-full border border-line px-4 py-3 text-sm outline-none focus:border-ink" name="email" onChange={() => setError("")} placeholder="you@example.com" type="email" /></label>
         {error && <p aria-live="polite" className="text-sm text-red-700">{error}</p>}
-        <button className="min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:opacity-50" disabled={loading} type="submit">{loading ? "Looking up…" : "View order"}</button>
+        <button aria-busy={loading} className="inline-flex min-h-12 w-full items-center justify-center bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:opacity-50" disabled={loading} type="submit">{loading ? <LoadingSpinner label="Looking up…" /> : "View order"}</button>
       </form>
       {!isAuthenticated && <p className="mt-6 text-xs leading-5 text-muted">Have an account? <Link className="font-semibold text-ink underline" href="/dashboard/my-orders">Open My Orders</Link>.</p>}
       {order && <div className="mt-10 border border-line p-5 sm:p-8"><OrderDetails order={order} /></div>}

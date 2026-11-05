@@ -22,18 +22,12 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Contact form email
 
-The contact form stores submissions in MongoDB and sends notifications to `contactgoalnet@gmail.com`. Configure these server-only environment variables to enable email delivery:
+The contact form stores submissions in MongoDB and sends branded Resend notifications to `contactgoalnet@gmail.com`. Configure `RESEND_API_KEY` in the server environment and optionally set `RESEND_FROM_EMAIL` to a sender address on a verified Resend domain. The default `onboarding@resend.dev` sender is for Resend testing only. Without a Resend API key, form messages are still saved and visible in the admin contact messages page, but notification emails are not delivered.
 
 ```env
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
 ```
-
-`SMTP_FROM` is optional and defaults to `SMTP_USER`. For Gmail, use an app password rather than your account password. Without SMTP configuration, form messages are still saved and visible in the admin contact messages page, but notification emails are not delivered.
 
 ## Order notification email
 

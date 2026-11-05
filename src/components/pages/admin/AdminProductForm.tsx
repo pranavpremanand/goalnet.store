@@ -13,6 +13,7 @@ import { showApiError } from "@/lib/form-errors";
 import type { CategoryDto, ProductDto } from "@/lib/types/catalog";
 import { productInputSchema, type ProductInput } from "@/lib/validation/catalog";
 import { Field, FormError, adminInputClass } from "@/components/pages/admin/FormFields";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { ImageUploader } from "@/components/pages/admin/ImageUploader";
 import { useUploadSession } from "@/components/pages/admin/useUploadSession";
 
@@ -157,7 +158,7 @@ export function AdminProductForm({ product, categories }: { product?: ProductDto
         </Section>
 
         <div className="flex gap-3">
-          <button className="min-h-12 bg-brand px-8 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? "Saving…" : product ? "Save changes" : "Create product"}</button>
+          <button aria-busy={isSubmitting} className="inline-flex min-h-12 items-center justify-center bg-brand px-8 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? <LoadingSpinner label="Saving…" /> : product ? "Save changes" : "Create product"}</button>
           <Link className="inline-flex min-h-12 items-center border border-line px-8 text-xs font-bold uppercase" href="/admin/products">Cancel</Link>
         </div>
       </form>

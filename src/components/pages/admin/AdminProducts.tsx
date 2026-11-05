@@ -11,6 +11,7 @@ import { productApi } from "@/lib/admin-api";
 import type { CategoryDto, ProductDto, ProductListResult } from "@/lib/types/catalog";
 import { formatRupees } from "@/lib/format";
 import { adminInputClass } from "@/components/pages/admin/FormFields";
+import { LoadingSpinner } from "@/components/common/Loading";
 
 type Filters = { q: string; category: string; status: string };
 
@@ -99,7 +100,7 @@ export function AdminProducts({ result, categories, filters }: { result: Product
             <h2 className="mt-2 font-display text-2xl font-semibold">Delete this product?</h2>
             <p className="mt-2 text-sm text-muted">“{toDelete.name}” and its images will be removed. This cannot be undone.</p>
             {error && <p className="mt-3 border-l-4 border-red-600 bg-red-50 p-3 text-sm text-red-800" role="alert">{error}</p>}
-            <div className="mt-5 flex gap-3"><button className="min-h-11 bg-red-700 px-5 text-xs font-bold uppercase text-white disabled:opacity-60" disabled={deleting} onClick={() => void confirmDelete(toDelete)} type="button">{deleting ? "Deleting…" : "Delete"}</button><button className="min-h-11 border border-line px-5 text-xs font-bold uppercase" onClick={() => setToDelete(null)} type="button">Cancel</button></div>
+            <div className="mt-5 flex gap-3"><button aria-busy={deleting} className="inline-flex min-h-11 items-center justify-center bg-red-700 px-5 text-xs font-bold uppercase text-white disabled:opacity-60" disabled={deleting} onClick={() => void confirmDelete(toDelete)} type="button">{deleting ? <LoadingSpinner label="Deleting…" /> : "Delete"}</button><button className="min-h-11 border border-line px-5 text-xs font-bold uppercase" onClick={() => setToDelete(null)} type="button">Cancel</button></div>
           </section>
         </div>
       )}

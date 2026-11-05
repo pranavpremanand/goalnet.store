@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LuCheck as Check, LuPencil as Pencil, LuPlus as Plus, LuTrash2 as Trash2, LuX as X } from "react-icons/lu";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { ApiError, apiRequest } from "@/lib/api-client";
 import { showApiError } from "@/lib/form-errors";
 import type { ImageAsset } from "@/lib/types/catalog";
@@ -86,7 +87,7 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
             </div>
           </div>
           <label className="flex items-center gap-2 text-sm"><input {...register("isActive")} className="size-4 accent-[#f2fa18]" type="checkbox" />Active (shown in the carousel)</label>
-          <div className="flex gap-3"><button className="min-h-11 bg-brand px-6 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? "Saving…" : slide ? "Save slide" : "Add slide"}</button><button className="min-h-11 border border-line px-6 text-xs font-bold uppercase" onClick={onClose} type="button">Cancel</button></div>
+          <div className="flex gap-3"><button aria-busy={isSubmitting} className="inline-flex min-h-11 items-center justify-center bg-brand px-6 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? <LoadingSpinner label="Saving…" /> : slide ? "Save slide" : "Add slide"}</button><button className="min-h-11 border border-line px-6 text-xs font-bold uppercase" onClick={onClose} type="button">Cancel</button></div>
         </form>
       </section>
     </div>
@@ -135,7 +136,22 @@ export function AdminHeroSlides({ slides }: { slides: HeroSlide[] }) {
         </div>
       )}
       {editor.open && <SlideEditor key={editor.slide?.id ?? "new"} onClose={() => setEditor({ open: false })} onSaved={saved} slide={editor.slide} />}
-      {deleting && <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4"><section aria-modal="true" className="w-full max-w-sm bg-paper p-6" role="dialog"><p className="text-xs font-bold uppercase text-muted">Please confirm</p><h2 className="mt-2 font-display text-2xl font-semibold">Delete this slide?</h2><p className="mt-2 text-sm text-muted">“{deleting.heading}” and its ImageKit background will be removed.</p>{error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}<div className="mt-5 flex gap-3"><button className="min-h-11 bg-red-700 px-5 text-xs font-bold uppercase text-white disabled:opacity-60" disabled={busy} onClick={() => void removeSlide(deleting)} type="button">{busy ? "Deleting…" : "Delete slide"}</button><button className="min-h-11 border border-line px-5 text-xs font-bold uppercase" onClick={() => setDeleting(null)} type="button">Cancel</button></div></section></div>}
+      {deleting && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4">
+          <section aria-modal="true" className="w-full max-w-sm bg-paper p-6" role="dialog">
+            <p className="text-xs font-bold uppercase text-muted">Please confirm</p>
+            <h2 className="mt-2 font-display text-2xl font-semibold">Delete this slide?</h2>
+            <p className="mt-2 text-sm text-muted">“{deleting.heading}” and its ImageKit background will be removed.</p>
+            {error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}
+            <div className="mt-5 flex gap-3">
+              <button aria-busy={busy} className="inline-flex min-h-11 items-center justify-center bg-red-700 px-5 text-xs font-bold uppercase text-white disabled:opacity-60" disabled={busy} onClick={() => void removeSlide(deleting)} type="button">
+                {busy ? <LoadingSpinner label="Deleting…" /> : "Delete slide"}
+              </button>
+              <button className="min-h-11 border border-line px-5 text-xs font-bold uppercase" onClick={() => setDeleting(null)} type="button">Cancel</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

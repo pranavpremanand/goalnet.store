@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AdminLoadingSkeleton } from "@/components/common/Loading";
 import { AdminHeroSlides } from "@/components/pages/admin/AdminHeroSlides";
 import { requireAdminPage } from "@/server/auth/current-user";
 import * as heroSlideService from "@/server/services/hero-slide.service";
@@ -11,5 +12,5 @@ async function HeroSlidesPage() {
 }
 
 export default function Page() {
-  return <Suspense fallback={<div aria-busy="true" className="min-h-[40vh] text-sm text-muted">Loading hero slides…</div>}><HeroSlidesPage /></Suspense>;
+  return <Suspense fallback={<AdminLoadingSkeleton />}><HeroSlidesPage /></Suspense>;
 }

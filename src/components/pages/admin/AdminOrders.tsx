@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LuSearch as Search, LuX as X } from "react-icons/lu";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { formatRupees } from "@/lib/format";
 import { ORDER_STATUSES, ORDER_STATUS_LABELS, type OrderDto, type OrderStatus } from "@/lib/types/orders";
 
@@ -230,7 +231,7 @@ export function AdminOrders({ result, filters }: Props) {
                 Cancel
               </button>
               <button className="bg-brand px-4 py-2.5 text-xs font-bold uppercase disabled:opacity-50" disabled={saving} type="submit">
-                {saving ? "Saving…" : "Save"}
+                {saving ? <LoadingSpinner label="Saving…" /> : "Save"}
               </button>
             </div>
           </form>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LuMail as Mail, LuRefreshCw as RefreshCw } from "react-icons/lu";
+import { LoadingSpinner } from "@/components/common/Loading";
 import type { ContactSubmissionPage } from "@/server/repositories/contact-submission.repository";
 
 export function AdminContactMessages({ initialPage }: { initialPage: ContactSubmissionPage }) {
@@ -78,8 +79,7 @@ export function AdminContactMessages({ initialPage }: { initialPage: ContactSubm
           onClick={() => void loadMore()}
           type="button"
         >
-          <RefreshCw className={loading ? "animate-spin" : ""} size={15} />
-          {loading ? "Loading..." : "Load more"}
+          {loading ? <LoadingSpinner label="Loading more…" /> : <><RefreshCw size={15} />Load more</>}
         </button>
       )}
     </section>

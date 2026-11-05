@@ -1,11 +1,12 @@
 import { Suspense, type ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/server/auth/current-user";
+import { LoadingSpinner } from "@/components/common/Loading";
 
 // Verified on the server against the session store; the proxy only does a cheap cookie check first.
 
 function GateFallback() {
-  return <div aria-busy="true" className="grid min-h-[50vh] place-items-center text-sm text-muted">Loading…</div>;
+  return <div aria-busy="true" className="grid min-h-[50vh] place-items-center text-sm text-muted"><LoadingSpinner label="Checking your account" /></div>;
 }
 
 async function UserGate({ children }: { children: ReactNode }) {

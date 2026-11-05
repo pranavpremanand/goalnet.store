@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { LuArrowUpRight as ArrowUpRight } from "react-icons/lu";
+import { SkeletonBlock } from "@/components/common/Loading";
 import { ProductCard } from "@/components/common/ProductCard";
 import { listFeaturedProducts } from "@/server/services/storefront.service";
 
@@ -40,7 +41,25 @@ async function FeaturedProducts() {
 
 export function HomeFeatured() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <section aria-busy="true" aria-label="Loading featured products" className="bg-canvas py-14 sm:py-20">
+          <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-14">
+            <SkeletonBlock className="mb-3 h-3 w-32" />
+            <SkeletonBlock className="mb-8 h-9 w-56" />
+            <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-4 md:gap-6">
+              {Array.from({ length: 8 }, (_, index) => (
+                <div className="space-y-3" key={index}>
+                  <SkeletonBlock className="aspect-4/5" />
+                  <SkeletonBlock className="h-4 w-4/5" />
+                  <SkeletonBlock className="h-4 w-1/3" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      }
+    >
       <FeaturedProducts />
     </Suspense>
   );

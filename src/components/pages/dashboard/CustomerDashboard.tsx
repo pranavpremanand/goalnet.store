@@ -29,6 +29,7 @@ import {
   LuX as X,
 } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { formatRupees } from "@/lib/format";
 import type { StoreProduct } from "@/lib/types/storefront";
 import { OrderDetails } from "@/components/pages/orders/OrderDetails";
@@ -96,6 +97,7 @@ export function CustomerDashboard({
 
   // Addresses
   const [addresses, setAddresses] = useState<UserAddressRecord[]>(currentUser.addresses ?? []);
+  const [removingAddressId, setRemovingAddressId] = useState<string | null>(null);
   const [dialog, setDialog] = useState("");
   const [savingAddress, setSavingAddress] = useState(false);
 
@@ -222,6 +224,8 @@ export function CustomerDashboard({
 
   // Handle Remove Address
   async function handleRemoveAddress(id: string) {
+    if (removingAddressId) return;
+    setRemovingAddressId(id);
     try {
       const res = await fetch(`/api/account/addresses/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -233,6 +237,8 @@ export function CustomerDashboard({
       }
     } catch {
       setNotice("Failed to remove address.");
+    } finally {
+      setRemovingAddressId(null);
     }
   }
 
@@ -643,7 +649,7 @@ export function CustomerDashboard({
                   type="submit"
                 >
                   {savingPassword
-                    ? "Updating..."
+                    ? <LoadingSpinner label="Updating…" />
                     : currentUser.hasPassword
                     ? "Change password"
                     : "Set password"}
@@ -707,7 +713,7 @@ export function CustomerDashboard({
                   disabled={savingProfile}
                   type="submit"
                 >
-                  {savingProfile ? "Saving..." : "Save changes"}
+                  {savingProfile ? <LoadingSpinner label="Saving…" /> : "Save changes"}
                 </button>
                 <button
                   className="border border-line px-5 py-3 text-xs font-bold uppercase hover:bg-canvas"
@@ -744,12 +750,13 @@ export function CustomerDashboard({
                       <MapPin size={15} /> {index === 0 ? "Default address" : "Saved address"}
                     </span>
                     <button
-                      aria-label="Delete address"
-                      className="text-muted hover:text-red-700 p-1"
+                      aria-label={removingAddressId === address.id ? "Removing address" : "Delete address"}
+                      className="p-1 text-muted hover:text-red-700 disabled:opacity-60"
+                      disabled={removingAddressId !== null}
                       onClick={() => handleRemoveAddress(address.id)}
                       type="button"
                     >
-                      <Trash2 size={16} />
+                      {removingAddressId === address.id ? <LoadingSpinner /> : <Trash2 size={16} />}
                     </button>
                   </div>
                   <p className="mt-4 font-semibold text-base">{address.name}</p>
@@ -854,7 +861,7 @@ export function CustomerDashboard({
                     disabled={creatingTicket || !ticketMessage.trim()}
                     type="submit"
                   >
-                    {creatingTicket ? "Starting chat..." : "Submit ticket & start chat"}
+                    {creatingTicket ? <LoadingSpinner label="Starting chat…" /> : "Submit ticket & start chat"}
                   </button>
                   {tickets.length > 0 && (
                     <button
@@ -991,7 +998,7 @@ export function CustomerDashboard({
                           type="submit"
                         >
                           <Send size={14} />
-                          <span>Send</span>
+                          {sendingReply ? <LoadingSpinner label="Sending" /> : <span>Send</span>}
                         </button>
                       </div>
                     </form>
@@ -1050,7 +1057,7 @@ export function CustomerDashboard({
                 disabled={savingAddress}
                 type="submit"
               >
-                {savingAddress ? "Saving..." : "Save address"}
+                {savingAddress ? <LoadingSpinner label="Saving…" /> : "Save address"}
               </button>
             </form>
           </section>

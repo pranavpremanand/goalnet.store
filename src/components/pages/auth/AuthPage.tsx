@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LuArrowLeft as ArrowLeft, LuEye as Eye, LuEyeOff as EyeOff, LuMail as Mail, LuPhone as Phone, LuCheck as Check } from "react-icons/lu";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { GoogleSignInButton } from "@/components/pages/auth/GoogleSignInButton";
 import { signInUser, signUpUser } from "@/lib/auth-client";
@@ -47,7 +48,7 @@ function useAfterAuth(redirectTo?: string) {
 }
 
 function SubmitButton({ busy, label }: { busy: boolean; label: string }) {
-  return <button className="min-h-12 w-full bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:opacity-60" disabled={busy} type="submit">{busy ? "Please wait…" : label}</button>;
+  return <button aria-busy={busy} className="inline-flex min-h-12 w-full items-center justify-center bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:opacity-60" disabled={busy} type="submit">{busy ? <LoadingSpinner label="Please wait…" /> : label}</button>;
 }
 
 function ServerMessage({ message }: { message?: string }) {
