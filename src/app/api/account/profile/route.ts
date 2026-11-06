@@ -1,6 +1,6 @@
 import { apiHandler } from "@/server/http/handler";
 import { requireUser } from "@/server/auth/current-user";
-import { BadRequestError } from "@/server/errors";
+import { BadRequestError, UnauthorizedError } from "@/server/errors";
 import { findUserById, updateUserProfile } from "@/server/repositories/user.repository";
 
 export const GET = apiHandler(async () => {
@@ -20,6 +20,6 @@ export const PATCH = apiHandler(async (request) => {
   }
 
   const updated = await updateUserProfile(auth.id, { name, phone });
+  if (!updated) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
   return Response.json({ user: updated });
 });
-

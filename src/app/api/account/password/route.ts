@@ -1,6 +1,6 @@
 import { apiHandler } from "@/server/http/handler";
 import { requireUser } from "@/server/auth/current-user";
-import { BadRequestError } from "@/server/errors";
+import { BadRequestError, UnauthorizedError } from "@/server/errors";
 import { hashPassword, verifyPassword } from "@/server/lib/password";
 import { getUserWithPasswordById, updateUserPassword } from "@/server/repositories/user.repository";
 
@@ -32,10 +32,11 @@ export const POST = apiHandler(async (request) => {
   }
 
   const newHash = await hashPassword(newPassword);
-  await updateUserPassword(auth.id, newHash);
+  if (!(await updateUserPassword(auth.id, newHash))) {
+    throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+  }
 
   return Response.json({
     message: user.hasPassword ? "Password changed successfully." : "Password created successfully. You can now also log in using your password.",
   });
 });
-

@@ -34,6 +34,7 @@ async function DashboardRoute({ params }: { params: Promise<{ page: string }> })
     email: auth.email,
     phone: auth.phone ?? "",
     role: auth.role,
+    isBlocked: auth.isBlocked,
     hasPassword: auth.hasPassword ?? true,
     isGoogleUser: auth.isGoogleUser ?? false,
     addresses: auth.addresses ?? [],

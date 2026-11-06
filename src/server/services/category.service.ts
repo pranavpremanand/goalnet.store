@@ -16,6 +16,15 @@ export async function listCategories(): Promise<CategoryDto[]> {
   return categories.map((category) => ({ ...category, productCount: counts.get(category.id) ?? 0 }));
 }
 
+export async function reorderCategories(ids: string[]) {
+  const categories = await categoryRepository.listCategories();
+  const expected = new Set(categories.map((category) => category.id));
+  if (ids.length !== categories.length || new Set(ids).size !== ids.length || ids.some((id) => !expected.has(id))) {
+    throw new BadRequestError("The category list changed. Refresh the page and try again.");
+  }
+  await categoryRepository.reorderCategories(ids);
+}
+
 // Storefront: only categories the admin has switched on.
 export async function listActiveCategories(): Promise<PublicCategory[]> {
   const categories = await categoryRepository.listCategories({ activeOnly: true });

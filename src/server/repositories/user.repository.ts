@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 import { connectToDatabase } from "@/server/db/connect";
+import { NotFoundError, UnauthorizedError } from "@/server/errors";
 import { UserModel, type UserRole, type UserAddressAttrs } from "@/server/models/user.model";
 
 export type UserAddressRecord = {
@@ -20,6 +21,7 @@ export type UserRecord = {
   email: string;
   phone: string;
   role: UserRole;
+  isBlocked: boolean;
   hasPassword: boolean;
   isGoogleUser: boolean;
   addresses: UserAddressRecord[];
@@ -35,6 +37,7 @@ type UserDoc = {
   email: string;
   phone?: string;
   role: UserRole;
+  isBlocked?: boolean;
   passwordHash?: string;
   googleSub?: string;
   addresses?: Array<UserAddressAttrs & { _id?: { toString(): string } }>;
@@ -49,6 +52,7 @@ function toRecord(doc: UserDoc): UserRecord {
     email: doc.email,
     phone: doc.phone ?? "",
     role: doc.role,
+    isBlocked: Boolean(doc.isBlocked),
     hasPassword: Boolean(doc.passwordHash),
     isGoogleUser: Boolean(doc.googleSub),
     addresses: (doc.addresses ?? []).map((addr) => ({
@@ -86,6 +90,11 @@ export async function userEmailExists(email: string) {
   return (await UserModel.exists({ email })) !== null;
 }
 
+export async function isUserBlocked(id: string) {
+  await connectToDatabase();
+  return (await UserModel.exists({ _id: id, isBlocked: true })) !== null;
+}
+
 export async function findUserById(id: string): Promise<UserRecord | null> {
   await connectToDatabase();
   const doc = await UserModel.findById(id).select("+passwordHash").lean<UserDoc>();
@@ -102,6 +111,68 @@ export async function findUserByGoogleSub(googleSub: string): Promise<UserRecord
   await connectToDatabase();
   const doc = await UserModel.findOne({ googleSub }).select("+passwordHash").lean<UserDoc>();
   return doc ? toRecord(doc) : null;
+}
+
+export type AdminUserRecord = {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  isBlocked: boolean;
+};
+
+export async function listAdminUsers(input: { page: number; limit: number; q: string }) {
+  await connectToDatabase();
+  const query: { role: "customer"; $or?: Array<Record<string, RegExp>> } = { role: "customer" };
+  if (input.q) {
+    const escaped = input.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(escaped, "i");
+    query.$or = [{ name: pattern }, { email: pattern }];
+  }
+  const [docs, total] = await Promise.all([
+    UserModel.find(query)
+      .select("name email createdAt isBlocked")
+      .sort({ createdAt: -1 })
+      .skip((input.page - 1) * input.limit)
+      .limit(input.limit)
+      .lean<Array<{ _id: Types.ObjectId; name: string; email: string; createdAt: Date; isBlocked?: boolean }>>(),
+    UserModel.countDocuments(query),
+  ]);
+  return {
+    users: docs.map((doc): AdminUserRecord => ({
+      id: doc._id.toString(),
+      name: doc.name,
+      email: doc.email,
+      createdAt: doc.createdAt.toISOString(),
+      isBlocked: Boolean(doc.isBlocked),
+    })),
+    total,
+    page: input.page,
+    pages: Math.ceil(total / input.limit),
+  };
+}
+
+export async function setCustomerBlocked(id: string, isBlocked: boolean): Promise<AdminUserRecord | null> {
+  await connectToDatabase();
+  const doc = await UserModel.findOneAndUpdate(
+    { _id: id, role: "customer" },
+    { $set: { isBlocked } },
+    { returnDocument: "after", runValidators: true },
+  ).select("name email createdAt isBlocked").lean<{
+    _id: Types.ObjectId;
+    name: string;
+    email: string;
+    createdAt: Date;
+    isBlocked?: boolean;
+  }>();
+  if (!doc) return null;
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    email: doc.email,
+    createdAt: doc.createdAt.toISOString(),
+    isBlocked: Boolean(doc.isBlocked),
+  };
 }
 
 export async function linkGoogleIdentity(userId: string, googleSub: string): Promise<UserRecord | null> {
@@ -131,8 +202,8 @@ export async function updateUserProfile(id: string, updates: { name?: string; ph
   const $set: Record<string, string> = {};
   if (typeof updates.name === "string") $set.name = updates.name.trim();
   if (typeof updates.phone === "string") $set.phone = updates.phone.trim();
-  const doc = await UserModel.findByIdAndUpdate(
-    id,
+  const doc = await UserModel.findOneAndUpdate(
+    { _id: id, isBlocked: { $ne: true } },
     { $set },
     { returnDocument: "after", runValidators: true },
   ).select("+passwordHash").lean<UserDoc>();
@@ -141,17 +212,12 @@ export async function updateUserProfile(id: string, updates: { name?: string; ph
 
 export async function updateUserPassword(id: string, passwordHash: string): Promise<boolean> {
   await connectToDatabase();
-  const result = await UserModel.updateOne({ _id: id }, { $set: { passwordHash } });
+  const result = await UserModel.updateOne({ _id: id, isBlocked: { $ne: true } }, { $set: { passwordHash } });
   return result.modifiedCount > 0;
 }
 
-export async function addUserAddress(id: string, address: Omit<UserAddressRecord, "id">): Promise<UserAddressRecord[] | null> {
-  await connectToDatabase();
-  const user = await UserModel.findById(id);
-  if (!user) return null;
-  user.addresses.push(address as any);
-  await user.save();
-  return user.addresses.map((addr) => ({
+function toAddressRecords(addresses: Array<UserAddressAttrs & { _id?: { toString(): string } }>) {
+  return addresses.map((addr) => ({
     id: addr._id?.toString() ?? "",
     name: addr.name,
     email: addr.email,
@@ -164,36 +230,44 @@ export async function addUserAddress(id: string, address: Omit<UserAddressRecord
   }));
 }
 
-export async function removeUserAddress(id: string, addressId: string): Promise<UserAddressRecord[] | null> {
+export async function addUserAddress(id: string, address: Omit<UserAddressRecord, "id">): Promise<UserAddressRecord[]> {
   await connectToDatabase();
-  const user = await UserModel.findById(id);
-  if (!user) return null;
-  user.addresses = user.addresses.filter((addr) => addr._id?.toString() !== addressId) as any;
-  await user.save();
-  return user.addresses.map((addr) => ({
-    id: addr._id?.toString() ?? "",
-    name: addr.name,
-    email: addr.email,
-    phone: addr.phone,
-    pin: addr.pin,
-    state: addr.state,
-    city: addr.city,
-    address: addr.address,
-    apartment: addr.apartment ?? "",
-  }));
+  const user = await UserModel.findOneAndUpdate(
+    { _id: id, isBlocked: { $ne: true } },
+    { $push: { addresses: address } },
+    { returnDocument: "after", runValidators: true },
+  ).lean<UserDoc>();
+  if (!user) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+  return toAddressRecords(user.addresses ?? []);
+}
+
+export async function removeUserAddress(id: string, addressId: string): Promise<UserAddressRecord[]> {
+  if (!Types.ObjectId.isValid(addressId)) throw new NotFoundError("Address not found.");
+  await connectToDatabase();
+  const user = await UserModel.findOneAndUpdate(
+    { _id: id, isBlocked: { $ne: true } },
+    { $pull: { addresses: { _id: new Types.ObjectId(addressId) } } },
+    { returnDocument: "after", runValidators: true },
+  ).lean<UserDoc>();
+  if (!user) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+  return toAddressRecords(user.addresses ?? []);
 }
 
 export async function toggleUserFavorite(id: string, productId: string): Promise<string[]> {
   await connectToDatabase();
-  const user = await UserModel.findById(id);
-  if (!user) return [];
+  const user = await UserModel.findOne({ _id: id, isBlocked: { $ne: true } }).lean<UserDoc>();
+  if (!user) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
   const prodObjId = new Types.ObjectId(productId);
-  const exists = user.favorites.some((fav) => fav.toString() === productId);
-  if (exists) {
-    user.favorites = user.favorites.filter((fav) => fav.toString() !== productId) as any;
-  } else {
-    user.favorites.push(prodObjId as any);
-  }
-  await user.save();
-  return user.favorites.map((fav) => fav.toString());
+  const favorites = user.favorites ?? [];
+  const exists = favorites.some((fav) => fav.toString() === productId);
+  const updatedFavorites = exists
+    ? favorites.filter((fav) => fav.toString() !== productId)
+    : [...favorites, prodObjId];
+  const updatedUser = await UserModel.findOneAndUpdate(
+    { _id: id, isBlocked: { $ne: true } },
+    { $set: { favorites: updatedFavorites } },
+    { returnDocument: "after", runValidators: true },
+  ).lean<UserDoc>();
+  if (!updatedUser) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+  return (updatedUser.favorites ?? []).map((favorite) => favorite.toString());
 }

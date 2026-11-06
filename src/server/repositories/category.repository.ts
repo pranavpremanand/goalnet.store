@@ -52,6 +52,14 @@ export async function updateCategory(id: string, data: CategoryData): Promise<Ca
   return doc ? toRecord(doc) : null;
 }
 
+export async function reorderCategories(ids: string[]) {
+  await connectToDatabase();
+  if (ids.length === 0) return;
+  await CategoryModel.bulkWrite(ids.map((id, displayOrder) => ({
+    updateOne: { filter: { _id: id }, update: { $set: { displayOrder } } },
+  })));
+}
+
 export async function deleteCategory(id: string) {
   await connectToDatabase();
   return (await CategoryModel.deleteOne({ _id: id })).deletedCount === 1;

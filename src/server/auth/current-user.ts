@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { ForbiddenError, UnauthorizedError } from "@/server/errors";
 import { readSessionCookie } from "@/server/http/session-cookie";
 import { getUserFromSessionToken, type AuthUser } from "@/server/services/auth.service";
+import { isUserBlocked } from "@/server/repositories/user.repository";
 
 // Memoized per request, so a layout and its pages share a single database lookup.
 export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
@@ -16,6 +17,7 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
 export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) throw new UnauthorizedError();
+  if (await isUserBlocked(user.id)) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
   return user;
 }
 

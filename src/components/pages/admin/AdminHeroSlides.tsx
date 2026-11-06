@@ -5,25 +5,29 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LuCheck as Check, LuPencil as Pencil, LuPlus as Plus, LuTrash2 as Trash2, LuX as X } from "react-icons/lu";
+import { LuCheck as Check, LuChevronDown as ChevronDown, LuChevronUp as ChevronUp, LuGripVertical as GripVertical, LuPencil as Pencil, LuPlus as Plus, LuTrash2 as Trash2, LuX as X } from "react-icons/lu";
 import { LoadingSpinner } from "@/components/common/Loading";
+import { SortableTable, SortableTableRow } from "@/components/pages/admin/SortableTable";
+import { moveItem } from "@/lib/reorder";
 import { ApiError, apiRequest } from "@/lib/api-client";
 import { showApiError } from "@/lib/form-errors";
 import type { ImageAsset } from "@/lib/types/catalog";
-import { heroSlideInputSchema, type HeroSlideInput } from "@/lib/validation/hero";
+import { resolveHeroMediaType, type HeroMedia } from "@/lib/types/hero";
+import { heroSlideInputSchema, type HeroSlideInput, type HeroSlideOutput } from "@/lib/validation/hero";
 import { Field, FormError, adminInputClass } from "@/components/pages/admin/FormFields";
 import { ImageUploader } from "@/components/pages/admin/ImageUploader";
+import { HeroMediaUploader } from "@/components/pages/admin/HeroMediaUploader";
 import { useUploadSession } from "@/components/pages/admin/useUploadSession";
 
 type HeroSlide = HeroSlideInput & { id: string; createdAt: string; updatedAt: string };
 
 const emptySlide: HeroSlideInput = {
-  tagline: "", heading: "", highlightedWord: "", description: "", image: { url: "", fileId: "", alt: "" }, buttons: [], isActive: true, displayOrder: 0,
+  tagline: "", heading: "", highlightedWord: "", description: "", image: { url: "", fileId: "", alt: "", mediaType: "image" }, buttons: [], isActive: true, displayOrder: 0,
 };
 
 function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onClose: () => void; onSaved: (message: string) => void }) {
   const uploads = useUploadSession();
-  const { register, control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<HeroSlideInput>({
+  const { register, control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<HeroSlideInput, unknown, HeroSlideOutput>({
     resolver: zodResolver(heroSlideInputSchema),
     defaultValues: slide ? {
       tagline: slide.tagline, heading: slide.heading, highlightedWord: slide.highlightedWord, description: slide.description,
@@ -38,8 +42,12 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
 
   async function onSubmit(values: HeroSlideInput) {
     try {
-      if (slide) await apiRequest(`/api/admin/hero-slides/${slide.id}`, { method: "PUT", body: JSON.stringify(values) });
-      else await apiRequest("/api/admin/hero-slides", { method: "POST", body: JSON.stringify(values) });
+      const normalizedValues = {
+        ...values,
+        image: { ...values.image, mediaType: resolveHeroMediaType(values.image) },
+      };
+      if (slide) await apiRequest(`/api/admin/hero-slides/${slide.id}`, { method: "PUT", body: JSON.stringify(normalizedValues) });
+      else await apiRequest("/api/admin/hero-slides", { method: "POST", body: JSON.stringify(normalizedValues) });
       uploads.markSaved();
       onSaved(slide ? "Slide updated." : "Slide added.");
     } catch (error) {
@@ -66,10 +74,42 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
           </div>
           <Field error={errors.description?.message} label="Description"><textarea {...register("description")} aria-invalid={Boolean(errors.description)} className={adminInputClass} rows={3} /></Field>
           <div>
-            <p className="text-xs font-semibold">Background image</p>
-            <p className="mt-1 text-[11px] text-muted">Wide landscape images work best. JPG, PNG or WebP, up to 5 MB.</p>
+            <p className="text-xs font-semibold">Background media</p>
+            <p className="mt-1 text-[11px] text-muted">Choose an image or a short video for this slide.</p>
             <div className="mt-2">
-                <Controller control={control} name="image" render={({ field }) => <ImageUploader error={errors.image?.message ?? errors.image?.url?.message} max={1} onChange={(images: ImageAsset[]) => field.onChange(images[0] ?? { url: "", fileId: "", alt: "" })} session={uploads} target="hero" value={field.value?.fileId ? [field.value] : []} />} />
+              <Controller control={control} name="image" render={({ field }) => (
+                <div>
+                  <Field label="Media type">
+                    <select
+                      className={adminInputClass}
+                      onChange={(event) => {
+                        const mediaType: HeroMedia["mediaType"] = event.target.value === "video" ? "video" : "image";
+                        if (field.value.fileId) uploads.release(field.value.fileId);
+                        field.onChange({ url: "", fileId: "", alt: "", mediaType });
+                      }}
+                      value={resolveHeroMediaType(field.value)}
+                    >
+                      <option value="image">Image</option>
+                      <option value="video">Video</option>
+                    </select>
+                  </Field>
+                  <div className="mt-3">
+                    {resolveHeroMediaType(field.value) === "video" ? (
+                      <HeroMediaUploader onChange={field.onChange} session={uploads} value={{ ...field.value, mediaType: "video" }} />
+                    ) : (
+                      <ImageUploader
+                        error={errors.image?.message ?? errors.image?.url?.message}
+                        max={1}
+                        onChange={(images: ImageAsset[]) => field.onChange(images[0] ? { ...images[0], mediaType: "image" } : { url: "", fileId: "", alt: "", mediaType: "image" })}
+                        session={uploads}
+                        target="hero"
+                        value={field.value?.fileId ? [{ ...field.value, alt: field.value.alt }] : []}
+                      />
+                    )}
+                  </div>
+                  {errors.image?.message && <p className="mt-2 text-xs text-red-700" role="alert">{errors.image.message}</p>}
+                </div>
+              )} />
             </div>
           </div>
           <div>
@@ -96,16 +136,58 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
 
 export function AdminHeroSlides({ slides }: { slides: HeroSlide[] }) {
   const router = useRouter();
+  const [orderedSlides, setOrderedSlides] = useState<HeroSlide[] | null>(null);
   const [editor, setEditor] = useState<{ open: false } | { open: true; slide: HeroSlide | null }>({ open: false });
   const [deleting, setDeleting] = useState<HeroSlide | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const displayedSlides = orderedSlides ?? slides;
 
   function saved(message: string) {
+    setOrderedSlides(null);
     setEditor({ open: false });
     setNotice(message);
     router.refresh();
+  }
+
+  async function saveSlideOrder(ids: string[]) {
+    if (reordering) return;
+    const slidesById = new Map(displayedSlides.map((slide) => [slide.id, slide]));
+    const reordered = ids.flatMap((id) => {
+      const slide = slidesById.get(id);
+      return slide ? [slide] : [];
+    });
+    if (reordered.length !== displayedSlides.length) return;
+    setOrderedSlides(reordered.map((slide, displayOrder) => ({ ...slide, displayOrder })));
+    setReordering(true);
+    setError("");
+    try {
+      await apiRequest("/api/admin/hero-slides/reorder", {
+        method: "PATCH",
+        body: JSON.stringify({ ids: reordered.map((slide) => slide.id) }),
+      });
+      setNotice("Slide order updated.");
+      router.refresh();
+    } catch (failure) {
+      setOrderedSlides(null);
+      setError(failure instanceof ApiError ? failure.message : "Could not save the new slide order.");
+      router.refresh();
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  function reorderSlides(fromId: string, toId: string) {
+    const reordered = moveItem(displayedSlides, fromId, toId);
+    if (reordered !== displayedSlides) void saveSlideOrder(reordered.map((slide) => slide.id));
+  }
+
+  function moveSlideBy(slideId: string, offset: number) {
+    const index = displayedSlides.findIndex((slide) => slide.id === slideId);
+    const target = displayedSlides[index + offset];
+    if (target) void reorderSlides(slideId, target.id);
   }
 
   async function removeSlide(slide: HeroSlide) {
@@ -113,8 +195,9 @@ export function AdminHeroSlides({ slides }: { slides: HeroSlide[] }) {
     setError("");
     try {
       await apiRequest(`/api/admin/hero-slides/${slide.id}`, { method: "DELETE" });
+      setOrderedSlides(null);
       setDeleting(null);
-      setNotice("Slide deleted. Its image was removed from ImageKit.");
+      setNotice("Slide deleted. Its media was removed from ImageKit.");
       router.refresh();
     } catch (failure) {
       setError(failure instanceof ApiError ? failure.message : "Something went wrong. Please try again.");
@@ -125,16 +208,40 @@ export function AdminHeroSlides({ slides }: { slides: HeroSlide[] }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase text-muted">Homepage</p><h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Hero carousel</h1><p className="mt-2 text-sm text-muted">Manage the slides shown at the top of the homepage.</p></div><button className="inline-flex min-h-11 items-center gap-2 bg-brand px-5 text-xs font-bold uppercase" onClick={() => { setNotice(""); setEditor({ open: true, slide: null }); }} type="button"><Plus size={15} /> New slide</button></div>
+      <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase text-muted">Homepage</p><h1 className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Hero carousel</h1><p className="mt-2 text-sm text-muted">Manage the slides shown at the top of the homepage. Drag rows or use the arrows to reorder.</p></div><button className="inline-flex min-h-11 items-center gap-2 bg-brand px-5 text-xs font-bold uppercase disabled:opacity-50" disabled={reordering} onClick={() => { setNotice(""); setEditor({ open: true, slide: null }); }} type="button"><Plus size={15} /> New slide</button></div>
       {notice && <p aria-live="polite" className="mt-5 flex items-center gap-2 bg-canvas p-3 text-sm"><Check size={15} />{notice}</p>}
-      {slides.length === 0 ? <p className="mt-6 border border-dashed border-line p-8 text-center text-sm text-muted">No saved slides. The homepage is showing its default slide until you add one.</p> : (
-        <div className="mt-6 overflow-x-auto border border-line">
-          <table className="w-full min-w-[780px] text-left text-sm">
-            <thead className="bg-canvas text-[10px] font-bold uppercase text-muted"><tr><th className="px-4 py-3">Slide</th><th className="px-4 py-3">Tagline</th><th className="px-4 py-3">Order</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
-            <tbody>{slides.map((slide) => <tr className="border-t border-line" key={slide.id}><td className="px-4 py-3"><div className="flex items-center gap-3"><div className="relative h-12 w-20 shrink-0 overflow-hidden bg-canvas"><Image alt={slide.image.alt || slide.heading} className="object-cover" fill sizes="80px" src={slide.image.url} /></div><div><p className="font-semibold">{slide.heading}</p><p className="text-xs text-muted">{slide.buttons.map((button) => button.label).join(" · ") || "No buttons"}</p></div></div></td><td className="px-4 py-3">{slide.tagline}</td><td className="px-4 py-3">{slide.displayOrder}</td><td className="px-4 py-3"><span className={`px-2 py-1 text-[10px] font-bold uppercase ${slide.isActive ? "bg-brand" : "bg-canvas text-muted"}`}>{slide.isActive ? "Active" : "Inactive"}</span></td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button aria-label={`Edit ${slide.heading}`} className="grid size-9 place-items-center border border-line" onClick={() => { setNotice(""); setEditor({ open: true, slide }); }} type="button"><Pencil size={15} /></button><button aria-label={`Delete ${slide.heading}`} className="grid size-9 place-items-center border border-line text-red-700" onClick={() => { setError(""); setDeleting(slide); }} type="button"><Trash2 size={15} /></button></div></td></tr>)}</tbody>
-          </table>
-        </div>
+      {displayedSlides.length === 0 ? <p className="mt-6 border border-dashed border-line p-8 text-center text-sm text-muted">No saved slides. The homepage is showing its default slide until you add one.</p> : (
+        <SortableTable disabled={reordering} items={displayedSlides.map((slide) => slide.id)} onReorder={(ids) => void saveSlideOrder(ids)}>
+          <div className="mt-6 overflow-x-auto no-scrollbar border border-line">
+            <table className="w-full min-w-[820px] text-left text-sm">
+              <thead className="bg-canvas text-[10px] font-bold uppercase text-muted"><tr><th className="px-2 py-3">Drag any row</th><th className="px-4 py-3">Slide</th><th className="px-4 py-3">Tagline</th><th className="px-4 py-3">Media type</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
+              <tbody>{displayedSlides.map((slide, index) => (
+                <SortableTableRow className="border-t border-line hover:bg-canvas/70" disabled={reordering} id={slide.id} key={slide.id}>
+                <td className="px-2 py-3">
+                  <div className="flex items-center gap-1">
+                    <button
+                      aria-label={`Drag to reorder ${slide.heading}`}
+                      className="grid size-9 place-items-center border border-line"
+                      type="button"
+                    ><GripVertical size={17} /></button>
+                    <div className="flex flex-col">
+                      <button aria-label={`Move ${slide.heading} up`} className="p-1 text-muted disabled:opacity-30" disabled={reordering || index === 0} onClick={() => moveSlideBy(slide.id, -1)} onPointerDown={(event) => event.stopPropagation()} type="button"><ChevronUp size={14} /></button>
+                      <button aria-label={`Move ${slide.heading} down`} className="p-1 text-muted disabled:opacity-30" disabled={reordering || index === displayedSlides.length - 1} onClick={() => moveSlideBy(slide.id, 1)} onPointerDown={(event) => event.stopPropagation()} type="button"><ChevronDown size={14} /></button>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="relative h-12 w-20 shrink-0 overflow-hidden bg-canvas">{resolveHeroMediaType(slide.image) === "video" ? <video aria-label={`${slide.heading} video thumbnail`} className="size-full object-cover" muted onLoadedData={(event) => { const video = event.currentTarget; if (Number.isFinite(video.duration) && video.duration > 0) video.currentTime = Math.min(1, video.duration / 2); }} playsInline preload="auto" src={slide.image.url} /> : <Image alt={slide.image.alt || slide.heading} className="object-cover" fill sizes="80px" src={slide.image.url} />}</div><div><p className="font-semibold">{slide.heading}</p><p className="text-xs text-muted">{slide.buttons.map((button) => button.label).join(" · ") || "No buttons"}</p></div></div></td>
+                <td className="px-4 py-3">{slide.tagline}</td>
+                <td className="px-4 py-3"><span className="text-xs font-semibold uppercase text-muted">{resolveHeroMediaType(slide.image)}</span></td>
+                <td className="px-4 py-3"><span className={`px-2 py-1 text-[10px] font-bold uppercase ${slide.isActive ? "bg-brand" : "bg-canvas text-muted"}`}>{slide.isActive ? "Active" : "Inactive"}</span></td>
+                <td className="px-4 py-3"><div className="flex justify-end gap-2"><button aria-label={`Edit ${slide.heading}`} className="grid size-9 place-items-center border border-line" disabled={reordering} onClick={() => { setNotice(""); setEditor({ open: true, slide }); }} type="button"><Pencil size={15} /></button><button aria-label={`Delete ${slide.heading}`} className="grid size-9 place-items-center border border-line text-red-700" disabled={reordering} onClick={() => { setError(""); setDeleting(slide); }} type="button"><Trash2 size={15} /></button></div></td>
+                </SortableTableRow>
+            ))}</tbody>
+            </table>
+          </div>
+        </SortableTable>
       )}
+      {reordering && <p aria-live="polite" className="mt-3"><LoadingSpinner label="Saving slide order…" /></p>}
       {editor.open && <SlideEditor key={editor.slide?.id ?? "new"} onClose={() => setEditor({ open: false })} onSaved={saved} slide={editor.slide} />}
       {deleting && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4">

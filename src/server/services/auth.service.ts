@@ -46,7 +46,7 @@ export async function signIn(input: SignInInput, userAgent?: string | null, opti
   const passwordMatches = await verifyPassword(input.password, user?.passwordHash ?? (await decoyHash));
 
   // A wrong role gets the same answer as a wrong password, so admin accounts are not revealed.
-  if (!user || !passwordMatches || (options.role && user.role !== options.role)) throw new UnauthorizedError("Invalid email or password.");
+  if (!user || !passwordMatches || user.isBlocked || (options.role && user.role !== options.role)) throw new UnauthorizedError("Invalid email or password.");
   return startSession(user, userAgent);
 }
 
@@ -69,10 +69,14 @@ export async function signInWithGoogle(credential: string, userAgent?: string | 
   }
 
   const byGoogle = await findUserByGoogleSub(googleSub);
-  if (byGoogle) return startSession(byGoogle, userAgent);
+  if (byGoogle) {
+    if (byGoogle.isBlocked) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+    return startSession(byGoogle, userAgent);
+  }
 
   const byEmail = await findUserByEmail(email);
   if (byEmail) {
+    if (byEmail.isBlocked) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
     const linked = await linkGoogleIdentity(byEmail.id, googleSub);
     if (!linked) throw new ConflictError("This account is already linked to another Google account. Sign in with your original method.");
     return startSession(linked, userAgent);
@@ -86,7 +90,7 @@ export async function signInWithGoogle(credential: string, userAgent?: string | 
   } catch (error) {
     if (!isDuplicateKeyError(error)) throw error;
     const racedUser = await findUserByGoogleSub(googleSub);
-    if (racedUser) return startSession(racedUser, userAgent);
+    if (racedUser && !racedUser.isBlocked) return startSession(racedUser, userAgent);
     throw new ConflictError("An account already exists with this email. Sign in with that account, then connect Google.");
   }
 }
@@ -99,5 +103,6 @@ export async function getUserFromSessionToken(sessionToken: string | undefined):
   if (!sessionToken) return null;
   const userId = await findActiveSessionUserId(hashSessionToken(sessionToken));
   if (!userId) return null;
-  return findUserById(userId);
+  const user = await findUserById(userId);
+  return user?.isBlocked ? null : user;
 }

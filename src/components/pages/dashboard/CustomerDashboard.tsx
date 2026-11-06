@@ -385,7 +385,7 @@ export function CustomerDashboard({
             <p className="text-xs text-muted truncate max-w-[160px]">{displayEmail}</p>
           </div>
         </div>
-        <nav aria-label="Customer dashboard" className="mt-4 grid grid-cols-4 gap-1 sm:grid-cols-7 lg:grid-cols-1">
+        <nav aria-label="Customer dashboard" className="mt-4 grid grid-cols-3 gap-1 sm:grid-cols-7 lg:grid-cols-1">
           {sections.map(({ id, label, icon: Icon }) => (
             <Link
               aria-current={page === id ? "page" : undefined}

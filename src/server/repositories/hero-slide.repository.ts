@@ -1,6 +1,7 @@
 import type { Types } from "mongoose";
 import { connectToDatabase } from "@/server/db/connect";
 import type { HeroSlideInput } from "@/lib/validation/hero";
+import { resolveHeroMediaType } from "@/lib/types/hero";
 import { HeroSlideModel, type HeroSlideAttrs } from "@/server/models/hero-slide.model";
 
 export type HeroSlideRecord = Omit<HeroSlideAttrs, "createdAt" | "updatedAt"> & { id: string; createdAt: string; updatedAt: string };
@@ -14,7 +15,12 @@ function toRecord(doc: HeroSlideDoc): HeroSlideRecord {
     heading: doc.heading,
     highlightedWord: doc.highlightedWord ?? "",
     description: doc.description,
-    image: { url: doc.image.url, fileId: doc.image.fileId, alt: doc.image.alt ?? "" },
+    image: {
+      url: doc.image.url,
+      fileId: doc.image.fileId,
+      alt: doc.image.alt ?? "",
+      mediaType: resolveHeroMediaType({ url: doc.image.url, mediaType: doc.image.mediaType }),
+    },
     buttons: doc.buttons.map((button) => ({ label: button.label, href: button.href, style: button.style })),
     isActive: doc.isActive,
     displayOrder: doc.displayOrder,
@@ -47,12 +53,20 @@ export async function updateHeroSlide(id: string, input: HeroSlideInput): Promis
   return doc ? toRecord(doc) : null;
 }
 
+export async function reorderHeroSlides(ids: string[]) {
+  await connectToDatabase();
+  if (ids.length === 0) return;
+  await HeroSlideModel.bulkWrite(ids.map((id, displayOrder) => ({
+    updateOne: { filter: { _id: id }, update: { $set: { displayOrder } } },
+  })));
+}
+
 export async function deleteHeroSlide(id: string) {
   await connectToDatabase();
   return (await HeroSlideModel.deleteOne({ _id: id })).deletedCount === 1;
 }
 
-export async function isHeroImageFileUsed(fileId: string) {
+export async function isHeroMediaFileUsed(fileId: string) {
   await connectToDatabase();
   return (await HeroSlideModel.exists({ "image.fileId": fileId })) !== null;
 }

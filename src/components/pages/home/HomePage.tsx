@@ -54,7 +54,7 @@ export function HomePage() {
         <div className="relative aspect-[4/3] overflow-hidden bg-canvas">
           <Image
             alt="Messi taking freeking vs Jordan - WC26"
-            className="object-cover object-bottom"
+            className="object-cover object-center"
             fill
             sizes="(max-width: 768px) 100vw, 45vw"
             src="/images/home-about.jpg"

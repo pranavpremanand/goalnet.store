@@ -45,4 +45,7 @@ export const AVAILABILITY_LABELS: Record<AvailabilityStatus, string> = {
 
 export const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const HERO_VIDEO_MIME_TYPES = ["video/mp4", "video/webm"] as const;
+export const MAX_HERO_VIDEO_BYTES = 20 * 1024 * 1024;
+export const MAX_HERO_VIDEO_DURATION_SECONDS = 10;
 export const MAX_PRODUCT_IMAGES = 6;

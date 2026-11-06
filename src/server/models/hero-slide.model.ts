@@ -5,7 +5,7 @@ export interface HeroSlideAttrs {
   heading: string;
   highlightedWord: string;
   description: string;
-  image: { url: string; fileId: string; alt: string };
+  image: { url: string; fileId: string; alt: string; mediaType: "image" | "video" };
   buttons: { label: string; href: string; style: "primary" | "secondary" }[];
   isActive: boolean;
   displayOrder: number;
@@ -23,6 +23,7 @@ const heroSlideSchema = new Schema<HeroSlideAttrs>(
       url: { type: String, required: true },
       fileId: { type: String, required: true },
       alt: { type: String, default: "", trim: true, maxlength: 200 },
+      mediaType: { type: String, enum: ["image", "video"], default: "image" },
     },
     buttons: [
       {

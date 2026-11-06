@@ -1,6 +1,7 @@
 import { createHmac, randomUUID } from "node:crypto";
-import { IMAGE_MIME_TYPES, MAX_IMAGE_BYTES } from "@/lib/catalog-constants";
+import { HERO_VIDEO_MIME_TYPES, IMAGE_MIME_TYPES, MAX_HERO_VIDEO_BYTES, MAX_IMAGE_BYTES } from "@/lib/catalog-constants";
 import type { ImageAsset, UploadAuth } from "@/lib/types/catalog";
+import type { HeroMedia } from "@/lib/types/hero";
 import type { UploadTarget } from "@/lib/validation/catalog";
 import { getImageKitConfig } from "@/server/config/env";
 import { BadRequestError, ServiceUnavailableError } from "@/server/errors";
@@ -22,6 +23,40 @@ function basicAuth(privateKey: string) {
   return `Basic ${Buffer.from(`${privateKey}:`).toString("base64")}`;
 }
 
+type ImageKitFileDetails = { fileType?: string; mime?: string; size?: number; filePath?: string; url?: string };
+
+function matchesImageKitFilePath(fileUrl: string, urlEndpoint: string, filePath: string) {
+  try {
+    const endpoint = new URL(urlEndpoint);
+    const submitted = new URL(fileUrl);
+    const endpointPath = endpoint.pathname.replace(/\/+$/, "");
+    const expectedPath = `${endpointPath}${filePath.startsWith("/") ? filePath : `/${filePath}`}`;
+    return submitted.origin === endpoint.origin
+      && decodeURIComponent(submitted.pathname).replace(/\/+$/, "") === decodeURIComponent(expectedPath).replace(/\/+$/, "");
+  } catch {
+    return false;
+  }
+}
+
+async function getFileDetails(fileId: string, field: string, mediaLabel: string): Promise<ImageKitFileDetails> {
+  const invalid = (message: string) => new BadRequestError(message, { [field]: [message] });
+  const { privateKey } = requireConfig();
+  try {
+    const response = await fetch(`${API_BASE}/files/${encodeURIComponent(fileId)}/details`, {
+      headers: { Authorization: basicAuth(privateKey), Accept: "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (response.status === 404) throw invalid(`The uploaded ${mediaLabel} could not be found. Please upload it again`);
+    if (!response.ok) throw new Error(`ImageKit responded with ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    if (error instanceof BadRequestError) throw error;
+    console.error(`ImageKit ${mediaLabel} verification failed`, error);
+    throw new ServiceUnavailableError(`The ${mediaLabel} could not be verified right now. Please try again.`);
+  }
+}
+
 // Short-lived signature that lets the browser upload straight to ImageKit without seeing the private key.
 export function createUploadAuth(target: UploadTarget): UploadAuth {
   const { publicKey, privateKey, urlEndpoint } = requireConfig();
@@ -32,26 +67,12 @@ export function createUploadAuth(target: UploadTarget): UploadAuth {
 }
 
 async function verifyImage(image: ImageAsset, folder: string, field: string) {
-  const { privateKey, urlEndpoint } = requireConfig();
+  const { urlEndpoint } = requireConfig();
   const invalid = (message: string) => new BadRequestError(message, { [field]: [message] });
 
   if (!image.url.startsWith(`${urlEndpoint}/`)) throw invalid("The image must be uploaded through the admin uploader");
 
-  let details: { fileType?: string; mime?: string; size?: number; filePath?: string; url?: string };
-  try {
-    const response = await fetch(`${API_BASE}/files/${encodeURIComponent(image.fileId)}/details`, {
-      headers: { Authorization: basicAuth(privateKey), Accept: "application/json" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
-    });
-    if (response.status === 404) throw invalid("The uploaded image could not be found. Please upload it again");
-    if (!response.ok) throw new Error(`ImageKit responded with ${response.status}`);
-    details = await response.json();
-  } catch (error) {
-    if (error instanceof BadRequestError) throw error;
-    console.error("ImageKit image verification failed", error);
-    throw new ServiceUnavailableError("The image could not be verified right now. Please try again.");
-  }
+  const details = await getFileDetails(image.fileId, field, "image");
 
   if (details.fileType !== "image" || !IMAGE_MIME_TYPES.includes(details.mime as (typeof IMAGE_MIME_TYPES)[number])) throw invalid("Only JPG, PNG or WebP images are allowed");
   if ((details.size ?? 0) > MAX_IMAGE_BYTES) throw invalid("Images must be 5 MB or smaller");
@@ -59,10 +80,40 @@ async function verifyImage(image: ImageAsset, folder: string, field: string) {
   if (!details.url || new URL(details.url).pathname !== new URL(image.url).pathname) throw invalid("The image details do not match the uploaded file");
 }
 
+async function verifyHeroMedia(media: HeroMedia, field: string) {
+  const { urlEndpoint } = requireConfig();
+  const invalid = (message: string) => new BadRequestError(message, { [field]: [message] });
+
+  if (!media.url.startsWith(`${urlEndpoint}/`)) throw invalid("Upload the hero media using the admin uploader");
+
+  const details = await getFileDetails(media.fileId, field, "hero media");
+
+  const maxBytes = media.mediaType === "video" ? MAX_HERO_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  const expectedFileType = media.mediaType === "video" ? "non-image" : "image";
+  const allowedMime = media.mediaType === "video"
+    ? HERO_VIDEO_MIME_TYPES.some((mime) => mime === details.mime)
+    : IMAGE_MIME_TYPES.some((mime) => mime === details.mime);
+  const validFileType = media.mediaType === "video"
+    ? details.fileType === "non-image" || details.fileType === "video"
+    : details.fileType === expectedFileType;
+  if (!validFileType || !allowedMime) {
+    throw invalid(media.mediaType === "video" ? "Only MP4 or WebM videos are allowed" : "Only JPG, PNG or WebP images are allowed");
+  }
+  if (typeof details.size !== "number" || details.size > maxBytes) {
+    throw invalid(media.mediaType === "video" ? "Videos must be 20 MB or smaller" : "Images must be 5 MB or smaller");
+  }
+  if (!details.filePath?.startsWith(`${FOLDERS.hero}/`)) throw invalid("The media was uploaded to the wrong folder");
+  if (!matchesImageKitFilePath(media.url, urlEndpoint, details.filePath)) throw invalid("The media details do not match the uploaded file");
+}
+
 // Images already saved on the record were verified before, so only new ones are checked with ImageKit.
 export async function verifyNewImages(images: ImageAsset[], target: UploadTarget, knownFileIds: Set<string>, field: string) {
   const fresh = images.filter((image) => !knownFileIds.has(image.fileId));
   await Promise.all(fresh.map((image) => verifyImage(image, FOLDERS[target], field)));
+}
+
+export async function verifyNewHeroMedia(media: HeroMedia, knownFileIds: Set<string>, field: string) {
+  if (!knownFileIds.has(media.fileId)) await verifyHeroMedia(media, field);
 }
 
 // Cleanup is best-effort: a failed delete must not fail the request that triggered it.
@@ -90,7 +141,7 @@ async function isFileInUse(fileId: string) {
   const [asCover, asProductImage, asHeroImage] = await Promise.all([
     categoryRepository.isCoverImageFileUsed(fileId),
     productRepository.isImageFileUsed(fileId),
-    heroSlideRepository.isHeroImageFileUsed(fileId),
+    heroSlideRepository.isHeroMediaFileUsed(fileId),
   ]);
   return asCover || asProductImage || asHeroImage;
 }

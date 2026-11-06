@@ -21,6 +21,7 @@ export interface UserAttrs {
   passwordHash?: string;
   googleSub?: string;
   role: UserRole;
+  isBlocked: boolean;
   addresses: UserAddressAttrs[];
   favorites: Types.ObjectId[];
   createdAt: Date;
@@ -49,6 +50,7 @@ const userSchema = new Schema<UserAttrs>(
     passwordHash: { type: String, select: false },
     googleSub: { type: String, unique: true, sparse: true, select: false },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    isBlocked: { type: Boolean, default: false },
     addresses: { type: [addressSchema], default: [] },
     favorites: { type: [Schema.Types.ObjectId], ref: "Product", default: [] },
   },
@@ -60,6 +62,7 @@ const cachedUserModel = models.User as Model<UserAttrs> | undefined;
 const cachedPasswordHashRequired = cachedUserModel?.schema.path("passwordHash")?.options.required;
 const cachedGoogleSubPath = cachedUserModel?.schema.path("googleSub");
 const cachedFavoritesPath = cachedUserModel?.schema.path("favorites");
-if (cachedUserModel && (cachedPasswordHashRequired || !cachedGoogleSubPath || !cachedFavoritesPath)) delete models.User;
+const cachedIsBlockedPath = cachedUserModel?.schema.path("isBlocked");
+if (cachedUserModel && (cachedPasswordHashRequired || !cachedGoogleSubPath || !cachedFavoritesPath || !cachedIsBlockedPath)) delete models.User;
 
 export const UserModel = (models.User as Model<UserAttrs> | undefined) ?? model<UserAttrs>("User", userSchema);
