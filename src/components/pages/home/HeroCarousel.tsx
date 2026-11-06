@@ -49,7 +49,7 @@ function HeroMediaLayer({
       <video
         aria-hidden={decorative}
         autoPlay
-        className={`absolute inset-0 z-0 size-full object-cover object-right lg:object-center ${className}`}
+        className={`absolute inset-0 z-0 size-full object-cover object-center ${className}`}
         key={media.fileId}
         loop
         muted
