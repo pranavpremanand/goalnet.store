@@ -102,7 +102,7 @@ export function AdminDashboard({ data }: { data: DashboardData }) {
               All orders
             </Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-canvas text-[10px] uppercase text-muted">
                 <tr>

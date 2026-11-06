@@ -212,7 +212,7 @@ export function AdminHeroSlides({ slides }: { slides: HeroSlide[] }) {
       {notice && <p aria-live="polite" className="mt-5 flex items-center gap-2 bg-canvas p-3 text-sm"><Check size={15} />{notice}</p>}
       {displayedSlides.length === 0 ? <p className="mt-6 border border-dashed border-line p-8 text-center text-sm text-muted">No saved slides. The homepage is showing its default slide until you add one.</p> : (
         <SortableTable disabled={reordering} items={displayedSlides.map((slide) => slide.id)} onReorder={(ids) => void saveSlideOrder(ids)}>
-          <div className="mt-6 overflow-x-auto no-scrollbar border border-line">
+          <div className="mt-6 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain no-scrollbar border border-line">
             <table className="w-full min-w-[820px] text-left text-sm">
               <thead className="bg-canvas text-[10px] font-bold uppercase text-muted"><tr><th className="px-2 py-3">Drag any row</th><th className="px-4 py-3">Slide</th><th className="px-4 py-3">Tagline</th><th className="px-4 py-3">Media type</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
               <tbody>{displayedSlides.map((slide, index) => (

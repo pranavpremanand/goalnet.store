@@ -7,7 +7,7 @@ export function AdminNavbar() {
     <header className="sticky top-0 z-40 border-b border-line bg-paper">
       <nav
         aria-label="Admin header"
-        className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 sm:px-7 lg:px-9"
+        className="mx-auto flex h-16 w-full max-w-[100vw] items-center justify-between px-4 sm:px-7 lg:max-w-[1600px] lg:px-9"
       >
         <BrandMark />
         <div className="flex items-center gap-3 sm:gap-5">

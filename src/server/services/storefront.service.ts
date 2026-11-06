@@ -1,4 +1,5 @@
 import type { ProductDto } from "@/lib/types/catalog";
+import type { JerseyType, TeamType } from "@/lib/catalog-constants";
 import type { StoreCategory, StorePriceBand, StoreProduct, StoreProductPage } from "@/lib/types/storefront";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as productRepository from "@/server/repositories/product.repository";
@@ -44,6 +45,8 @@ export async function listStoreProductPage(filter: {
   page: number;
   query: string;
   categories: string[];
+  teamTypes?: TeamType[];
+  jerseyTypes?: JerseyType[];
   minPrice?: number;
   maxPrice?: number;
   sort: "featured" | "low" | "high";
@@ -65,6 +68,8 @@ export async function listStoreProductPage(filter: {
         .map((category) => category.id)
       : [],
     query: filter.query,
+    teamTypes: filter.teamTypes,
+    jerseyTypes: filter.jerseyTypes,
     minPrice: filter.minPrice,
     maxPrice: filter.maxPrice,
     sort: filter.sort,

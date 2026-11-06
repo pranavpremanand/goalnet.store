@@ -93,7 +93,7 @@ export function AdminOrders({ result, filters }: Props) {
         <button className="bg-ink px-4 py-2.5 text-xs font-bold uppercase text-white" type="submit">Apply</button>
       </form>
 
-      <div className="mt-5 overflow-x-auto border border-line">
+      <div className="mt-5 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain border border-line">
         <table className="w-full min-w-[960px] text-left text-xs">
           <thead className="bg-canvas font-bold uppercase text-muted">
             <tr>

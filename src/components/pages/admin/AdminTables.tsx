@@ -100,7 +100,7 @@ export function AdminUsers({ initialData }: { initialData: UserPage }) {
 
       {error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}
 
-      <div className="mt-5 overflow-x-auto border border-line">
+      <div className="mt-5 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain border border-line">
         <table className="w-full min-w-[690px] text-left text-sm">
           <thead className="bg-canvas text-[10px] font-bold uppercase text-muted">
             <tr><th className="px-4 py-3">No.</th><th className="px-4 py-3">Name</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Created</th><th className="px-4 py-3">Status</th></tr>

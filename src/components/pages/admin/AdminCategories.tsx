@@ -537,7 +537,7 @@ export function AdminCategories({ categories }: { categories: CategoryDto[] }) {
           items={displayedCategories.map((category) => category.id)}
           onReorder={(ids) => void saveCategoryOrder(ids)}
         >
-          <div className="mt-6 overflow-x-auto no-scrollbar border border-line">
+          <div className="mt-6 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain no-scrollbar border border-line">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-canvas text-[10px] font-bold uppercase text-muted">
                 <tr>

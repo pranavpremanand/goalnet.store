@@ -66,7 +66,7 @@ export function AdminProducts({ result, categories, filters }: { result: Product
       {result.items.length === 0 ? (
         <p className="mt-6 border border-dashed border-line p-8 text-center text-sm text-muted">{result.total === 0 && !filters.q && !filters.category && filters.status === "all" ? "No products yet. Add your first product." : "No products match these filters."}</p>
       ) : (
-        <div className="mt-6 overflow-x-auto border border-line">
+        <div className="mt-6 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain border border-line">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-canvas text-[10px] font-bold uppercase text-muted"><tr><th className="px-4 py-3">Product</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Price</th><th className="px-4 py-3">Sizes</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
             <tbody>

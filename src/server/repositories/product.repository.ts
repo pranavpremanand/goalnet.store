@@ -1,5 +1,5 @@
 import { Types, type QueryFilter } from "mongoose";
-import type { JerseyType } from "@/lib/catalog-constants";
+import type { JerseyType, TeamType } from "@/lib/catalog-constants";
 import type { ProductDto } from "@/lib/types/catalog";
 import type { StorePriceBand } from "@/lib/types/storefront";
 import { connectToDatabase } from "@/server/db/connect";
@@ -93,6 +93,8 @@ type StorefrontPageFilter = {
   categoryIds: string[];
   searchCategoryIds: string[];
   query: string;
+  teamTypes?: TeamType[];
+  jerseyTypes?: JerseyType[];
   minPrice?: number;
   maxPrice?: number;
   sort: "featured" | "low" | "high";
@@ -135,6 +137,20 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
       searchConditions.push({ category: { $in: filter.searchCategoryIds } });
     }
     query.$or = searchConditions;
+  }
+  if (filter.teamTypes?.length) query["team.type"] = { $in: filter.teamTypes };
+  if (filter.jerseyTypes?.length) {
+    const storedTypes = filter.jerseyTypes.flatMap((jerseyType): (JerseyType | RegExp)[] => {
+      switch (jerseyType) {
+        case "five-sleeve":
+          return ["five-sleeve", /^oversized-five-sleeve$/, /^five-sleeve-collar$/];
+        case "full-sleeve":
+          return ["full-sleeve", /^full-sleeve-collar$/, /^full-sleeve-round-neck$/];
+        default:
+          return [jerseyType];
+      }
+    });
+    query.jerseyType = { $in: storedTypes };
   }
   if (filter.minPrice !== undefined || filter.maxPrice !== undefined) {
     query.price = {

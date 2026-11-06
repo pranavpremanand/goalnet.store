@@ -8,6 +8,8 @@ export const GET = apiHandler(async (request) => {
     page: query.page,
     query: query.q,
     categories: query.categories,
+    teamTypes: query.teamTypes,
+    jerseyTypes: query.jerseyTypes,
     minPrice: query.minPrice,
     maxPrice: query.maxPrice,
     sort: query.sort,
