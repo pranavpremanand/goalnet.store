@@ -188,18 +188,19 @@ export async function listActivePriceBands(categoryIds: string[]): Promise<Store
 
   if (!bounds) return [];
 
-  const minBandStart = Math.floor(bounds.minPrice / 100) * 100;
-  const maxBandStart = Math.floor(bounds.maxPrice / 100) * 100;
-  const requiredStep = Math.max(100, Math.ceil((maxBandStart - minBandStart + 1) / 10));
-  const magnitude = 10 ** Math.floor(Math.log10(requiredStep));
-  const step = [1, 2, 5, 10].map((multiple) => multiple * magnitude).find((candidate) => candidate >= requiredStep) ?? requiredStep;
-  const firstBandStart = Math.floor(bounds.minPrice / step) * step;
-  const lastBandStart = Math.floor(bounds.maxPrice / step) * step;
-  const bandCount = Math.max(5, Math.floor((lastBandStart - firstBandStart) / step) + 1);
+  const firstPrice = Math.floor(bounds.minPrice / 100) * 100;
+  const lastPrice = Math.ceil((bounds.maxPrice + 1) / 100) * 100 - 1;
+  const hundredCount = (lastPrice - firstPrice + 1) / 100;
+  const bandCount = Math.min(5, hundredCount);
+  const baseHundredsPerBand = Math.floor(hundredCount / bandCount);
+  const extraHundreds = hundredCount % bandCount;
+  let nextMinPrice = firstPrice;
 
   return Array.from({ length: bandCount }, (_, index) => {
-    const minPrice = firstBandStart + index * step;
-    return { minPrice, maxPrice: minPrice + step - 1 };
+    const bandSize = (baseHundredsPerBand + (index < extraHundreds ? 1 : 0)) * 100;
+    const band = { minPrice: nextMinPrice, maxPrice: nextMinPrice + bandSize - 1 };
+    nextMinPrice = band.maxPrice + 1;
+    return band;
   });
 }
 
