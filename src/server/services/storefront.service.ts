@@ -1,5 +1,5 @@
 import type { ProductDto } from "@/lib/types/catalog";
-import type { StoreCategory, StorePriceBand, StoreProduct } from "@/lib/types/storefront";
+import type { StoreCategory, StorePriceBand, StoreProduct, StoreProductPage } from "@/lib/types/storefront";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as productRepository from "@/server/repositories/product.repository";
 
@@ -38,9 +38,46 @@ export async function listStoreCategories(): Promise<StoreCategory[]> {
   return (await categoryRepository.listCategories({ activeOnly: true })).map(({ id, name, slug }) => ({ id, name, slug }));
 }
 
-export async function listStoreProducts(): Promise<StoreProduct[]> {
-  const products = await productRepository.listActiveProducts({ categoryIds: await activeCategoryIds() });
-  return products.map(toStoreProduct);
+const STOREFRONT_PAGE_SIZE = 24;
+
+export async function listStoreProductPage(filter: {
+  page: number;
+  query: string;
+  categories: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  sort: "featured" | "low" | "high";
+}): Promise<StoreProductPage> {
+  const categories = await categoryRepository.listCategories({ activeOnly: true });
+  const requestedSlugs = new Set(filter.categories);
+  const visibleCategories = filter.categories.length
+    ? categories.filter((category) => requestedSlugs.has(category.slug))
+    : categories;
+  const categoryIds = visibleCategories.map((category) => category.id);
+  const emptyPage = { items: [], page: filter.page, total: 0, hasMore: false };
+  if (filter.categories.length > 0 && categoryIds.length !== requestedSlugs.size) return emptyPage;
+
+  const result = await productRepository.listActiveProductPage({
+    categoryIds,
+    searchCategoryIds: filter.query
+      ? visibleCategories
+        .filter((category) => category.name.toLocaleLowerCase().includes(filter.query.toLocaleLowerCase()))
+        .map((category) => category.id)
+      : [],
+    query: filter.query,
+    minPrice: filter.minPrice,
+    maxPrice: filter.maxPrice,
+    sort: filter.sort,
+    page: filter.page,
+    pageSize: STOREFRONT_PAGE_SIZE,
+  });
+
+  return {
+    items: result.items.map(toStoreProduct),
+    page: filter.page,
+    total: result.total,
+    hasMore: result.hasMore,
+  };
 }
 
 export async function listStorePriceBands(): Promise<StorePriceBand[]> {

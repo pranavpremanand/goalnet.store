@@ -89,6 +89,16 @@ export async function findProductById(id: string): Promise<ProductDto | null> {
 }
 
 type StorefrontFilter = { categoryIds: string[]; featuredOnly?: boolean; categoryId?: string; excludeId?: string; ids?: string[]; limit?: number };
+type StorefrontPageFilter = {
+  categoryIds: string[];
+  searchCategoryIds: string[];
+  query: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sort: "featured" | "low" | "high";
+  page: number;
+  pageSize: number;
+};
 
 // Customer-facing queries only ever see active products that belong to an active category.
 export async function listActiveProducts(filter: StorefrontFilter): Promise<ProductDto[]> {
@@ -103,6 +113,57 @@ export async function listActiveProducts(filter: StorefrontFilter): Promise<Prod
 
   const docs = await ProductModel.find(query).sort({ displayOrder: 1, createdAt: -1 }).limit(filter.limit ?? 200).populate("category", "name slug").lean<ProductDoc[]>();
   return docs.map(toDto);
+}
+
+export async function listActiveProductPage(filter: StorefrontPageFilter) {
+  if (filter.categoryIds.length === 0) return { items: [], total: 0, hasMore: false };
+  await connectToDatabase();
+
+  const query: QueryFilter<ProductAttrs> = {
+    isActive: true,
+    category: { $in: filter.categoryIds },
+  };
+  if (filter.query) {
+    const pattern = new RegExp(escapeRegex(filter.query), "i");
+    const searchConditions: QueryFilter<ProductAttrs>[] = [
+      { name: pattern },
+      { slug: pattern },
+      { brand: pattern },
+      { "team.name": pattern },
+    ];
+    if (filter.searchCategoryIds.length > 0) {
+      searchConditions.push({ category: { $in: filter.searchCategoryIds } });
+    }
+    query.$or = searchConditions;
+  }
+  if (filter.minPrice !== undefined || filter.maxPrice !== undefined) {
+    query.price = {
+      ...(filter.minPrice !== undefined ? { $gte: filter.minPrice } : {}),
+      ...(filter.maxPrice !== undefined ? { $lte: filter.maxPrice } : {}),
+    };
+  }
+
+  const sort: Record<string, 1 | -1> = filter.sort === "low"
+    ? { price: 1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const }
+    : filter.sort === "high"
+      ? { price: -1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const }
+      : { isFeatured: -1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const };
+  const [docs, total] = await Promise.all([
+    ProductModel.find(query)
+      .sort(sort)
+      .skip((filter.page - 1) * filter.pageSize)
+      .limit(filter.pageSize + 1)
+      .populate("category", "name slug")
+      .lean<ProductDoc[]>(),
+    ProductModel.countDocuments(query),
+  ]);
+  const hasMore = docs.length > filter.pageSize;
+
+  return {
+    items: docs.slice(0, filter.pageSize).map(toDto),
+    total,
+    hasMore,
+  };
 }
 
 export async function listActivePriceBands(categoryIds: string[]): Promise<StorePriceBand[]> {
