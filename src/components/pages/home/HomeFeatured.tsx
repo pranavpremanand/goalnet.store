@@ -4,6 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { LuArrowUpRight as ArrowUpRight } from "react-icons/lu";
 import { SkeletonBlock } from "@/components/common/Loading";
 import { ProductCard } from "@/components/common/ProductCard";
+import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { listFeaturedProducts } from "@/server/services/storefront.service";
 
 async function FeaturedProducts() {
@@ -31,7 +32,9 @@ async function FeaturedProducts() {
         </div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-4 md:gap-6">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ScrollReveal className="min-w-0" key={product.id} variant="scale">
+              <ProductCard product={product} />
+            </ScrollReveal>
           ))}
         </div>
       </div>

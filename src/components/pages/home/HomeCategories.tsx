@@ -4,6 +4,7 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { LuArrowUpRight } from "react-icons/lu";
 import { SkeletonBlock } from "@/components/common/Loading";
+import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { listActiveCategories } from "@/server/services/category.service";
 
 async function CategoryCards() {
@@ -31,7 +32,8 @@ async function CategoryCards() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
           {categories.map((category) => (
-            <Link className="group relative aspect-4/5 overflow-hidden bg-charcoal text-white" href={`/shop?category=${category.slug}`} key={category.id}>
+            <ScrollReveal className="min-w-0" key={category.id} variant="scale">
+            <Link className="group relative block aspect-4/5 overflow-hidden bg-charcoal text-white" href={`/shop?category=${category.slug}`}>
               <Image
                 alt={category.coverImage.alt || category.name}
                 className="object-cover transition duration-500 group-hover:scale-105"
@@ -50,6 +52,7 @@ async function CategoryCards() {
                 </span>
               </div>
             </Link>
+            </ScrollReveal>
           ))}
         </div>
       </div>

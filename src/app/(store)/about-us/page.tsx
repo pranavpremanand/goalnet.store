@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ScrollReveal } from "@/components/common/ScrollReveal";
 import {
   LuArrowRight as ArrowRight,
   LuFlag as Flag,
@@ -36,6 +37,7 @@ export default function AboutPage() {
           </p>
         </div>
       </section>
+      <ScrollReveal>
       <section className="mx-auto grid max-w-[1440px] gap-10 px-5 py-16 sm:px-8 md:grid-cols-[0.8fr_1.2fr] md:gap-20 md:py-24 lg:px-14">
         <div className="relative isolate flex min-h-72 flex-col justify-end overflow-hidden bg-charcoal p-6 text-white sm:min-h-96 sm:p-8">
           <Image
@@ -96,6 +98,8 @@ export default function AboutPage() {
           </Link>
         </div>
       </section>
+      </ScrollReveal>
+      <ScrollReveal>
       <section className="bg-canvas/50 py-14 sm:py-20">
         <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-14">
           <div className="mb-8">
@@ -138,6 +142,8 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+      </ScrollReveal>
+      <ScrollReveal>
       <section className="relative min-h-[300px] overflow-hidden bg-charcoal sm:min-h-[420px]">
         <Image
           alt="Stadium ready for a match"
@@ -155,6 +161,7 @@ export default function AboutPage() {
           </p>
         </div>
       </section>
+      </ScrollReveal>
     </main>
   );
 }

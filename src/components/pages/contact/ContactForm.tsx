@@ -7,6 +7,7 @@ import {
   LuMapPin as MapPin,
 } from "react-icons/lu";
 import { LoadingSpinner } from "@/components/common/Loading";
+import { ScrollReveal } from "@/components/common/ScrollReveal";
 
 export function ContactForm() {
   const [sent, setSent] = useState(false);
@@ -130,7 +131,8 @@ export function ContactForm() {
           </form>
         )}
       </section>
-      <aside className="relative flex min-h-[360px] flex-col justify-end overflow-hidden bg-charcoal p-7 text-white sm:p-10">
+      <ScrollReveal>
+      <aside className="relative flex min-h-[360px] h-full flex-col justify-end overflow-hidden bg-charcoal p-7 text-white sm:p-10">
         <div
           aria-hidden="true"
           className="absolute inset-0 opacity-30"
@@ -160,6 +162,7 @@ export function ContactForm() {
           </div>
         </div>
       </aside>
+      </ScrollReveal>
     </main>
   );
 }

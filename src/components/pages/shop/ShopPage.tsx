@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { LuFilter as Filter, LuSlidersHorizontal as SlidersHorizontal, LuX as X } from "react-icons/lu";
 import { formatRupees } from "@/lib/format";
 import { ProductCard } from "@/components/common/ProductCard";
+import { ScrollReveal } from "@/components/common/ScrollReveal";
 import type { StoreCategory, StorePriceBand, StoreProduct } from "@/lib/types/storefront";
 
 function ShopContent({
@@ -133,7 +134,11 @@ function ShopContent({
         <div>
           {products.length ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 md:grid-cols-3 xl:grid-cols-4">
-              {products.map((product) => <ProductCard key={product.id} product={product} />)}
+              {products.map((product) => (
+                <ScrollReveal className="min-w-0" key={product.id} variant="scale">
+                  <ProductCard product={product} />
+                </ScrollReveal>
+              ))}
             </div>
           ) : (
             <div className="grid min-h-72 place-items-center border border-dashed border-line p-8 text-center">

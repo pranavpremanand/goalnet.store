@@ -4,11 +4,13 @@ import { LuArrowRight as ArrowRight, LuQuote as Quote } from "react-icons/lu";
 import { HomeHero } from "@/components/pages/home/HomeHero";
 import { HomeCategories } from "@/components/pages/home/HomeCategories";
 import { HomeFeatured } from "@/components/pages/home/HomeFeatured";
+import { ScrollReveal } from "@/components/common/ScrollReveal";
 
 export function HomePage() {
   return (
     <main>
       <HomeHero />
+      <ScrollReveal>
       <section className="bg-canvas py-14">
         <div className="mx-auto grid max-w-[1440px] gap-5 px-5 sm:px-8 md:grid-cols-[1fr_auto] md:items-center md:gap-8 lg:px-14">
           {/* <div className="flex items-start gap-3 text-brand">
@@ -45,16 +47,18 @@ export function HomePage() {
           </p>
         </div>
       </section>
+      </ScrollReveal>
 
       <HomeCategories />
 
       <HomeFeatured />
 
+      <ScrollReveal>
       <section className="mx-auto grid max-w-[1440px] gap-10 px-5 py-16 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-20 md:py-24 lg:px-14">
-        <div className="relative aspect-[4/3] overflow-hidden bg-canvas">
+        <div className="relative aspect-[4/3] h-full overflow-hidden bg-canvas">
           <Image
             alt="Messi taking freeking vs Jordan - WC26"
-            className="object-cover object-center"
+            className="object-cover object-center h-full w-full"
             fill
             sizes="(max-width: 768px) 100vw, 45vw"
             src="/images/home-about.jpg"
@@ -93,7 +97,9 @@ export function HomePage() {
           </Link>
         </div>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal>
       <section className="grid bg-brand md:grid-cols-2">
         <div className="relative min-h-[300px] overflow-hidden bg-[#d8df0d] md:min-h-[490px]">
           <Image
@@ -121,7 +127,9 @@ export function HomePage() {
           </Link>
         </div>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal>
       <section className="mx-auto flex max-w-[1440px] flex-col items-start justify-between gap-7 px-5 py-14 sm:px-8 md:flex-row md:items-center md:py-20 lg:px-14">
         <div>
           <p className="mb-2 text-xs font-bold uppercase text-muted">
@@ -138,6 +146,7 @@ export function HomePage() {
           Shop all products <ArrowRight size={17} />
         </Link>
       </section>
+      </ScrollReveal>
     </main>
   );
 }

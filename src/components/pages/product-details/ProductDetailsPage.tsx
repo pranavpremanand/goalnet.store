@@ -12,6 +12,7 @@ import {
   LuX as X,
 } from "react-icons/lu";
 import { ProductCard } from "@/components/common/ProductCard";
+import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { LoadingSpinner } from "@/components/common/Loading";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { ProductImageZoom } from "@/components/pages/product-details/ProductImageZoom";
@@ -436,7 +437,9 @@ export function ProductDetailsPage({
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
               {related.map((item) => (
-                <ProductCard key={item.id} product={item} />
+                <ScrollReveal className="min-w-0" key={item.id} variant="scale">
+                  <ProductCard product={item} />
+                </ScrollReveal>
               ))}
             </div>
           </div>
