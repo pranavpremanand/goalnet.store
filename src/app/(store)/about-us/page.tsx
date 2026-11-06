@@ -15,14 +15,14 @@ export default function AboutPage() {
     <main>
       <section className="relative isolate min-h-[530px] overflow-hidden bg-charcoal text-white md:min-h-[610px]">
         <Image
-          alt="Players walking onto the football pitch"
-          className="object-cover"
+          alt="Football goal on an open pitch at sunset"
+          className="object-cover md:object-[100%_70%]"
           fill
           priority
           sizes="100vw"
-          src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=2200&q=85"
+          src="https://images.unsplash.com/photo-1748606327306-5c518f0a6cfa?q=80&w=1170?auto=format&fit=crop&w=2200&q=100"
         />
-        <div className="absolute inset-0 bg-black/55" />
+        <div className="absolute inset-0 bg-black/45" />
         <div className="relative mx-auto flex min-h-[530px] max-w-[1440px] flex-col justify-end px-5 pb-12 sm:px-8 md:min-h-[610px] md:pb-16 lg:px-14">
           <p className="mb-4 text-xs font-bold uppercase text-brand">
             GOALNET / Our story
@@ -41,11 +41,11 @@ export default function AboutPage() {
       <section className="mx-auto grid max-w-[1440px] gap-10 px-5 py-16 sm:px-8 md:grid-cols-[0.8fr_1.2fr] md:gap-20 md:py-24 lg:px-14">
         <div className="relative isolate flex min-h-72 flex-col justify-end overflow-hidden bg-charcoal p-6 text-white sm:min-h-96 sm:p-8">
           <Image
-            alt=""
+            alt="A football resting against the goal net"
             className="object-cover"
             fill
             sizes="(max-width: 768px) 100vw, 40vw"
-            src="/images/home-about.jpg"
+            src="https://images.unsplash.com/photo-1760885984948-c8af6359b7f6?q=80&w=1170?auto=format&fit=crop&w=2200&q=100"
           />
           <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
           <div className="relative">
@@ -146,13 +146,13 @@ export default function AboutPage() {
       <ScrollReveal>
       <section className="relative min-h-[300px] overflow-hidden bg-charcoal sm:min-h-[420px]">
         <Image
-          alt="Stadium ready for a match"
+          alt="Sunlit grass on a football pitch"
           className="object-cover"
           fill
           sizes="100vw"
-          src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=2200&q=85"
+          src="https://images.unsplash.com/photo-1459865264687-595d652de67e?q=80&w=1170?auto=format&fit=crop&w=2200&q=100"
         />
-        <div className="absolute inset-0 bg-ink/45" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-ink/30 sm:via-ink/10 to-transparent" />
         <div className="relative mx-auto flex min-h-[300px] max-w-[1440px] items-center px-5 sm:min-h-[420px] sm:px-8 lg:px-14">
           <p className="max-w-2xl font-display text-4xl font-semibold text-white sm:text-6xl">
             The game is yours.

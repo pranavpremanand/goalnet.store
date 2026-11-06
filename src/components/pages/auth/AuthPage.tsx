@@ -156,7 +156,7 @@ export function AuthPage({ mode, redirectTo, googleClientId = "" }: { mode: Auth
         </div>
       </section>
       <aside className="relative hidden min-h-full overflow-hidden bg-charcoal lg:block">
-        <Image alt="Football stadium ready for kickoff" className="object-cover" fill priority sizes="50vw" src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=85" />
+        <Image alt="Football stadium ready for kickoff" className="object-cover" fill priority sizes="50vw" src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=100" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/10" />
         <div className="absolute bottom-12 left-10 right-10 text-white xl:bottom-16 xl:left-14"><p className="text-xs font-bold uppercase text-brand">For every side of the game</p><p className="mt-3 max-w-lg font-display text-4xl font-semibold leading-tight xl:text-5xl">The stories we wear are the stories we keep.</p></div>
       </aside>

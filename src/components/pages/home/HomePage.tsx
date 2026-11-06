@@ -57,7 +57,7 @@ export function HomePage() {
       <section className="mx-auto grid max-w-[1440px] gap-10 px-5 py-16 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-20 md:py-24 lg:px-14">
         <div className="relative aspect-[4/3] h-full overflow-hidden bg-canvas">
           <Image
-            alt="Messi taking freeking vs Jordan - WC26"
+            alt="Messi vs Athletic Club 2011-12 Season"
             className="object-cover object-center h-full w-full"
             fill
             sizes="(max-width: 768px) 100vw, 45vw"

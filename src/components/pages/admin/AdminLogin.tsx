@@ -50,7 +50,7 @@ export function AdminLogin() {
           </form>
         </div>
       </section>
-      <aside className="relative hidden overflow-hidden bg-charcoal lg:block"><Image alt="Football stadium before kickoff" className="object-cover" fill priority sizes="50vw" src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=85" /><div className="absolute inset-0 bg-black/45" /><div className="absolute bottom-12 left-12 max-w-lg text-white"><p className="text-xs font-bold uppercase text-brand">Behind every great matchday</p><h2 className="mt-3 font-display text-4xl font-semibold">The details that keep the game moving.</h2></div></aside>
+      <aside className="relative hidden overflow-hidden bg-charcoal lg:block"><Image alt="Football stadium before kickoff" className="object-cover" fill priority sizes="50vw" src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1400&q=100" /><div className="absolute inset-0 bg-black/45" /><div className="absolute bottom-12 left-12 max-w-lg text-white"><p className="text-xs font-bold uppercase text-brand">Behind every great matchday</p><h2 className="mt-3 font-display text-4xl font-semibold">The details that keep the game moving.</h2></div></aside>
     </main>
   );
 }
