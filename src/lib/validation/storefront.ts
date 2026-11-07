@@ -13,7 +13,7 @@ export const storefrontProductPageQuerySchema = z.object({
   fits: z.array(z.enum(FIT_TYPES)).max(2).default([]),
   minPrice: priceSchema,
   maxPrice: priceSchema,
-  sort: z.enum(["featured", "low", "high"]).default("featured"),
+  sort: z.enum(["featured", "newest", "low", "high"]).default("featured"),
 }).refine(
   ({ minPrice, maxPrice }) => minPrice === undefined || maxPrice === undefined || minPrice <= maxPrice,
   { message: "Minimum price must not exceed maximum price.", path: ["minPrice"] },

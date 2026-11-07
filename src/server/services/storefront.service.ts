@@ -53,7 +53,7 @@ export async function listStoreProductPage(filter: {
   fits?: FitType[];
   minPrice?: number;
   maxPrice?: number;
-  sort: "featured" | "low" | "high";
+  sort: "featured" | "newest" | "low" | "high";
 }): Promise<StoreProductPage> {
   const categories = await categoryRepository.listCategories({ activeOnly: true });
   const requestedSlugs = new Set(filter.categories);

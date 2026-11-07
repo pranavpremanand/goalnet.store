@@ -26,7 +26,7 @@ import type {
   StoreProductPage,
 } from "@/lib/types/storefront";
 
-type ShopSort = "featured" | "low" | "high";
+type ShopSort = "featured" | "newest" | "low" | "high";
 const teamTypeOptions: { value: TeamType; label: string }[] = [
   { value: "club", label: "Club" },
   { value: "national", label: "National" },
@@ -552,12 +552,13 @@ function ShopContent({
             className="bg-transparent text-sm font-medium normal-case outline-none"
             onChange={(event) => {
               const value = event.target.value;
-              if (value === "featured" || value === "low" || value === "high")
+              if (value === "featured" || value === "newest" || value === "low" || value === "high")
                 setSort(value);
             }}
             value={sort}
           >
             <option value="featured">Featured</option>
+            <option value="newest">Newest first</option>
             <option value="low">Price: low to high</option>
             <option value="high">Price: high to low</option>
           </select>

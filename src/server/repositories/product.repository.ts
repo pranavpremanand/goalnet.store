@@ -128,7 +128,7 @@ type StorefrontPageFilter = {
   fits?: FitType[];
   minPrice?: number;
   maxPrice?: number;
-  sort: "featured" | "low" | "high";
+  sort: "featured" | "newest" | "low" | "high";
   page: number;
   pageSize: number;
 };
@@ -264,7 +264,9 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
     ? { price: 1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const }
     : filter.sort === "high"
       ? { price: -1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const }
-      : { displayOrder: 1 as const, isFeatured: -1 as const, createdAt: -1 as const, _id: -1 as const };
+      : filter.sort === "newest"
+        ? { createdAt: -1 as const, _id: -1 as const }
+      : { isFeatured: -1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const };
   const [docs, total] = await Promise.all([
     ProductModel.find(query)
       .sort(sort)
