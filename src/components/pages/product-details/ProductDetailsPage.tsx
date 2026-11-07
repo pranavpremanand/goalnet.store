@@ -370,39 +370,43 @@ export function ProductDetailsPage({
               </p>
             )}
           </div>
-          <div className="mt-7 grid grid-cols-2 gap-3">
-            <button
-              className="inline-flex min-h-12 w-full items-center justify-center bg-brand px-3 text-center text-xs font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-sm"
-              disabled={cartPending}
-              onClick={addToBag}
-              type="button"
-            >
-              {cartPending ? <LoadingSpinner label="Adding…" /> : "Add to bag"}
-            </button>
-            <button
-              className="inline-flex min-h-12 w-full items-center justify-center border border-ink px-3 text-center text-xs font-bold uppercase transition hover:bg-canvas sm:px-5 sm:text-sm"
-              onClick={buyNow}
-              type="button"
-            >
-              Buy now
-            </button>
-            <button
-              aria-pressed={wishlisted}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-line px-3 text-sm font-semibold transition hover:border-ink disabled:cursor-wait disabled:opacity-60"
-              disabled={wishlistLoading || wishlistPending}
-              onClick={() => void toggleProductWishlist()}
-              type="button"
-            >
-              <Heart fill={wishlisted ? "currentColor" : "none"} size={16} />
-              {wishlisted ? "Saved" : "Wishlist"}
-            </button>
-            <button
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-line px-3 text-sm font-semibold transition hover:border-ink"
-              onClick={shareProduct}
-              type="button"
-            >
-              <Share2 size={16} /> Share
-            </button>
+          <div className="mt-7 space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                className="inline-flex min-h-14 w-full items-center justify-center bg-brand px-5 text-center text-xs font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
+                disabled={cartPending}
+                onClick={addToBag}
+                type="button"
+              >
+                {cartPending ? <LoadingSpinner label="Adding…" /> : "Add to bag"}
+              </button>
+              <button
+                className="inline-flex min-h-14 w-full items-center justify-center border border-ink px-5 text-center text-xs font-bold uppercase transition hover:bg-canvas sm:text-sm"
+                onClick={buyNow}
+                type="button"
+              >
+                Buy now
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                aria-pressed={wishlisted}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 border border-line px-3 text-sm font-semibold transition hover:border-ink disabled:cursor-wait disabled:opacity-60"
+                disabled={wishlistLoading || wishlistPending}
+                onClick={() => void toggleProductWishlist()}
+                type="button"
+              >
+                <Heart fill={wishlisted ? "currentColor" : "none"} size={16} />
+                {wishlisted ? "Saved" : "Wishlist"}
+              </button>
+              <button
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 border border-line px-3 text-sm font-semibold transition hover:border-ink"
+                onClick={shareProduct}
+                type="button"
+              >
+                <Share2 size={16} /> Share
+              </button>
+            </div>
           </div>
           {notice && (
             <p
