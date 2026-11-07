@@ -40,9 +40,10 @@ export async function getCategory(id: string): Promise<CategoryDto> {
 export async function createCategory(input: CategoryInput): Promise<CategoryDto> {
   const slug = await resolveSlug({ requested: input.slug, name: input.name, exists: (value) => categoryRepository.categorySlugExists(value) });
   await verifyNewImages([input.coverImage], "category", new Set(), "coverImage");
+  const coverImage = { ...input.coverImage, cropPosition: input.coverImage.cropPosition ?? { x: 50, y: 50 } };
 
   try {
-    const category = await categoryRepository.createCategory({ name: input.name, slug, description: input.description, tagline: input.tagline, coverImage: input.coverImage, isActive: input.isActive, displayOrder: input.displayOrder });
+    const category = await categoryRepository.createCategory({ name: input.name, slug, description: input.description, tagline: input.tagline, coverImage, isActive: input.isActive, displayOrder: input.displayOrder });
     return { ...category, productCount: 0 };
   } catch (error) {
     if (isDuplicateKeyError(error)) throw new ConflictError(SLUG_TAKEN, { slug: [SLUG_TAKEN] });
@@ -56,10 +57,11 @@ export async function updateCategory(id: string, input: CategoryInput): Promise<
 
   const slug = await resolveSlug({ requested: input.slug, name: input.name, current: existing.slug, exists: (value) => categoryRepository.categorySlugExists(value, id) });
   await verifyNewImages([input.coverImage], "category", new Set([existing.coverImage.fileId]), "coverImage");
+  const coverImage = { ...input.coverImage, cropPosition: input.coverImage.cropPosition ?? { x: 50, y: 50 } };
 
   let updated;
   try {
-    updated = await categoryRepository.updateCategory(id, { name: input.name, slug, description: input.description, tagline: input.tagline, coverImage: input.coverImage, isActive: input.isActive, displayOrder: input.displayOrder });
+    updated = await categoryRepository.updateCategory(id, { name: input.name, slug, description: input.description, tagline: input.tagline, coverImage, isActive: input.isActive, displayOrder: input.displayOrder });
   } catch (error) {
     if (isDuplicateKeyError(error)) throw new ConflictError(SLUG_TAKEN, { slug: [SLUG_TAKEN] });
     throw error;

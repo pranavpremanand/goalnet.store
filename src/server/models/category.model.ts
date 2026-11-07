@@ -5,7 +5,7 @@ export interface CategoryAttrs {
   slug: string;
   description: string;
   tagline: string;
-  coverImage: { url: string; fileId: string; alt: string };
+  coverImage: { url: string; fileId: string; alt: string; cropPosition: { x: number; y: number } };
   isActive: boolean;
   displayOrder: number;
   createdAt: Date;
@@ -24,6 +24,11 @@ const categorySchema = new Schema<CategoryAttrs>(
       // ImageKit file id, kept so the file can be deleted when the image is replaced.
       fileId: { type: String, required: true },
       alt: { type: String, default: "" },
+      cropPosition: {
+        _id: false,
+        x: { type: Number, default: 50, min: 0, max: 100 },
+        y: { type: Number, default: 50, min: 0, max: 100 },
+      },
     },
     isActive: { type: Boolean, default: true },
     displayOrder: { type: Number, default: 0 },

@@ -16,7 +16,15 @@ function toRecord(doc: CategoryDoc): CategoryRecord {
     description: doc.description,
     // Categories created before the tagline existed have no value stored.
     tagline: doc.tagline ?? "",
-    coverImage: { url: doc.coverImage.url, fileId: doc.coverImage.fileId, alt: doc.coverImage.alt },
+    coverImage: {
+      url: doc.coverImage.url,
+      fileId: doc.coverImage.fileId,
+      alt: doc.coverImage.alt,
+      cropPosition: {
+        x: doc.coverImage.cropPosition?.x ?? 50,
+        y: doc.coverImage.cropPosition?.y ?? 50,
+      },
+    },
     isActive: doc.isActive,
     displayOrder: doc.displayOrder,
     createdAt: doc.createdAt.toISOString(),

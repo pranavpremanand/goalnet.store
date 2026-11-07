@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
 import {
   LuCheck as Check,
   LuChevronDown as ChevronDown,
@@ -240,7 +241,7 @@ function CategoryDialog({
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<CategoryInput>({
+  } = useForm<z.input<typeof categoryInputSchema>, unknown, CategoryInput>({
     resolver: zodResolver(categoryInputSchema),
     defaultValues: category
       ? {
@@ -355,8 +356,9 @@ function CategoryDialog({
                       errors.coverImage?.url?.message
                     }
                     max={1}
-                    onChange={(images) => field.onChange(images[0])}
+                    onChange={(images) => field.onChange(images[0] ?? null)}
                     session={uploads}
+                    showCropPosition
                     target="category"
                     value={field.value ? [field.value] : []}
                   />
@@ -602,6 +604,9 @@ export function AdminCategories({ categories }: { categories: CategoryDto[] }) {
                             fill
                             sizes="48px"
                             src={category.coverImage.url}
+                            style={{
+                              objectPosition: `${category.coverImage.cropPosition?.x ?? 50}% ${category.coverImage.cropPosition?.y ?? 50}%`,
+                            }}
                           />
                         </div>
                         <span className="font-semibold">{category.name}</span>

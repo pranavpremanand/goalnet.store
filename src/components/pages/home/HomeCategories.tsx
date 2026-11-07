@@ -40,6 +40,9 @@ async function CategoryCards() {
                 fill
                 sizes="(max-width: 640px) 48vw, (max-width: 1024px) 31vw, 19vw"
                 src={category.coverImage.url}
+                style={{
+                  objectPosition: `${category.coverImage.cropPosition?.x ?? 50}% ${category.coverImage.cropPosition?.y ?? 50}%`,
+                }}
               />
               <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/5" />
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 sm:p-4">

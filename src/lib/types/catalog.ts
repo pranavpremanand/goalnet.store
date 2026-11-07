@@ -1,6 +1,8 @@
 import type { AvailabilityStatus, JerseyType, LogoType, ProductType, SizeSystem, TeamType } from "@/lib/catalog-constants";
 
 export type ImageAsset = { url: string; fileId: string; alt: string };
+export type ImageCropPosition = { x: number; y: number };
+export type CroppableImageAsset = ImageAsset & { cropPosition?: ImageCropPosition };
 
 export type CategoryDto = {
   id: string;
@@ -8,7 +10,7 @@ export type CategoryDto = {
   slug: string;
   description: string;
   tagline: string;
-  coverImage: ImageAsset;
+  coverImage: CroppableImageAsset;
   isActive: boolean;
   displayOrder: number;
   productCount: number;

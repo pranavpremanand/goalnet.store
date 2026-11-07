@@ -18,6 +18,11 @@ export const imageSchema = z.object(
   { error: "Please upload an image" },
 );
 
+const cropPositionSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+});
+
 // Leave the slug blank to generate one from the name.
 const slugField = text("Slug", 120);
 
@@ -26,7 +31,10 @@ export const categoryInputSchema = z.object({
   slug: slugField,
   description: text("Description", 500),
   tagline: text("Tagline", 80),
-  coverImage: imageSchema,
+  coverImage: imageSchema.extend({ cropPosition: cropPositionSchema.optional() }).nullable().refine(
+    (image): image is z.infer<typeof imageSchema> & { cropPosition?: z.infer<typeof cropPositionSchema> } => image !== null,
+    "Please upload an image",
+  ),
   isActive: z.boolean(),
   displayOrder: wholeNumber("Display order", 0, 9999),
 });
