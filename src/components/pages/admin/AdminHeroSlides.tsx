@@ -214,14 +214,19 @@ export function AdminHeroSlides({ slides }: { slides: HeroSlide[] }) {
         <SortableTable disabled={reordering} items={displayedSlides.map((slide) => slide.id)} onReorder={(ids) => void saveSlideOrder(ids)}>
           <div className="mt-6 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain no-scrollbar border border-line">
             <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="bg-canvas text-[10px] font-bold uppercase text-muted"><tr><th className="px-2 py-3">Drag any row</th><th className="px-4 py-3">Slide</th><th className="px-4 py-3">Tagline</th><th className="px-4 py-3">Media type</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
+              <thead className="bg-canvas text-[10px] font-bold uppercase text-muted"><tr><th className="px-2 py-3">Reorder</th><th className="px-4 py-3">Slide</th><th className="px-4 py-3">Tagline</th><th className="px-4 py-3">Media type</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
               <tbody>{displayedSlides.map((slide, index) => (
                 <SortableTableRow className="border-t border-line hover:bg-canvas/70" disabled={reordering} id={slide.id} key={slide.id}>
+                {({ attributes, listeners, setActivatorNodeRef }) => <>
                 <td className="px-2 py-3">
                   <div className="flex items-center gap-1">
                     <button
-                      aria-label={`Drag to reorder ${slide.heading}`}
+                      {...attributes}
+                      {...listeners}
                       className="grid size-9 place-items-center border border-line"
+                      aria-label={`Drag to reorder ${slide.heading}`}
+                      ref={setActivatorNodeRef}
+                      style={{ touchAction: "none" }}
                       type="button"
                     ><GripVertical size={17} /></button>
                     <div className="flex flex-col">
@@ -235,6 +240,7 @@ export function AdminHeroSlides({ slides }: { slides: HeroSlide[] }) {
                 <td className="px-4 py-3"><span className="text-xs font-semibold uppercase text-muted">{resolveHeroMediaType(slide.image)}</span></td>
                 <td className="px-4 py-3"><span className={`px-2 py-1 text-[10px] font-bold uppercase ${slide.isActive ? "bg-brand" : "bg-canvas text-muted"}`}>{slide.isActive ? "Active" : "Inactive"}</span></td>
                 <td className="px-4 py-3"><div className="flex justify-end gap-2"><button aria-label={`Edit ${slide.heading}`} className="grid size-9 place-items-center border border-line" disabled={reordering} onClick={() => { setNotice(""); setEditor({ open: true, slide }); }} type="button"><Pencil size={15} /></button><button aria-label={`Delete ${slide.heading}`} className="grid size-9 place-items-center border border-line text-red-700" disabled={reordering} onClick={() => { setError(""); setDeleting(slide); }} type="button"><Trash2 size={15} /></button></div></td>
+                </>}
                 </SortableTableRow>
             ))}</tbody>
             </table>

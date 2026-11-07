@@ -9,6 +9,7 @@ import type { z } from "zod";
 import {
   AVAILABILITY_LABELS,
   AVAILABILITY_STATUSES,
+  DEFAULT_PRODUCT_FABRIC,
   DEFAULT_SIZE_SYSTEM,
   FIT_TYPES,
   FIT_TYPE_LABELS,
@@ -75,7 +76,7 @@ function toDefaults(product?: ProductDto): Partial<ProductFormValues> {
       jerseyType: "half-sleeve",
       fit: "regular",
       logoType: "unknown",
-      fabric: "",
+      fabric: DEFAULT_PRODUCT_FABRIC,
       price: "",
       compareAtPrice: null,
       sizeSystem: "apparel",
@@ -100,6 +101,7 @@ function toDefaults(product?: ProductDto): Partial<ProductFormValues> {
   void _updatedAt;
   return {
     ...rest,
+    fabric: rest.fabric || DEFAULT_PRODUCT_FABRIC,
     team: {
       ...rest.team,
       name: rest.team.name ?? "",

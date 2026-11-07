@@ -1,5 +1,5 @@
 import { Schema, model, models, type Model, type Types } from "mongoose";
-import { AVAILABILITY_STATUSES, FIT_TYPES, JERSEY_TYPES, LOGO_TYPES, PRODUCT_TYPES, SIZE_SYSTEMS, TEAM_TYPES, type AvailabilityStatus, type FitType, type JerseyType, type LogoType, type ProductType, type SizeSystem, type TeamType } from "@/lib/catalog-constants";
+import { AVAILABILITY_STATUSES, DEFAULT_PRODUCT_FABRIC, FIT_TYPES, JERSEY_TYPES, LOGO_TYPES, PRODUCT_TYPES, SIZE_SYSTEMS, TEAM_TYPES, type AvailabilityStatus, type FitType, type JerseyType, type LogoType, type ProductType, type SizeSystem, type TeamType } from "@/lib/catalog-constants";
 import "@/server/models/category.model";
 
 export interface ProductAttrs {
@@ -51,7 +51,7 @@ const productSchema = new Schema<ProductAttrs>(
     jerseyType: { type: String, enum: JERSEY_TYPES, default: null },
     fit: { type: String, enum: FIT_TYPES, default: null },
     logoType: { type: String, enum: LOGO_TYPES, default: "unknown" },
-    fabric: { type: String, default: "Breathable Polyster Dot Knit Fabric", trim: true },
+    fabric: { type: String, default: DEFAULT_PRODUCT_FABRIC, trim: true },
     price: { type: Number, required: true, min: 0 },
     compareAtPrice: { type: Number, default: null, min: 0 },
     sizeSystem: { type: String, enum: SIZE_SYSTEMS, default: "apparel" },

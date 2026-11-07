@@ -5,6 +5,7 @@ export const FIT_TYPES = ["regular", "oversized"] as const;
 export const LOGO_TYPES = ["sublimation", "embroidered", "unknown"] as const;
 export const SIZE_SYSTEMS = ["apparel", "uk", "eu", "one-size"] as const;
 export const AVAILABILITY_STATUSES = ["available", "unavailable", "supplier-confirmation-required"] as const;
+export const DEFAULT_PRODUCT_FABRIC = "Breathable Polyster Dot Knit Fabric";
 
 export type ProductType = (typeof PRODUCT_TYPES)[number];
 export type TeamType = (typeof TEAM_TYPES)[number];

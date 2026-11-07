@@ -10,7 +10,25 @@ type Params = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const product = await getStoreProduct((await params).slug);
   if (!product) return { title: "Product not found | GoalNet" };
-  return { title: `${product.seoTitle || product.name} | GoalNet`, description: product.seoDescription || product.description.slice(0, 160) || undefined };
+  const title = `${product.seoTitle || product.name} | GoalNet`;
+  const description = product.seoDescription || product.description.slice(0, 160) || undefined;
+  const images = product.image ? [{ url: product.image, alt: product.imageAlt || product.name }] : [];
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: images.map(({ url }) => url),
+    },
+  };
 }
 
 async function Product({ params }: Params) {

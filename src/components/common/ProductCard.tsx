@@ -70,7 +70,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
         </div>
       </div>
       {wishlistError && <p className="mt-2 text-xs text-red-700" role="alert">{wishlistError}</p>}
-      <p className="mt-1 text-xs text-muted">Check product availability</p>
+      <p className="mt-1 text-xs text-muted">Explore sizes &amp; product details</p>
     </article>
   );
 }

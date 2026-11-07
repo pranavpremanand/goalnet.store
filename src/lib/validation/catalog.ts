@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AVAILABILITY_STATUSES, FIT_TYPES, JERSEY_TYPES, LOGO_TYPES, MAX_PRODUCT_IMAGES, PRODUCT_TYPES, SIZE_OPTIONS, SIZE_SYSTEMS, TEAM_TYPES, isTeamBased } from "@/lib/catalog-constants";
+import { AVAILABILITY_STATUSES, DEFAULT_PRODUCT_FABRIC, FIT_TYPES, JERSEY_TYPES, LOGO_TYPES, MAX_PRODUCT_IMAGES, PRODUCT_TYPES, SIZE_OPTIONS, SIZE_SYSTEMS, TEAM_TYPES, isTeamBased } from "@/lib/catalog-constants";
 
 // Shared by the admin forms and the API so both enforce the same rules.
 
@@ -61,7 +61,10 @@ export const productInputSchema = z
     jerseyType: z.enum(JERSEY_TYPES, { error: "Select a jersey type" }).nullable(),
     fit: z.enum(FIT_TYPES, { error: "Select a fit" }).nullable(),
     logoType: z.enum(LOGO_TYPES, { error: "Select a logo type" }),
-    fabric: text("Material", 120),
+    fabric: z.preprocess(
+      (value) => value === "" || value === undefined ? undefined : value,
+      text("Material", 120).default(DEFAULT_PRODUCT_FABRIC),
+    ),
     price: z.preprocess(
       (value) => value === "" ? undefined : Number(value),
       z.number({ error: "Enter a price" }).positive("Price must be greater than 0").max(1_000_000, "Price is too high"),

@@ -1,9 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+type SortableHandleProps = Pick<ReturnType<typeof useSortable>, "attributes" | "listeners" | "setActivatorNodeRef">;
 
 export function SortableTable({
   items,
@@ -17,8 +19,8 @@ export function SortableTable({
   children: ReactNode;
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -51,25 +53,22 @@ export function SortableTableRow({
   id: string;
   disabled?: boolean;
   className?: string;
-  children: ReactNode;
+  children: (handle: SortableHandleProps) => ReactNode;
 }) {
-  const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({ id, disabled });
+  const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform, transition } = useSortable({ id, disabled });
 
   return (
     <tr
-      {...attributes}
-      {...listeners}
       aria-roledescription="sortable row"
-      className={`${className} cursor-grab outline-none transition-colors active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${isDragging ? "relative z-10 bg-paper opacity-90 shadow-lg" : ""}`}
+      className={`${className} outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${isDragging ? "relative z-10 bg-paper opacity-90 shadow-lg" : ""}`}
       ref={setNodeRef}
       role="row"
       style={{
-        touchAction: "none",
         transform: CSS.Transform.toString(transform),
         transition: transition ?? "transform 220ms cubic-bezier(0.2, 0, 0, 1)",
       }}
     >
-      {children}
+      {children({ attributes, listeners, setActivatorNodeRef })}
     </tr>
   );
 }

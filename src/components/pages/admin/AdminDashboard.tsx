@@ -57,7 +57,7 @@ export function AdminDashboard({ data }: { data: DashboardData }) {
           </h1>
         </div>
         <Link
-          className="inline-flex items-center gap-2 bg-brand px-4 py-3 text-xs font-bold uppercase"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-brand px-4 py-3 text-xs font-bold uppercase sm:w-auto"
           href="/admin/products"
         >
           Manage products <ArrowRight size={15} />
@@ -102,7 +102,30 @@ export function AdminDashboard({ data }: { data: DashboardData }) {
               All orders
             </Link>
           </div>
-          <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+          <div className="space-y-3 p-3 md:hidden">
+            {data.recentOrders.length ? (
+              data.recentOrders.map((order) => (
+                <article className="min-w-0 border border-line p-3" key={order.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-all text-sm font-semibold">{order.ref}</p>
+                      <p className="mt-1 break-words text-xs text-muted">{order.shipping.name}</p>
+                    </div>
+                    <span className="shrink-0 bg-canvas px-2 py-1 text-[10px] font-bold uppercase">
+                      {ORDER_STATUS_LABELS[order.status]}
+                    </span>
+                  </div>
+                  <p className="mt-3 break-words text-xs text-muted">
+                    {order.lines.map((line) => line.name).join(", ")}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold">{formatRupees(order.total)}</p>
+                </article>
+              ))
+            ) : (
+              <p className="py-5 text-center text-sm text-muted">No paid orders yet.</p>
+            )}
+          </div>
+          <div className="hidden w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain md:block">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-canvas text-[10px] uppercase text-muted">
                 <tr>

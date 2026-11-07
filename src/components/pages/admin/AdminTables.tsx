@@ -100,7 +100,39 @@ export function AdminUsers({ initialData }: { initialData: UserPage }) {
 
       {error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}
 
-      <div className="mt-5 w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain border border-line">
+      <div className="mt-5 space-y-3 md:hidden" aria-busy={loading}>
+        {data.users.map((user, index) => (
+          <article className="min-w-0 border border-line p-4" key={user.id}>
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase text-muted">
+                  Account {(page - 1) * 50 + index + 1}
+                </p>
+                <p className="mt-1 break-words font-semibold">{user.name}</p>
+                <p className="mt-1 break-all text-sm text-muted">{user.email}</p>
+              </div>
+              <button
+                className={`shrink-0 px-3 py-2 text-[10px] font-bold uppercase disabled:opacity-50 ${user.isBlocked ? "bg-[#16812c] text-white" : "bg-[#830000] text-white"}`}
+                disabled={updatingId !== null}
+                onClick={() => setConfirmUser(user)}
+                type="button"
+              >
+                {user.isBlocked ? "Unblock" : "Block"}
+              </button>
+            </div>
+            <p className="mt-3 border-t border-line pt-3 text-xs text-muted">
+              Joined {new Date(user.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+            </p>
+          </article>
+        ))}
+        {!data.users.length && (
+          <p className="border border-line px-4 py-10 text-center text-sm text-muted">
+            {loading ? "Loading accounts…" : "No customer accounts found."}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-5 hidden w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain border border-line md:block">
         <table className="w-full min-w-[690px] text-left text-sm">
           <thead className="bg-canvas text-[10px] font-bold uppercase text-muted">
             <tr><th className="px-4 py-3">No.</th><th className="px-4 py-3">Name</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Created</th><th className="px-4 py-3">Status</th></tr>
@@ -131,19 +163,19 @@ export function AdminUsers({ initialData }: { initialData: UserPage }) {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted">Page {data.pages ? data.page : 0} of {data.pages}</p>
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2 sm:w-auto">
           <button
             aria-label="Previous page"
-            className="inline-flex min-h-10 items-center gap-1 border border-line px-3 text-xs font-bold uppercase disabled:opacity-40"
+            className="inline-flex min-h-10 flex-1 items-center justify-center gap-1 border border-line px-3 text-xs font-bold uppercase disabled:opacity-40 sm:flex-none"
             disabled={page <= 1 || loading}
             onClick={() => setPage((current) => current - 1)}
             type="button"
           ><ChevronLeft size={15} /> Previous</button>
           <button
             aria-label="Next page"
-            className="inline-flex min-h-10 items-center gap-1 border border-line px-3 text-xs font-bold uppercase disabled:opacity-40"
+            className="inline-flex min-h-10 flex-1 items-center justify-center gap-1 border border-line px-3 text-xs font-bold uppercase disabled:opacity-40 sm:flex-none"
             disabled={page >= data.pages || loading}
             onClick={() => setPage((current) => current + 1)}
             type="button"

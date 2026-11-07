@@ -543,7 +543,7 @@ export function AdminCategories({ categories }: { categories: CategoryDto[] }) {
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-canvas text-[10px] font-bold uppercase text-muted">
                 <tr>
-                  <th className="px-2 py-3">Drag any row</th>
+                  <th className="px-2 py-3">Reorder</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Slug</th>
                   <th className="px-4 py-3">Products</th>
@@ -559,11 +559,16 @@ export function AdminCategories({ categories }: { categories: CategoryDto[] }) {
                     id={category.id}
                     key={category.id}
                   >
+                  {({ attributes, listeners, setActivatorNodeRef }) => <>
                     <td className="px-2 py-3">
                       <div className="flex items-center gap-1">
                         <button
-                          aria-label={`Drag to reorder ${category.name}`}
+                          {...attributes}
+                          {...listeners}
                           className="grid size-9 place-items-center border border-line"
+                          aria-label={`Drag to reorder ${category.name}`}
+                          ref={setActivatorNodeRef}
+                          style={{ touchAction: "none" }}
                           type="button"
                         >
                           <GripVertical size={17} />
@@ -650,6 +655,7 @@ export function AdminCategories({ categories }: { categories: CategoryDto[] }) {
                         </button>
                       </div>
                     </td>
+                  </>}
                   </SortableTableRow>
                 ))}
               </tbody>

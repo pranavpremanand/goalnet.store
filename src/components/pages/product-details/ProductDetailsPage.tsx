@@ -214,8 +214,11 @@ export function ProductDetailsPage({
       <div className="mx-auto grid max-w-[1440px] gap-8 px-5 py-7 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:px-14 lg:py-10">
         <div>
           <ProductImageZoom
-            alt={product.images[activeImage]?.alt ?? product.imageAlt}
-            src={product.images[activeImage]?.url ?? product.image}
+            activeIndex={activeImage}
+            images={product.images.length
+              ? product.images.map((image) => ({ src: image.url, alt: image.alt || product.name }))
+              : [{ src: product.image, alt: product.imageAlt || product.name }]}
+            onActiveIndexChange={setActiveImage}
           >
             <span className="absolute left-4 top-4 bg-brand px-3 py-1.5 text-[10px] font-bold uppercase">
               GOALNET selection
@@ -310,7 +313,7 @@ export function ProductDetailsPage({
               </p>
             )}
           </div>
-          <div className="mt-7 grid gap-2 sm:grid-cols-[1.3fr_0.7fr_0.8fr]">
+          <div className="mt-7 grid gap-2 sm:grid-cols-[1.3fr_0.7fr]">
             <button
               className="min-h-12 bg-brand px-5 text-sm font-bold uppercase transition hover:bg-[#d8df0d]"
               disabled={cartPending}
@@ -318,13 +321,6 @@ export function ProductDetailsPage({
               type="button"
             >
               {cartPending ? <LoadingSpinner label="Adding…" /> : "Add to bag"}
-            </button>
-            <button
-              className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold"
-              onClick={shareProduct}
-              type="button"
-            >
-              <Share2 size={16} /> Share
             </button>
             <button
               aria-pressed={wishlisted}
@@ -338,13 +334,13 @@ export function ProductDetailsPage({
             </button>
           </div>
 
-          {/* <button
+          <button
             className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold"
             onClick={shareProduct}
             type="button"
           >
             <Share2 size={16} /> Share
-          </button> */}
+          </button>
           {notice && (
             <p
               aria-live={notice.type === "error" ? "assertive" : "polite"}
