@@ -459,6 +459,16 @@ export function CustomerDashboard({
           ))}
         </nav>
         <button
+          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 border border-line px-3 py-2 text-sm text-muted hover:text-red-700 lg:hidden"
+          onClick={async () => {
+            await signOutUser();
+            router.push("/login");
+          }}
+          type="button"
+        >
+          <LogOut size={17} /> Sign out
+        </button>
+        <button
           className="mt-5 hidden items-center gap-3 px-3 py-2 text-sm text-muted hover:text-red-700 lg:flex"
           onClick={async () => {
             await signOutUser();
