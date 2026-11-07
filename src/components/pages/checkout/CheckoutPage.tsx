@@ -377,10 +377,16 @@ export function CheckoutPage({
               ? offices[0].key
               : "",
         );
-        const locality = [result.district, result.state].filter(Boolean).join(", ");
+        const office = offices[0];
+        const locality =
+          offices.length === 1
+            ? [office.name, office.district, office.state]
+                .filter(Boolean)
+                .join(", ")
+            : [result.district, result.state].filter(Boolean).join(", ");
         setPincodeLookup({
           status: "success",
-          message: `Delivery available${locality ? ` in ${locality}` : ""}.${offices.length > 1 ? " Select your post office to complete the delivery address." : ""}`,
+          message: `${offices.length === 1 ? "Delivery available through" : "Delivery available"}${locality ? ` ${locality}` : ""}.${offices.length > 1 ? " Select your post office to complete the delivery address." : ""}`,
         });
       } catch {
         if (requestId === lookupRequestId.current) {

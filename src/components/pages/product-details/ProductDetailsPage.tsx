@@ -203,10 +203,13 @@ export function ProductDetailsPage({
             ? offices[0].key
             : "",
       );
-      const locality = [result.district, result.state].filter(Boolean).join(", ");
+      const office = offices[0];
+      const locality = offices.length === 1
+        ? [office.name, office.district, office.state].filter(Boolean).join(", ")
+        : [result.district, result.state].filter(Boolean).join(", ");
       setPincodeLookup({
         status: "success",
-        message: `Delivery available${locality ? ` in ${locality}` : ""}.${offices.length > 1 ? " Select your post office to confirm the locality." : " Final serviceability is subject to courier confirmation."}`,
+        message: `${offices.length === 1 ? "Delivery available through" : "Delivery available"}${locality ? ` ${locality}` : ""}.${offices.length > 1 ? " Select your post office to confirm the locality." : " Final serviceability is subject to courier confirmation."}`,
       });
     } catch {
       if (requestId === deliveryLookupId.current) {
@@ -367,9 +370,9 @@ export function ProductDetailsPage({
               </p>
             )}
           </div>
-          <div className="mt-7 grid gap-2 sm:grid-cols-2">
+          <div className="mt-7 grid grid-cols-2 gap-3">
             <button
-              className="min-h-12 bg-brand px-5 text-sm font-bold uppercase transition hover:bg-[#d8df0d]"
+              className="inline-flex min-h-12 w-full items-center justify-center bg-brand px-3 text-center text-xs font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-60 sm:px-5 sm:text-sm"
               disabled={cartPending}
               onClick={addToBag}
               type="button"
@@ -377,7 +380,7 @@ export function ProductDetailsPage({
               {cartPending ? <LoadingSpinner label="Adding…" /> : "Add to bag"}
             </button>
             <button
-              className="min-h-12 border border-ink px-5 text-sm font-bold uppercase transition hover:bg-canvas"
+              className="inline-flex min-h-12 w-full items-center justify-center border border-ink px-3 text-center text-xs font-bold uppercase transition hover:bg-canvas sm:px-5 sm:text-sm"
               onClick={buyNow}
               type="button"
             >
@@ -385,7 +388,7 @@ export function ProductDetailsPage({
             </button>
             <button
               aria-pressed={wishlisted}
-              className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold disabled:cursor-wait disabled:opacity-60 sm:col-span-2"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-line px-3 text-sm font-semibold transition hover:border-ink disabled:cursor-wait disabled:opacity-60"
               disabled={wishlistLoading || wishlistPending}
               onClick={() => void toggleProductWishlist()}
               type="button"
@@ -393,15 +396,14 @@ export function ProductDetailsPage({
               <Heart fill={wishlisted ? "currentColor" : "none"} size={16} />
               {wishlisted ? "Saved" : "Wishlist"}
             </button>
+            <button
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-line px-3 text-sm font-semibold transition hover:border-ink"
+              onClick={shareProduct}
+              type="button"
+            >
+              <Share2 size={16} /> Share
+            </button>
           </div>
-
-          <button
-            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold"
-            onClick={shareProduct}
-            type="button"
-          >
-            <Share2 size={16} /> Share
-          </button>
           {notice && (
             <p
               aria-live={notice.type === "error" ? "assertive" : "polite"}
