@@ -7,6 +7,14 @@ import { SkeletonBlock } from "@/components/common/Loading";
 import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { listActiveCategories } from "@/server/services/category.service";
 
+const categoryGridColumns = [
+  "lg:grid-cols-1",
+  "lg:grid-cols-2",
+  "lg:grid-cols-3",
+  "lg:grid-cols-4",
+  "lg:grid-cols-5",
+];
+
 async function CategoryCards() {
   let categories: Awaited<ReturnType<typeof listActiveCategories>> = [];
   try {
@@ -30,7 +38,7 @@ async function CategoryCards() {
             Browse all products <LuArrowUpRight aria-hidden="true" size={15} />
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+        <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 ${categoryGridColumns[Math.min(categories.length, 5) - 1]}`}>
           {categories.map((category) => (
             <ScrollReveal className="min-w-0" key={category.id} variant="scale">
             <Link className="group relative block aspect-4/5 overflow-hidden bg-charcoal text-white" href={`/shop?category=${category.slug}`}>
