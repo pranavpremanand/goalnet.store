@@ -59,7 +59,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
       </div>
       <div className="flex items-start justify-between gap-3 pt-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase text-muted">{product.category.name}</p>
+          <p className="truncate text-[10px] font-semibold uppercase text-muted">{product.categories.map((category) => category.name).join(" · ")}</p>
           <Link className="mt-1 block truncate font-display text-base font-semibold sm:text-lg" href={href}>
             {product.name}
           </Link>

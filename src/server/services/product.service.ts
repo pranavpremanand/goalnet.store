@@ -10,9 +10,10 @@ import { resolveSlug } from "@/server/services/slug.service";
 
 const SLUG_TAKEN = "This slug is already in use";
 
-async function assertCategoryExists(categoryId: string) {
-  if (!(await categoryRepository.findCategoryById(categoryId))) {
-    throw new BadRequestError("The selected category does not exist.", { category: ["Select a valid category"] });
+async function assertCategoriesExist(categoryIds: string[]) {
+  const categories = await Promise.all(categoryIds.map((id) => categoryRepository.findCategoryById(id)));
+  if (categories.some((category) => !category)) {
+    throw new BadRequestError("One or more selected categories do not exist.", { categories: ["Select valid categories"] });
   }
 }
 
@@ -21,6 +22,8 @@ function toData(input: ProductInput, slug: string): productRepository.ProductDat
   const teamBased = isTeamBased(input.productType);
   return {
     ...input,
+    category: input.categories[0],
+    categories: input.categories,
     slug,
     team: teamBased ? input.team : { name: null, type: null },
     season: teamBased ? input.season : "",
@@ -43,7 +46,7 @@ export async function getProduct(id: string): Promise<ProductDto> {
 }
 
 export async function createProduct(input: ProductInput): Promise<ProductDto> {
-  await assertCategoryExists(input.category);
+  await assertCategoriesExist(input.categories);
   const slug = await resolveSlug({ requested: input.slug, name: input.name, exists: (value) => productRepository.productSlugExists(value) });
   await verifyNewImages(input.images, "product", new Set(), "images");
 
@@ -59,7 +62,7 @@ export async function updateProduct(id: string, input: ProductInput): Promise<Pr
   const existing = await productRepository.findProductById(id);
   if (!existing) throw new NotFoundError("Product not found.");
 
-  await assertCategoryExists(input.category);
+  await assertCategoriesExist(input.categories);
   const slug = await resolveSlug({ requested: input.slug, name: input.name, current: existing.slug, exists: (value) => productRepository.productSlugExists(value, id) });
   await verifyNewImages(input.images, "product", new Set(existing.images.map((image) => image.fileId)), "images");
 

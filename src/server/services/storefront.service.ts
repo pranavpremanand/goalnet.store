@@ -1,5 +1,5 @@
 import type { ProductDto } from "@/lib/types/catalog";
-import type { FitType, JerseyType, TeamType } from "@/lib/catalog-constants";
+import type { FitType, JerseyType, LogoType, TeamType } from "@/lib/catalog-constants";
 import type { StoreCategory, StorePriceBand, StoreProduct, StoreProductPage } from "@/lib/types/storefront";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as productRepository from "@/server/repositories/product.repository";
@@ -12,6 +12,7 @@ function toStoreProduct(product: ProductDto): StoreProduct {
     name: product.name,
     description: product.description,
     category: { name: product.category.name, slug: product.category.slug },
+    categories: product.categories.map(({ name, slug }) => ({ name, slug })),
     productType: product.productType,
     brand: product.brand,
     teamName: product.team.name ?? "",
@@ -47,6 +48,7 @@ export async function listStoreProductPage(filter: {
   query: string;
   categories: string[];
   teamTypes?: TeamType[];
+  logoTypes?: LogoType[];
   jerseyTypes?: JerseyType[];
   fits?: FitType[];
   minPrice?: number;
@@ -71,6 +73,7 @@ export async function listStoreProductPage(filter: {
       : [],
     query: filter.query,
     teamTypes: filter.teamTypes,
+    logoTypes: filter.logoTypes,
     jerseyTypes: filter.jerseyTypes,
     fits: filter.fits,
     minPrice: filter.minPrice,
@@ -119,6 +122,11 @@ export async function listFeaturedProducts(limit: number): Promise<StoreProduct[
 export async function listRelatedProducts(product: StoreProduct, limit: number): Promise<StoreProduct[]> {
   const categoryIds = await activeCategoryIds();
   const candidates = await productRepository.listActiveProducts({ categoryIds, excludeId: product.id, limit: 50 });
-  const ranked = [...candidates].sort((a, b) => Number(b.category.slug === product.category.slug) - Number(a.category.slug === product.category.slug));
+  const productCategorySlugs = new Set(product.categories.map((category) => category.slug));
+  const ranked = [...candidates].sort((a, b) => {
+    const aSharesCategory = a.categories.some((category) => productCategorySlugs.has(category.slug));
+    const bSharesCategory = b.categories.some((category) => productCategorySlugs.has(category.slug));
+    return Number(bSharesCategory) - Number(aSharesCategory);
+  });
   return ranked.slice(0, limit).map(toStoreProduct);
 }

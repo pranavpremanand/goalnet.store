@@ -21,6 +21,7 @@ export interface ProductAttrs {
   variants: { size: string; availabilityStatus: AvailabilityStatus }[];
   images: { url: string; fileId: string; alt: string }[];
   category: Types.ObjectId;
+  categories: Types.ObjectId[];
   isActive: boolean;
   isFeatured: boolean;
   displayOrder: number;
@@ -71,6 +72,7 @@ const productSchema = new Schema<ProductAttrs>(
       },
     ],
     category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
+    categories: { type: [{ type: Schema.Types.ObjectId, ref: "Category" }], default: [] },
     isActive: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false },
     displayOrder: { type: Number, default: 0 },
@@ -83,9 +85,10 @@ const productSchema = new Schema<ProductAttrs>(
 );
 
 productSchema.index({ category: 1, isActive: 1, price: 1 });
+productSchema.index({ categories: 1, isActive: 1, price: 1 });
 productSchema.index({ isFeatured: 1, isActive: 1 });
 
 const cachedProductModel = models.Product as Model<ProductAttrs> | undefined;
-if (cachedProductModel && !cachedProductModel.schema.path("fit")) delete models.Product;
+if (cachedProductModel && (!cachedProductModel.schema.path("fit") || !cachedProductModel.schema.path("categories"))) delete models.Product;
 
 export const ProductModel = (models.Product as Model<ProductAttrs> | undefined) ?? model<ProductAttrs>("Product", productSchema);

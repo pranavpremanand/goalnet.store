@@ -73,7 +73,7 @@ export function AdminProducts({ result, categories, filters }: { result: Product
               {result.items.map((product) => (
                 <tr className="border-t border-line" key={product.id}>
                   <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="relative aspect-4/5 w-10 shrink-0 overflow-hidden bg-canvas">{product.images[0] && <Image alt={product.images[0].alt || product.name} className="object-cover" fill sizes="40px" src={product.images[0].url} />}</div><div><p className="font-semibold">{product.name}</p><p className="text-xs text-muted">{PRODUCT_TYPE_LABELS[product.productType]} · {product.slug}</p></div></div></td>
-                  <td className="px-4 py-3">{product.category.name}</td>
+                  <td className="px-4 py-3">{product.categories.map((category) => category.name).join(", ")}</td>
                   <td className="px-4 py-3">{formatRupees(product.price)}</td>
                   <td className="px-4 py-3 text-muted">{product.variants.map((variant) => variant.size).join(", ")}</td>
                   <td className="px-4 py-3"><span className={`px-2 py-1 text-[10px] font-bold uppercase ${product.isActive ? "bg-brand" : "bg-canvas text-muted"}`}>{product.isActive ? "Active" : "Inactive"}</span>{product.isFeatured && <span className="ml-1 bg-ink px-2 py-1 text-[10px] font-bold uppercase text-white">Featured</span>}</td>

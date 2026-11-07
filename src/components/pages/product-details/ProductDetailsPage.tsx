@@ -250,7 +250,7 @@ export function ProductDetailsPage({
         </div>
         <div className="lg:pt-4">
           <p className="text-xs font-bold uppercase text-muted">
-            {product.category.name}
+            {product.categories.map((category) => category.name).join(" · ")}
           </p>
           <h1 className="mt-2 font-display text-4xl font-semibold leading-tight sm:text-5xl">
             {product.name}
@@ -307,9 +307,9 @@ export function ProductDetailsPage({
             </div>
             {selected?.availability === "supplier-confirmation-required" && (
               <p className="mt-3 text-xs text-muted">
-                Availability for this{" "}
-                {product.sizeSystem === "one-size" ? "option" : "size"} is
-                confirmed with our supplier after you order.
+                We’ll confirm your selected{" "}
+                {product.sizeSystem === "one-size" ? "option" : "size"} after
+                checkout.
               </p>
             )}
           </div>

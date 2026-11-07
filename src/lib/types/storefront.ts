@@ -7,6 +7,7 @@ export type StoreProduct = {
   name: string;
   description: string;
   category: { name: string; slug: string };
+  categories: { name: string; slug: string }[];
   productType: ProductType;
   brand: string;
   teamName: string;

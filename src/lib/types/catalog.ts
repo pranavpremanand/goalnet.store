@@ -37,6 +37,7 @@ export type ProductDto = {
   variants: { size: string; availabilityStatus: AvailabilityStatus }[];
   images: ImageAsset[];
   category: { id: string; name: string; slug: string };
+  categories: { id: string; name: string; slug: string }[];
   isActive: boolean;
   isFeatured: boolean;
   displayOrder: number;

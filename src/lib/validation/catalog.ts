@@ -76,7 +76,7 @@ export const productInputSchema = z
       .min(1, "Select at least one size")
       .refine((variants) => new Set(variants.map((variant) => variant.size)).size === variants.length, "Each size can only be added once"),
     images: z.array(imageSchema).min(1, "Upload at least one product image").max(MAX_PRODUCT_IMAGES, `You can add up to ${MAX_PRODUCT_IMAGES} images`),
-    category: z.string().regex(/^[a-f\d]{24}$/i, "Select a category"),
+    categories: z.array(objectIdSchema).min(1, "Select at least one category").refine((ids) => new Set(ids).size === ids.length, "Each category can only be selected once"),
     isActive: z.boolean(),
     isFeatured: z.boolean(),
     displayOrder: wholeNumber("Display order", 0, 9999),

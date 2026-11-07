@@ -9,6 +9,7 @@ const STORAGE_KEY = "goalnet-wishlist-v1";
 const PRODUCT_ID_PATTERN = /^[a-f\d]{24}$/i;
 const MAX_GUEST_ITEMS = 500;
 const LOOKUP_BATCH_SIZE = 100;
+let memoryGuestIds: string[] = [];
 
 type WishlistResponse = { favorites: string[]; products: StoreProduct[] };
 type WishlistActionResult = { ok: true } | { ok: false; error: string };
@@ -32,10 +33,25 @@ function getErrorMessage(error: unknown) {
     : "Your wishlist could not be updated. Please try again.";
 }
 
-function readGuestIds() {
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
+function getGuestStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
+function readGuestIds() {
+  const storage = getGuestStorage();
+  if (!storage) return memoryGuestIds;
+
+  let raw: string | null;
+  try {
+    raw = storage.getItem(STORAGE_KEY);
+  } catch {
+    return memoryGuestIds;
+  }
+  if (!raw) return [];
   const value: unknown = JSON.parse(raw);
   if (!Array.isArray(value) || value.some((id) => typeof id !== "string")) {
     throw new Error("Your saved wishlist data is invalid. Clear it or contact support.");
@@ -45,7 +61,24 @@ function readGuestIds() {
 }
 
 function saveGuestIds(ids: string[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  memoryGuestIds = ids;
+  const storage = getGuestStorage();
+  if (!storage) return false;
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify(ids));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearGuestIds() {
+  memoryGuestIds = [];
+  try {
+    getGuestStorage()?.removeItem(STORAGE_KEY);
+  } catch {
+    // Keep the in-memory state cleared even if browser storage is unavailable.
+  }
 }
 
 async function loadGuestProducts(ids: string[]) {
@@ -91,12 +124,12 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
     try {
       if (sessionEmail) {
-        let guestIds: string[] = [];
-        let storageError = "";
+        let guestIds: string[];
         try {
           guestIds = readGuestIds();
         } catch (storageFailure) {
-          storageError = getErrorMessage(storageFailure);
+          setError(getErrorMessage(storageFailure));
+          guestIds = memoryGuestIds;
         }
         if (guestIds.length > 0) {
           await apiRequest<{ favorites: string[] }>("/api/account/favorites", {
@@ -107,15 +140,10 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         const wishlist = await apiRequest<WishlistResponse>("/api/account/favorites");
         if (currentRequest !== requestId.current) return;
         if (guestIds.length > 0) {
-          try {
-            window.localStorage.removeItem(STORAGE_KEY);
-          } catch (storageFailure) {
-            storageError = getErrorMessage(storageFailure);
-          }
+          clearGuestIds();
         }
         setProductIds(wishlist.favorites);
         setProducts(wishlist.products);
-        if (storageError) setError(storageError);
       } else {
         const guestIds = readGuestIds();
         setProductIds(guestIds);
@@ -123,7 +151,10 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         if (currentRequest !== requestId.current) return;
         setProductIds(result.validIds);
         setProducts(result.products);
-        if (result.validIds.length !== guestIds.length) saveGuestIds(result.validIds);
+        const storageAvailable = saveGuestIds(result.validIds);
+        if (!storageAvailable) {
+          setError("Browser storage is unavailable. Guest wishlist changes are temporary; sign in to save them to your account.");
+        }
       }
     } catch (requestError) {
       if (currentRequest === requestId.current) setError(getErrorMessage(requestError));
@@ -184,7 +215,10 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
             });
         updatedIds = response.favorites;
       } else {
-        saveGuestIds(nextIds);
+        const storageAvailable = saveGuestIds(nextIds);
+        if (!storageAvailable) {
+          setError("Browser storage is unavailable. Guest wishlist changes are temporary; sign in to save them to your account.");
+        }
       }
       if (operationId !== requestId.current) {
         return { ok: false, error: "Your account changed. Refresh the page and try again." };

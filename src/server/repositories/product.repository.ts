@@ -1,14 +1,21 @@
 import { Types, type QueryFilter } from "mongoose";
-import type { FitType, JerseyType, TeamType } from "@/lib/catalog-constants";
+import type { FitType, JerseyType, LogoType, TeamType } from "@/lib/catalog-constants";
 import type { ProductDto } from "@/lib/types/catalog";
 import type { StorePriceBand } from "@/lib/types/storefront";
 import { connectToDatabase } from "@/server/db/connect";
 import { ProductModel, type ProductAttrs, type StoredJerseyType } from "@/server/models/product.model";
 
-export type ProductData = Omit<ProductAttrs, "category" | "createdAt" | "updatedAt"> & { category: string };
+export type ProductData = Omit<ProductAttrs, "category" | "categories" | "createdAt" | "updatedAt"> & {
+  category: string;
+  categories: string[];
+};
 
 type PopulatedCategory = { _id: Types.ObjectId; name: string; slug: string } | null;
-type ProductDoc = Omit<ProductAttrs, "category"> & { _id: Types.ObjectId; category: PopulatedCategory };
+type ProductDoc = Omit<ProductAttrs, "category" | "categories"> & {
+  _id: Types.ObjectId;
+  category: PopulatedCategory;
+  categories?: (PopulatedCategory | Types.ObjectId)[];
+};
 const LEGACY_OVERSIZED_TYPES: StoredJerseyType[] = ["oversized-five-sleeve", "oversized-full-sleeve"];
 const LEGACY_OVERSIZED_TEXT = /oversized/i;
 
@@ -33,6 +40,15 @@ function normalizeJerseyType(value: unknown): JerseyType | null {
 function toDto(doc: ProductDoc): ProductDto {
   const isLegacyOversized = (doc.jerseyType !== null && LEGACY_OVERSIZED_TYPES.includes(doc.jerseyType))
     || LEGACY_OVERSIZED_TEXT.test(`${doc.name} ${doc.description}`);
+  const categories = (doc.categories ?? [])
+    .filter((category): category is NonNullable<PopulatedCategory> => category !== null && typeof category === "object" && "name" in category)
+    .map((category) => ({ id: category._id.toString(), name: category.name, slug: category.slug }));
+  const normalizedCategories = categories.length
+    ? categories
+    : doc.category
+      ? [{ id: doc.category._id.toString(), name: doc.category.name, slug: doc.category.slug }]
+      : [];
+  const primaryCategory = normalizedCategories[0] ?? { id: "", name: "Unknown category", slug: "" };
   return {
     id: doc._id.toString(),
     name: doc.name,
@@ -54,7 +70,8 @@ function toDto(doc: ProductDoc): ProductDto {
     sizeSystem: doc.sizeSystem ?? "apparel",
     variants: doc.variants.map((variant) => ({ size: variant.size, availabilityStatus: variant.availabilityStatus })),
     images: doc.images.map((image) => ({ url: image.url, fileId: image.fileId, alt: image.alt })),
-    category: doc.category ? { id: doc.category._id.toString(), name: doc.category.name, slug: doc.category.slug } : { id: "", name: "Unknown category", slug: "" },
+    category: primaryCategory,
+    categories: normalizedCategories,
     isActive: doc.isActive,
     isFeatured: doc.isFeatured,
     displayOrder: doc.displayOrder,
@@ -71,11 +88,14 @@ function escapeRegex(value: string) {
 export async function listProducts(filter: { page: number; limit: number; q: string; category: string; status: "all" | "active" | "inactive" }) {
   await connectToDatabase();
   const query: QueryFilter<ProductAttrs> = {};
+  const conditions: QueryFilter<ProductAttrs>[] = [];
   if (filter.q) {
     const pattern = new RegExp(escapeRegex(filter.q), "i");
-    query.$or = [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }];
+    conditions.push({ $or: [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }] });
   }
-  if (filter.category) query.category = filter.category;
+  if (filter.category) conditions.push({ $or: [{ category: filter.category }, { categories: filter.category }] });
+  if (conditions.length === 1) Object.assign(query, conditions[0]);
+  else if (conditions.length > 1) query.$and = conditions;
   if (filter.status !== "all") query.isActive = filter.status === "active";
 
   const [docs, total] = await Promise.all([
@@ -84,6 +104,7 @@ export async function listProducts(filter: { page: number; limit: number; q: str
       .skip((filter.page - 1) * filter.limit)
       .limit(filter.limit)
       .populate("category", "name slug")
+      .populate("categories", "name slug")
       .lean<ProductDoc[]>(),
     ProductModel.countDocuments(query),
   ]);
@@ -92,7 +113,7 @@ export async function listProducts(filter: { page: number; limit: number; q: str
 
 export async function findProductById(id: string): Promise<ProductDto | null> {
   await connectToDatabase();
-  const doc = await ProductModel.findById(id).populate("category", "name slug").lean<ProductDoc>();
+  const doc = await ProductModel.findById(id).populate("category", "name slug").populate("categories", "name slug").lean<ProductDoc>();
   return doc ? toDto(doc) : null;
 }
 
@@ -102,6 +123,7 @@ type StorefrontPageFilter = {
   searchCategoryIds: string[];
   query: string;
   teamTypes?: TeamType[];
+  logoTypes?: LogoType[];
   jerseyTypes?: JerseyType[];
   fits?: FitType[];
   minPrice?: number;
@@ -116,13 +138,22 @@ export async function listActiveProducts(filter: StorefrontFilter): Promise<Prod
   if (filter.categoryIds.length === 0) return [];
   await connectToDatabase();
 
-  const query: QueryFilter<ProductAttrs> = { isActive: true, category: { $in: filter.categoryIds } };
+  const query: QueryFilter<ProductAttrs> = {
+    isActive: true,
+  };
+  const conditions: QueryFilter<ProductAttrs>[] = [{
+    $or: [
+      { categories: { $in: filter.categoryIds } },
+      { category: { $in: filter.categoryIds } },
+    ],
+  }];
+  query.$and = conditions;
   if (filter.featuredOnly) query.isFeatured = true;
-  if (filter.categoryId) query.category = filter.categoryId;
+  if (filter.categoryId) conditions.push({ $or: [{ categories: filter.categoryId }, { category: filter.categoryId }] });
   if (filter.excludeId) query._id = { $ne: filter.excludeId };
   if (filter.ids) query._id = { $in: filter.ids };
 
-  const docs = await ProductModel.find(query).sort({ displayOrder: 1, createdAt: -1 }).limit(filter.limit ?? 200).populate("category", "name slug").lean<ProductDoc[]>();
+  const docs = await ProductModel.find(query).sort({ displayOrder: 1, createdAt: -1 }).limit(filter.limit ?? 200).populate("category", "name slug").populate("categories", "name slug").lean<ProductDoc[]>();
   return docs.map(toDto);
 }
 
@@ -132,9 +163,13 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
 
   const query: QueryFilter<ProductAttrs> = {
     isActive: true,
-    category: { $in: filter.categoryIds },
   };
-  const conditions: QueryFilter<ProductAttrs>[] = [];
+  const conditions: QueryFilter<ProductAttrs>[] = [{
+    $or: [
+    { categories: { $in: filter.categoryIds } },
+    { category: { $in: filter.categoryIds } },
+    ],
+  }];
   if (filter.query) {
     const pattern = new RegExp(escapeRegex(filter.query), "i");
     const searchConditions: QueryFilter<ProductAttrs>[] = [
@@ -144,7 +179,12 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
       { "team.name": pattern },
     ];
     if (filter.searchCategoryIds.length > 0) {
-      searchConditions.push({ category: { $in: filter.searchCategoryIds } });
+      searchConditions.push({
+        $or: [
+          { categories: { $in: filter.searchCategoryIds } },
+          { category: { $in: filter.searchCategoryIds } },
+        ],
+      });
     }
     conditions.push({ $or: searchConditions });
   }
@@ -159,6 +199,12 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
       return { "team.type": teamType };
     });
     conditions.push({ $or: teamTypeConditions });
+  }
+  if (filter.logoTypes?.length) {
+    conditions.push({
+      productType: { $in: ["jersey", "kit"] },
+      logoType: { $in: filter.logoTypes },
+    });
   }
   if (filter.fits?.length) {
     const fitConditions = filter.fits.map((fit): QueryFilter<ProductAttrs> => (
@@ -193,7 +239,7 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
     conditions.push({ $or: fitConditions });
   }
   if (conditions.length === 1) Object.assign(query, conditions[0]);
-  else if (conditions.length > 1) query.$and = conditions;
+  else query.$and = conditions;
   if (filter.jerseyTypes?.length) {
     const storedTypes = filter.jerseyTypes.flatMap((jerseyType): (StoredJerseyType | RegExp)[] => {
       switch (jerseyType) {
@@ -225,6 +271,7 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
       .skip((filter.page - 1) * filter.pageSize)
       .limit(filter.pageSize + 1)
       .populate("category", "name slug")
+      .populate("categories", "name slug")
       .lean<ProductDoc[]>(),
     ProductModel.countDocuments(query),
   ]);
@@ -245,7 +292,10 @@ export async function listActivePriceBands(categoryIds: string[]): Promise<Store
     {
       $match: {
         isActive: true,
-        category: { $in: categoryIds.map((id) => new Types.ObjectId(id)) },
+        $or: [
+          { categories: { $in: categoryIds.map((id) => new Types.ObjectId(id)) } },
+          { category: { $in: categoryIds.map((id) => new Types.ObjectId(id)) } },
+        ],
       },
     },
     {
@@ -305,8 +355,10 @@ export async function searchActiveProducts(queryText: string, categoryIds: strin
   const pattern = new RegExp(escapeRegex(queryText), "i");
   const docs = await ProductModel.find({
     isActive: true,
-    category: { $in: categoryIds },
-    $or: [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }, { season: pattern }],
+    $and: [
+      { $or: [{ categories: { $in: categoryIds } }, { category: { $in: categoryIds } }] },
+      { $or: [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }, { season: pattern }] },
+    ],
   })
     .select("name slug brand team.name season price images.url images.alt displayOrder createdAt")
     .sort({ displayOrder: 1, createdAt: -1 })
@@ -332,7 +384,14 @@ export async function searchActiveProducts(queryText: string, categoryIds: strin
 export async function findActiveProductBySlug(slug: string, categoryIds: string[]): Promise<ProductDto | null> {
   if (categoryIds.length === 0) return null;
   await connectToDatabase();
-  const doc = await ProductModel.findOne({ slug, isActive: true, category: { $in: categoryIds } }).populate("category", "name slug").lean<ProductDoc>();
+  const doc = await ProductModel.findOne({
+    slug,
+    isActive: true,
+    $or: [
+      { categories: { $in: categoryIds } },
+      { category: { $in: categoryIds } },
+    ],
+  }).populate("category", "name slug").populate("categories", "name slug").lean<ProductDoc>();
   return doc ? toDto(doc) : null;
 }
 
@@ -360,29 +419,64 @@ export async function deleteProduct(id: string) {
 
 export async function countProductsByCategory(): Promise<Map<string, number>> {
   await connectToDatabase();
-  const rows = await ProductModel.aggregate<{ _id: Types.ObjectId; count: number }>([{ $group: { _id: "$category", count: { $sum: 1 } } }]);
+  const rows = await ProductModel.aggregate<{ _id: Types.ObjectId; count: number }>([
+    {
+      $project: {
+        categoryIds: {
+          $cond: [
+            { $gt: [{ $size: { $ifNull: ["$categories", []] } }, 0] },
+            "$categories",
+            ["$category"],
+          ],
+        },
+      },
+    },
+    { $unwind: "$categoryIds" },
+    { $group: { _id: "$categoryIds", count: { $sum: 1 } } },
+  ]);
   return new Map(rows.map((row) => [row._id.toString(), row.count]));
 }
 
 export async function countProductsInCategory(categoryId: string) {
   await connectToDatabase();
-  return ProductModel.countDocuments({ category: categoryId });
+  return ProductModel.countDocuments({ $or: [{ category: categoryId }, { categories: categoryId }] });
 }
 
 export async function moveProductsToCategory(fromCategoryId: string, toCategoryId: string) {
   await connectToDatabase();
-  return (await ProductModel.updateMany({ category: fromCategoryId }, { $set: { category: toCategoryId } })).modifiedCount;
+  const from = new Types.ObjectId(fromCategoryId);
+  const to = new Types.ObjectId(toCategoryId);
+  return (await ProductModel.updateMany(
+    { $or: [{ category: from }, { categories: from }] },
+    [{
+      $set: {
+        categories: {
+          $setUnion: [
+            {
+              $filter: {
+                input: { $ifNull: ["$categories", []] },
+                as: "categoryId",
+                cond: { $ne: ["$$categoryId", from] },
+              },
+            },
+            [to],
+          ],
+        },
+        category: to,
+      },
+    }],
+  )).modifiedCount;
 }
 
 export async function listImageFileIdsInCategory(categoryId: string): Promise<string[]> {
   await connectToDatabase();
-  const docs = await ProductModel.find({ category: categoryId }).select("images.fileId").lean<{ images: { fileId: string }[] }[]>();
+  const docs = await ProductModel.find({ $or: [{ category: categoryId }, { categories: categoryId }] }).select("images.fileId").lean<{ images: { fileId: string }[] }[]>();
   return docs.flatMap((doc) => doc.images.map((image) => image.fileId));
 }
 
 export async function deleteProductsInCategory(categoryId: string) {
   await connectToDatabase();
-  return (await ProductModel.deleteMany({ category: categoryId })).deletedCount;
+  return (await ProductModel.deleteMany({ $or: [{ category: categoryId }, { categories: categoryId }] })).deletedCount;
 }
 
 export async function isImageFileUsed(fileId: string) {

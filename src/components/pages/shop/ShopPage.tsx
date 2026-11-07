@@ -12,7 +12,14 @@ import { ProductCard } from "@/components/common/ProductCard";
 import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { LoadingSpinner, SkeletonBlock } from "@/components/common/Loading";
 import { apiRequest } from "@/lib/api-client";
-import type { FitType, JerseyType, TeamType } from "@/lib/catalog-constants";
+import {
+  LOGO_TYPE_LABELS,
+  LOGO_TYPES,
+  type FitType,
+  type JerseyType,
+  type LogoType,
+  type TeamType,
+} from "@/lib/catalog-constants";
 import type {
   StoreCategory,
   StorePriceBand,
@@ -34,6 +41,10 @@ const fitOptions: { value: FitType; label: string }[] = [
   { value: "regular", label: "Regular Fit" },
   { value: "oversized", label: "Oversized Fit" },
 ];
+const logoTypeOptions: { value: LogoType; label: string }[] = LOGO_TYPES.map((value) => ({
+  value,
+  label: LOGO_TYPE_LABELS[value],
+}));
 
 function getProductPageUrl(
   page: number,
@@ -41,6 +52,7 @@ function getProductPageUrl(
     query: string;
     categories: string[];
     teamTypes: TeamType[];
+    logoTypes: LogoType[];
     jerseyTypes: JerseyType[];
     fits: FitType[];
     minPrice?: number;
@@ -56,6 +68,7 @@ function getProductPageUrl(
   for (const category of filters.categories)
     params.append("category", category);
   for (const teamType of filters.teamTypes) params.append("teamType", teamType);
+  for (const logoType of filters.logoTypes) params.append("logoType", logoType);
   for (const jerseyType of filters.jerseyTypes)
     params.append("jerseyType", jerseyType);
   for (const fit of filters.fits) params.append("fit", fit);
@@ -83,6 +96,7 @@ function ShopContent({
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(initialCategories);
   const [selectedTeamTypes, setSelectedTeamTypes] = useState<TeamType[]>([]);
+  const [selectedLogoTypes, setSelectedLogoTypes] = useState<LogoType[]>([]);
   const [selectedJerseyTypes, setSelectedJerseyTypes] = useState<JerseyType[]>(
     [],
   );
@@ -114,6 +128,7 @@ function ShopContent({
       query: searchQuery.trim(),
       categories: [...selectedCategories].sort(),
       teamTypes: [...selectedTeamTypes].sort(),
+      logoTypes: [...selectedLogoTypes].sort(),
       jerseyTypes: [...selectedJerseyTypes].sort(),
       fits: [...selectedFits].sort(),
       minPrice: selectedPrice?.minPrice,
@@ -124,6 +139,7 @@ function ShopContent({
       searchQuery,
       selectedCategories,
       selectedTeamTypes,
+      selectedLogoTypes,
       selectedJerseyTypes,
       selectedFits,
       selectedPrice,
@@ -137,6 +153,7 @@ function ShopContent({
         query: searchQuery.trim(),
         categories: [...initialCategories].sort(),
         teamTypes: [],
+        logoTypes: [],
         jerseyTypes: [],
         fits: [],
         sort: "featured",
@@ -314,6 +331,7 @@ function ShopContent({
   function clearFilters() {
     setSelectedCategories([]);
     setSelectedTeamTypes([]);
+    setSelectedLogoTypes([]);
     setSelectedJerseyTypes([]);
     setSelectedFits([]);
     setSelectedPriceBand(null);
@@ -395,6 +413,27 @@ function ShopContent({
                     selectedJerseyTypes,
                     setSelectedJerseyTypes,
                   )
+                }
+                type="checkbox"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend className="mb-3 text-xs font-bold uppercase">Logo type</legend>
+        <div className="space-y-2.5">
+          {logoTypeOptions.map(({ value, label }) => (
+            <label
+              className="flex cursor-pointer items-center gap-2.5 text-sm"
+              key={value}
+            >
+              <input
+                checked={selectedLogoTypes.includes(value)}
+                className="size-4 accent-[#f2fa18]"
+                onChange={() =>
+                  toggleValue(value, selectedLogoTypes, setSelectedLogoTypes)
                 }
                 type="checkbox"
               />
