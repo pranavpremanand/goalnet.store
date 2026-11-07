@@ -104,7 +104,7 @@ export const productInputSchema = z
 
 export const productListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(1000).default(20),
   q: z.string().trim().max(100).default(""),
   category: z.union([objectIdSchema, z.literal("")]).default(""),
   status: z.enum(["all", "active", "inactive"]).default("all"),

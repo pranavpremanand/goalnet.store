@@ -264,7 +264,7 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
     ? { price: 1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const }
     : filter.sort === "high"
       ? { price: -1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const }
-      : { isFeatured: -1 as const, displayOrder: 1 as const, createdAt: -1 as const, _id: -1 as const };
+      : { displayOrder: 1 as const, isFeatured: -1 as const, createdAt: -1 as const, _id: -1 as const };
   const [docs, total] = await Promise.all([
     ProductModel.find(query)
       .sort(sort)
@@ -402,8 +402,26 @@ export async function productSlugExists(slug: string, excludeId?: string) {
 
 export async function createProduct(data: ProductData): Promise<ProductDto> {
   await connectToDatabase();
-  const doc = await ProductModel.create(data);
+  await ProductModel.updateMany({}, { $inc: { displayOrder: 1 } });
+  const doc = await ProductModel.create({ ...data, displayOrder: 0 });
   return (await findProductById(doc._id.toString())) as ProductDto;
+}
+
+export async function listProductIdsInOrder(): Promise<string[]> {
+  await connectToDatabase();
+  const docs = await ProductModel.find({})
+    .sort({ displayOrder: 1, createdAt: -1, _id: -1 })
+    .select("_id")
+    .lean<{ _id: Types.ObjectId }[]>();
+  return docs.map((doc) => doc._id.toString());
+}
+
+export async function reorderProducts(ids: string[]) {
+  await connectToDatabase();
+  if (ids.length === 0) return;
+  await ProductModel.bulkWrite(ids.map((id, displayOrder) => ({
+    updateOne: { filter: { _id: id }, update: { $set: { displayOrder } } },
+  })));
 }
 
 export async function updateProduct(id: string, data: ProductData): Promise<ProductDto | null> {

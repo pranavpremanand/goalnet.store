@@ -10,7 +10,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   await requireAdminPage();
   const raw = await searchParams;
   const parsed = productListQuerySchema.safeParse(Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])));
-  const query = parsed.success ? parsed.data : productListQuerySchema.parse({});
+  const query = parsed.success
+    ? { ...parsed.data, limit: 1000 }
+    : productListQuerySchema.parse({ limit: 1000 });
 
   const [result, categories] = await Promise.all([productService.listProducts(query), categoryService.listCategories()]);
   return <AdminProducts categories={categories} filters={{ q: query.q, category: query.category, status: query.status }} key={JSON.stringify([query.q, query.category, query.status, query.page])} result={result} />;

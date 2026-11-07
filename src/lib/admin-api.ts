@@ -24,6 +24,7 @@ export const categoryApi = {
 export const productApi = {
   create: (input: ProductInput) => apiRequest<{ product: ProductDto }>("/api/admin/products", json("POST", input)),
   update: (id: string, input: ProductInput) => apiRequest<{ product: ProductDto }>(`/api/admin/products/${id}`, json("PUT", input)),
+  reorder: (ids: string[]) => apiRequest<{ success: boolean }>("/api/admin/products/reorder", json("PATCH", { ids })),
   remove: (id: string) => apiRequest<void>(`/api/admin/products/${id}`, { method: "DELETE" }),
 };
 

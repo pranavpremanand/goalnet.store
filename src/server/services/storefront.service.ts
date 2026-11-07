@@ -110,7 +110,7 @@ export async function listStoreProductsByIds(ids: string[]): Promise<StoreProduc
   return products.map(toStoreProduct);
 }
 
-// Shows featured products; before any are marked featured, the newest products fill the section.
+// Shows featured products in admin-defined order; without featured items, the catalog order fills the section.
 export async function listFeaturedProducts(limit: number): Promise<StoreProduct[]> {
   const categoryIds = await activeCategoryIds();
   const featured = await productRepository.listActiveProducts({ categoryIds, featuredOnly: true, limit });
@@ -118,15 +118,8 @@ export async function listFeaturedProducts(limit: number): Promise<StoreProduct[
   return products.map(toStoreProduct);
 }
 
-// Same-category products first, then the rest, so the section is full whenever the catalog allows it.
 export async function listRelatedProducts(product: StoreProduct, limit: number): Promise<StoreProduct[]> {
   const categoryIds = await activeCategoryIds();
   const candidates = await productRepository.listActiveProducts({ categoryIds, excludeId: product.id, limit: 50 });
-  const productCategorySlugs = new Set(product.categories.map((category) => category.slug));
-  const ranked = [...candidates].sort((a, b) => {
-    const aSharesCategory = a.categories.some((category) => productCategorySlugs.has(category.slug));
-    const bSharesCategory = b.categories.some((category) => productCategorySlugs.has(category.slug));
-    return Number(bSharesCategory) - Number(aSharesCategory);
-  });
-  return ranked.slice(0, limit).map(toStoreProduct);
+  return candidates.slice(0, limit).map(toStoreProduct);
 }

@@ -58,6 +58,19 @@ export async function createProduct(input: ProductInput): Promise<ProductDto> {
   }
 }
 
+export async function reorderProducts(ids: string[]) {
+  const currentIds = await productRepository.listProductIdsInOrder();
+  const expected = new Set(currentIds);
+  if (
+    ids.length !== currentIds.length ||
+    new Set(ids).size !== ids.length ||
+    ids.some((id) => !expected.has(id))
+  ) {
+    throw new BadRequestError("The product list changed. Refresh the page and try again.");
+  }
+  await productRepository.reorderProducts(ids);
+}
+
 export async function updateProduct(id: string, input: ProductInput): Promise<ProductDto> {
   const existing = await productRepository.findProductById(id);
   if (!existing) throw new NotFoundError("Product not found.");
