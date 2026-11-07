@@ -19,6 +19,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
             alt={product.imageAlt}
             className="object-cover transition duration-700 group-hover:scale-[1.04]"
             fill
+            quality={90}
             sizes="(max-width: 640px) 48vw, (max-width: 1024px) 30vw, 22vw"
             src={product.image}
           />

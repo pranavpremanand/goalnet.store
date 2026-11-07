@@ -68,6 +68,7 @@ function HeroMediaLayer({
       fill
       key={media.fileId}
       priority
+      quality={90}
       sizes="100vw"
       src={media.url}
     />

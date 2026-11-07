@@ -224,6 +224,7 @@ export function ProductDetailsPage({
                     alt=""
                     className="object-cover"
                     fill
+                    quality={90}
                     sizes="180px"
                     src={image.url}
                   />
@@ -484,6 +485,7 @@ export function ProductDetailsPage({
                   className="object-contain"
                   fill
                   priority
+                  quality={90}
                   sizes="(max-width: 768px) 100vw, 680px"
                   src={sizeChart.image}
                 />

@@ -46,6 +46,7 @@ async function CategoryCards() {
                 alt={category.coverImage.alt || category.name}
                 className="object-cover transition duration-500 group-hover:scale-105"
                 fill
+                quality={90}
                 sizes="(max-width: 640px) 48vw, (max-width: 1024px) 31vw, 19vw"
                 src={category.coverImage.url}
                 style={{

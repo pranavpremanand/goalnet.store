@@ -40,7 +40,7 @@ export function ProductImageZoom({ src, alt, children }: { src: string; alt: str
   return (
     <div className="relative">
       <div className="relative aspect-[4/5] overflow-hidden bg-canvas lg:cursor-crosshair" onMouseEnter={track} onMouseLeave={() => setZoom(null)} onMouseMove={track} ref={frameRef}>
-        <Image alt={alt} className="object-cover" fill priority sizes="(max-width: 1024px) 100vw, 55vw" src={src} />
+        <Image alt={alt} className="object-cover" fill priority quality={90} sizes="(max-width: 1024px) 100vw, 55vw" src={src} />
         {children}
         {zoom && <div aria-hidden="true" className="pointer-events-none absolute z-20 hidden border border-ink bg-white/25 shadow-[0_0_0_1px_rgba(255,255,255,0.7)] lg:block" style={{ left: zoom.x, top: zoom.y, width: zoom.lens, height: zoom.lens }} />}
       </div>

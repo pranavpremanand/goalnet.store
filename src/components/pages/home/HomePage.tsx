@@ -60,6 +60,7 @@ export function HomePage() {
             alt="Messi vs Athletic Club 2011-12 Season"
             className="object-cover object-center h-full w-full"
             fill
+            quality={90}
             sizes="(max-width: 768px) 100vw, 45vw"
             src="/images/home-about.jpg"
           />
@@ -106,6 +107,7 @@ export function HomePage() {
             alt="A footballer preparing to take the pitch"
             className="object-cover"
             fill
+            quality={90}
             sizes="(max-width: 768px) 100vw, 50vw"
             src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1200&q=100"
           />
