@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   LuCircleAlert as CircleAlert,
   LuArrowRight as ArrowRight,
@@ -29,6 +30,14 @@ type PincodeLookup = {
   status: "idle" | "loading" | "success" | "error" | "blocked";
   message: string;
 };
+type DeliveryOffice = {
+  key: string;
+  name: string;
+  branchType: string;
+  division: string;
+  district: string;
+  state: string;
+};
 
 type Notice = { type: "success" | "error"; message: string };
 
@@ -54,6 +63,7 @@ export function ProductDetailsPage({
   product: StoreProduct;
   related: StoreProduct[];
 }) {
+  const router = useRouter();
   const [size, setSize] = useState("");
   const [activeImage, setActiveImage] = useState(0);
   const [deliveryCode, setDeliveryCode] = useState("");
@@ -61,6 +71,9 @@ export function ProductDetailsPage({
     status: "idle",
     message: "",
   });
+  const [deliveryOffices, setDeliveryOffices] = useState<DeliveryOffice[]>([]);
+  const [selectedOfficeKey, setSelectedOfficeKey] = useState("");
+  const deliveryLookupId = useRef(0);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [expanded, setExpanded] = useState("Description");
@@ -112,6 +125,21 @@ export function ProductDetailsPage({
     });
   }
 
+  function buyNow() {
+    if (!size) {
+      setNotice({
+        type: "error",
+        message:
+          product.sizeSystem === "one-size"
+            ? "Select the option to continue."
+            : "Choose a size to continue.",
+      });
+      return;
+    }
+
+    router.push(`/checkout?buyNow=${encodeURIComponent(product.id)}&size=${encodeURIComponent(size)}`);
+  }
+
   async function toggleProductWishlist() {
     const result = await toggleWishlist(product);
     setNotice(result.ok
@@ -120,6 +148,7 @@ export function ProductDetailsPage({
   }
 
   async function checkPincode(pin: string) {
+    const requestId = ++deliveryLookupId.current;
     setPincodeLookup({
       status: "loading",
       message: "Checking delivery availability…",
@@ -131,11 +160,12 @@ export function ProductDetailsPage({
       );
       const result = (await response.json()) as {
         serviceable?: boolean;
-        city?: string;
         district?: string;
         state?: string;
+        offices?: DeliveryOffice[];
         error?: string;
       };
+      if (requestId !== deliveryLookupId.current) return;
 
       if (!response.ok) {
         setPincodeLookup({
@@ -146,6 +176,8 @@ export function ProductDetailsPage({
         return;
       }
       if (!result.serviceable) {
+        setDeliveryOffices([]);
+        setSelectedOfficeKey("");
         setPincodeLookup({
           status: "blocked",
           message: "India Post does not list a delivery post office for this PIN code.",
@@ -153,24 +185,46 @@ export function ProductDetailsPage({
         return;
       }
 
-      const city = result.city || result.district;
-      const locality = [city, result.state].filter(Boolean).join(", ");
+      const offices = result.offices ?? [];
+      if (!offices.length) {
+        setDeliveryOffices([]);
+        setSelectedOfficeKey("");
+        setPincodeLookup({
+          status: "error",
+          message: "No delivery post office details were returned for this PIN code.",
+        });
+        return;
+      }
+      setDeliveryOffices(offices);
+      setSelectedOfficeKey((current) =>
+        offices.some((office) => office.key === current)
+          ? current
+          : offices.length === 1
+            ? offices[0].key
+            : "",
+      );
+      const locality = [result.district, result.state].filter(Boolean).join(", ");
       setPincodeLookup({
         status: "success",
-        message: `Delivery available${locality ? ` to ${locality}` : ""}. Final serviceability is subject to courier confirmation.`,
+        message: `Delivery available${locality ? ` in ${locality}` : ""}.${offices.length > 1 ? " Select your post office to confirm the locality." : " Final serviceability is subject to courier confirmation."}`,
       });
     } catch {
-      setPincodeLookup({
-        status: "error",
-        message: "The delivery service could not be reached. Please try again.",
-      });
+      if (requestId === deliveryLookupId.current) {
+        setPincodeLookup({
+          status: "error",
+          message: "The delivery service could not be reached. Please try again.",
+        });
+      }
     }
   }
 
   function changePin(next: string) {
+    deliveryLookupId.current += 1;
     const pin = next.replace(/\D/g, "").slice(0, 6);
     setDeliveryCode(pin);
     setPincodeLookup({ status: "idle", message: "" });
+    setDeliveryOffices([]);
+    setSelectedOfficeKey("");
     if (pin.length === 6) void checkPincode(pin);
   }
 
@@ -313,7 +367,7 @@ export function ProductDetailsPage({
               </p>
             )}
           </div>
-          <div className="mt-7 grid gap-2 sm:grid-cols-[1.3fr_0.7fr]">
+          <div className="mt-7 grid gap-2 sm:grid-cols-2">
             <button
               className="min-h-12 bg-brand px-5 text-sm font-bold uppercase transition hover:bg-[#d8df0d]"
               disabled={cartPending}
@@ -323,8 +377,15 @@ export function ProductDetailsPage({
               {cartPending ? <LoadingSpinner label="Adding…" /> : "Add to bag"}
             </button>
             <button
+              className="min-h-12 border border-ink px-5 text-sm font-bold uppercase transition hover:bg-canvas"
+              onClick={buyNow}
+              type="button"
+            >
+              Buy now
+            </button>
+            <button
               aria-pressed={wishlisted}
-              className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold disabled:cursor-wait disabled:opacity-60"
+              className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold disabled:cursor-wait disabled:opacity-60 sm:col-span-2"
               disabled={wishlistLoading || wishlistPending}
               onClick={() => void toggleProductWishlist()}
               type="button"
@@ -390,6 +451,41 @@ export function ProductDetailsPage({
               <p aria-live="polite" className={`mt-2 text-xs ${pincodeTone}`}>
                 {pincodeLookup.message}
               </p>
+            )}
+            {deliveryOffices.length > 1 && (
+              <label className="mt-3 block max-w-sm text-xs font-semibold">
+                Post office
+                <select
+                  className="mt-1.5 w-full border border-line bg-white p-2.5 text-sm font-normal"
+                  onChange={(event) => {
+                    const key = event.target.value;
+                    setSelectedOfficeKey(key);
+                    const office = deliveryOffices.find(
+                      (candidate) => candidate.key === key,
+                    );
+                    if (office) {
+                      setPincodeLookup({
+                        status: "success",
+                        message: `Delivery available through ${office.name}${office.district ? `, ${office.district}` : ""}${office.state ? `, ${office.state}` : ""}. Final serviceability is subject to courier confirmation.`,
+                      });
+                    } else {
+                      setPincodeLookup({
+                        status: "success",
+                        message: "Delivery is available. Select a post office to confirm the locality.",
+                      });
+                    }
+                  }}
+                  value={selectedOfficeKey}
+                >
+                  <option value="">Select a post office</option>
+                  {deliveryOffices.map((office) => (
+                    <option key={office.key} value={office.key}>
+                      {office.name} ({office.branchType})
+                      {office.division ? ` — ${office.division}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
             <p className="mt-3 text-xs text-muted">
               Processing generally takes 2–3 business days. Delivery is

@@ -4,9 +4,18 @@ import { ServiceUnavailableError, UpstreamError } from "@/server/errors";
 export type PincodeResult = {
   pincode: string;
   serviceable: boolean;
-  city?: string;
   district?: string;
   state?: string;
+  offices: PincodeOffice[];
+};
+
+export type PincodeOffice = {
+  key: string;
+  name: string;
+  branchType: string;
+  division: string;
+  district: string;
+  state: string;
 };
 
 export type DeliveryQuote = PincodeResult & { shippingFee: number | null };
@@ -65,19 +74,41 @@ async function fetchIndiaPostPincode(pincode: string): Promise<PincodeResult> {
   }
 
   const result = payload.find((entry) => readText(entry, "Status").toLowerCase() === "success");
-  if (!result || !Array.isArray(result.PostOffice)) return { pincode, serviceable: false };
+  if (!result || !Array.isArray(result.PostOffice)) {
+    return { pincode, serviceable: false, offices: [] };
+  }
 
   const offices = result.PostOffice.filter(isRecord);
-  const matchingOffices = offices.filter((office) => readText(office, "Pincode") === pincode).reverse();
-  const deliveryOffice = matchingOffices.find((office) => readText(office, "DeliveryStatus").toLowerCase() === "delivery");
-  const office = deliveryOffice ?? matchingOffices[0];
+  const deliveryOffices = offices
+    .filter(
+      (office) =>
+        readText(office, "Pincode") === pincode &&
+        readText(office, "DeliveryStatus").toLowerCase() === "delivery",
+    )
+    .map((office) => {
+      const name = readText(office, "Name");
+      const branchType = readText(office, "BranchType");
+      const division = readText(office, "Division");
+      const district = readText(office, "District");
+      const state = readText(office, "State");
+      return {
+        key: JSON.stringify([name, branchType, division, district, state]),
+        name,
+        branchType,
+        division,
+        district,
+        state,
+      };
+    })
+    .filter((office) => office.name);
+  const firstOffice = deliveryOffices[0];
 
   return {
     pincode,
-    serviceable: Boolean(deliveryOffice),
-    city: office ? readText(office, "Name") : undefined,
-    district: office ? readText(office, "District") : undefined,
-    state: office ? readText(office, "State") : undefined,
+    serviceable: deliveryOffices.length > 0,
+    district: firstOffice?.district,
+    state: firstOffice?.state,
+    offices: deliveryOffices,
   };
 }
 

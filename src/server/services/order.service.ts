@@ -62,21 +62,32 @@ async function priceLines(items: CartOrderLine[]) {
 }
 
 export async function createCheckoutOrder(input: CreateOrderInput, user: AuthUser | null, cartIdentity: CartIdentity): Promise<CheckoutSession> {
-  const cart = await getCart(cartIdentity);
-  if (cart.items.length === 0) throw new BadRequestError("Your bag is empty.");
-  const unavailableItem = cart.items.find((item) => !item.available);
-  if (unavailableItem) {
-    throw new BadRequestError(`${unavailableItem.name} in size ${unavailableItem.size} is no longer available. Remove it from your bag.`);
+  let items: CartOrderLine[];
+  if (input.buyNow) {
+    items = [{ ...input.buyNow, quantity: 1 }];
+  } else {
+    const cart = await getCart(cartIdentity);
+    if (cart.items.length === 0) throw new BadRequestError("Your bag is empty.");
+    const unavailableItem = cart.items.find((item) => !item.available);
+    if (unavailableItem) {
+      throw new BadRequestError(`${unavailableItem.name} in size ${unavailableItem.size} is no longer available. Remove it from your bag.`);
+    }
+    items = cart.items.map((item) => ({ productId: item.id, size: item.size, quantity: item.quantity }));
   }
-  const lines = await priceLines(cart.items.map((item) => ({ productId: item.id, size: item.size, quantity: item.quantity })));
+  const lines = await priceLines(items);
   const quantity = lines.reduce((sum, line) => sum + line.quantity, 0);
   const deliveryQuote = await getDeliveryQuote(input.shipping.pin, quantity);
   if (!deliveryQuote.serviceable || deliveryQuote.shippingFee === null) {
     throw new BadRequestError("We can't deliver to this PIN code. Please check the PIN code or use another address.");
   }
-  const verifiedCity = deliveryQuote.city || deliveryQuote.district;
-  if (!verifiedCity || !deliveryQuote.state) {
-    throw new UpstreamError("The pincode service did not return a verified city and state. Please try again.");
+  const selectedOffice = deliveryQuote.offices.find(
+    (office) => office.key === input.postOffice,
+  );
+  if (!selectedOffice) {
+    throw new BadRequestError("Select a delivery post office listed for this PIN code.");
+  }
+  if (!selectedOffice.name || !selectedOffice.state) {
+    throw new UpstreamError("The pincode service did not return verified post office details. Please try again.");
   }
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
@@ -88,7 +99,7 @@ export async function createCheckoutOrder(input: CreateOrderInput, user: AuthUse
     orderNumber,
     accessTokenHash: hashSessionToken(accessToken),
     userId: user?.id,
-    shipping: { ...input.shipping, city: verifiedCity, state: deliveryQuote.state },
+    shipping: { ...input.shipping, city: selectedOffice.name, state: selectedOffice.state },
     billingAddress: input.billingAddress,
     lines,
     subtotal,

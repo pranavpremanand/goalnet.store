@@ -1,3 +1,4 @@
+import { objectIdSchema } from "@/lib/validation/catalog";
 import { z } from "zod";
 import { ORDER_STATUSES } from "@/lib/types/orders";
 
@@ -17,7 +18,12 @@ export const orderAddressSchema = z.object({
 
 export const createOrderSchema = z.object({
   shipping: orderAddressSchema,
+  postOffice: z.string().trim().min(1).max(300),
   billingAddress: z.string().trim().min(5, "Enter the billing address").max(500, "Billing address is too long").nullable(),
+  buyNow: z.object({
+    productId: objectIdSchema,
+    size: z.string().trim().min(1).max(20),
+  }).optional(),
 });
 
 export const verifyPaymentSchema = z.object({

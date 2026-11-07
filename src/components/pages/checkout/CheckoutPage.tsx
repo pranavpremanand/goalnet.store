@@ -10,10 +10,14 @@ import {
   LuTrash2 as Trash2,
 } from "react-icons/lu";
 import { formatRupees } from "@/lib/format";
-import { useLocalCart } from "@/components/common/LocalCartProvider";
+import {
+  useLocalCart,
+  type CartLine,
+} from "@/components/common/LocalCartProvider";
 import { useDemoStore, type OrderAddress } from "@/lib/demo-store";
 import { apiRequest } from "@/lib/api-client";
 import { signOutUser } from "@/lib/auth-client";
+import type { StoreProduct } from "@/lib/types/storefront";
 import {
   createCheckoutSession,
   openRazorpayCheckout,
@@ -29,15 +33,26 @@ type PincodeLookup = {
   status: "idle" | "loading" | "success" | "error" | "blocked";
   message: string;
 };
+type DeliveryOffice = {
+  key: string;
+  name: string;
+  branchType: string;
+  division: string;
+  district: string;
+  state: string;
+};
 type SavedCheckoutAddress = OrderAddress & { id: string };
 
 const inputClass =
   "mt-1.5 w-full border border-line p-3 text-sm outline-none focus:border-ink";
 
-export function CheckoutPage() {
+export function CheckoutPage({
+  buyNow,
+}: {
+  buyNow?: { productId: string; size: string };
+}) {
   const {
     items,
-    total,
     updateQuantity,
     removeItem,
     clearCart,
@@ -47,11 +62,18 @@ export function CheckoutPage() {
     error: cartError,
   } = useLocalCart();
   const { session } = useDemoStore();
+  const [directResult, setDirectResult] = useState<{
+    key: string;
+    item: CartLine | null;
+    error: string;
+  } | null>(null);
   const [guest, setGuest] = useState(false);
   const [placedRef, setPlacedRef] = useState("");
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
-  const [updatingQuantityKey, setUpdatingQuantityKey] = useState<string | null>(null);
+  const [updatingQuantityKey, setUpdatingQuantityKey] = useState<string | null>(
+    null,
+  );
   const [draft, setDraft] = useState<Partial<OrderAddress>>({});
   const [choice, setChoice] = useState<number | "new">(0);
   const [savedAddressState, setSavedAddressState] = useState<{
@@ -70,6 +92,8 @@ export function CheckoutPage() {
     status: "idle",
     message: "",
   });
+  const [deliveryOffices, setDeliveryOffices] = useState<DeliveryOffice[]>([]);
+  const [selectedOfficeKey, setSelectedOfficeKey] = useState("");
   const [shippingQuote, setShippingQuote] = useState<{
     pin: string;
     quantity: number;
@@ -77,13 +101,98 @@ export function CheckoutPage() {
   } | null>(null);
   const lookupRequestId = useRef(0);
 
-  async function changeQuantity(productId: string, size: string, quantity: number) {
+  const directKey = buyNow
+    ? JSON.stringify([buyNow.productId, buyNow.size])
+    : "";
+  const directItem = directResult?.key === directKey ? directResult.item : null;
+  const directError = directResult?.key === directKey ? directResult.error : "";
+  const directLoading = Boolean(buyNow && directResult?.key !== directKey);
+
+  useEffect(() => {
+    if (!buyNow) return;
+    const directPurchase = buyNow;
+
+    let active = true;
+    async function loadDirectProduct() {
+      try {
+        const { products } = await apiRequest<{ products: StoreProduct[] }>(
+          `/api/storefront/products/by-ids?id=${encodeURIComponent(directPurchase.productId)}`,
+        );
+        if (!active) return;
+        const product = products.find(
+          (candidate) => candidate.id === directPurchase.productId,
+        );
+        const selectedSize = product?.sizes.find(
+          (option) => option.size === directPurchase.size,
+        );
+        if (!product || !selectedSize) {
+          setDirectResult({
+            key: JSON.stringify([
+              directPurchase.productId,
+              directPurchase.size,
+            ]),
+            item: null,
+            error:
+              "This product or size is no longer available. Please return to the product page and try again.",
+          });
+          return;
+        }
+        setDirectResult({
+          key: JSON.stringify([directPurchase.productId, directPurchase.size]),
+          item: {
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            image: product.image,
+            imageAlt: product.imageAlt,
+            price: product.price,
+            size: directPurchase.size,
+            quantity: 1,
+            available: selectedSize.availability !== "unavailable",
+          },
+          error: "",
+        });
+      } catch (error) {
+        if (active) {
+          setDirectResult({
+            key: JSON.stringify([
+              directPurchase.productId,
+              directPurchase.size,
+            ]),
+            item: null,
+            error:
+              error instanceof Error
+                ? error.message
+                : "The product could not be loaded. Please try again.",
+          });
+        }
+      }
+    }
+
+    void loadDirectProduct();
+
+    return () => {
+      active = false;
+    };
+  }, [buyNow]);
+
+  const checkoutItems = buyNow ? (directItem ? [directItem] : []) : items;
+  const checkoutTotal = checkoutItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  async function changeQuantity(
+    productId: string,
+    size: string,
+    quantity: number,
+  ) {
     const key = JSON.stringify([productId, size]);
     setUpdatingQuantityKey(key);
     try {
       await updateQuantity(productId, size, quantity);
     } finally {
-      setUpdatingQuantityKey((current) => current === key ? null : current);
+      setUpdatingQuantityKey((current) => (current === key ? null : current));
     }
   }
 
@@ -107,8 +216,8 @@ export function CheckoutPage() {
     ? { name: session.name, email: session.email, phone: session.phone }
     : {};
   const stage = session || guest ? "details" : "method";
-  const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  const hasUnavailableItems = items.some((item) => !item.available);
+  const quantity = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
+  const hasUnavailableItems = checkoutItems.some((item) => !item.available);
 
   useEffect(() => {
     const email = session?.email ?? "";
@@ -150,7 +259,7 @@ export function CheckoutPage() {
     setDraft((current) => ({ ...current, [field]: next }));
   }
 
-  const shipping: OrderAddress = savedChoice ?? {
+  const baseShipping: OrderAddress = savedChoice ?? {
     name: value("name"),
     email: value("email"),
     phone: value("phone"),
@@ -160,14 +269,26 @@ export function CheckoutPage() {
     address: value("address"),
     apartment: value("apartment"),
   };
+  const selectedOffice = deliveryOffices.find(
+    (office) => office.key === selectedOfficeKey,
+  );
+  const shipping: OrderAddress = selectedOffice
+    ? {
+        ...baseShipping,
+        city: selectedOffice.name,
+        state: selectedOffice.state,
+      }
+    : baseShipping;
 
   const currentPin = useSaved
     ? (savedChoice?.pin ?? "")
     : String(draft.pin ?? prefill.pin ?? "");
   const quoteIsCurrent =
-    shippingQuote?.pin === currentPin && shippingQuote.quantity === quantity;
+    shippingQuote?.pin === currentPin &&
+    shippingQuote.quantity === quantity &&
+    Boolean(selectedOffice);
   const shippingFee = shippingQuote?.fee ?? null;
-  const totalDue = total + (shippingFee ?? 0);
+  const totalDue = checkoutTotal + (shippingFee ?? 0);
   const quoteActionLabel = quoteIsCurrent
     ? `Pay ${formatRupees(totalDue)}`
     : pincodeLookup.status === "loading"
@@ -176,7 +297,9 @@ export function CheckoutPage() {
         ? "Shipping quote unavailable"
         : pincodeLookup.status === "blocked"
           ? "Delivery unavailable"
-          : /^\d{6}$/.test(currentPin)
+            : deliveryOffices.length > 1 && !selectedOffice
+              ? "Select a post office"
+            : /^\d{6}$/.test(currentPin)
             ? "Checking delivery…"
             : "Enter PIN for delivery quote";
 
@@ -197,9 +320,9 @@ export function CheckoutPage() {
         const result = (await response.json()) as {
           serviceable?: boolean;
           shippingFee?: number | null;
-          city?: string;
           district?: string;
           state?: string;
+          offices?: DeliveryOffice[];
           error?: string;
         };
         if (requestId !== lookupRequestId.current) return;
@@ -213,10 +336,22 @@ export function CheckoutPage() {
           return;
         }
         if (!result.serviceable) {
+          setDeliveryOffices([]);
+          setSelectedOfficeKey("");
           setPincodeLookup({
             status: "blocked",
             message:
               "India Post does not list a delivery post office for this PIN code.",
+          });
+          return;
+        }
+        const offices = result.offices ?? [];
+        if (!offices.length) {
+          setDeliveryOffices([]);
+          setSelectedOfficeKey("");
+          setPincodeLookup({
+            status: "error",
+            message: "No delivery post office details were returned for this PIN code.",
           });
           return;
         }
@@ -234,22 +369,18 @@ export function CheckoutPage() {
         }
 
         setShippingQuote({ pin, quantity, fee: result.shippingFee });
-        const city = result.city || result.district;
-        if (!useSaved) {
-          setDraft((current) =>
-            current.pin === pin
-              ? {
-                  ...current,
-                  city: city ?? current.city,
-                  state: result.state ?? current.state,
-                }
-              : current,
-          );
-        }
-        const locality = [city, result.state].filter(Boolean).join(", ");
+        setDeliveryOffices(offices);
+        setSelectedOfficeKey((current) =>
+          offices.some((office) => office.key === current)
+            ? current
+            : offices.length === 1
+              ? offices[0].key
+              : "",
+        );
+        const locality = [result.district, result.state].filter(Boolean).join(", ");
         setPincodeLookup({
           status: "success",
-          message: `Delivery available${locality ? ` to ${locality}` : ""}.`,
+          message: `Delivery available${locality ? ` in ${locality}` : ""}.${offices.length > 1 ? " Select your post office to complete the delivery address." : ""}`,
         });
       } catch {
         if (requestId === lookupRequestId.current) {
@@ -261,7 +392,7 @@ export function CheckoutPage() {
         }
       }
     },
-    [quantity, useSaved],
+    [quantity],
   );
 
   useEffect(() => {
@@ -286,18 +417,60 @@ export function CheckoutPage() {
     setField("pin", pin);
     setPincodeLookup({ status: "idle", message: "" });
     setShippingQuote(null);
+    setDeliveryOffices([]);
+    setSelectedOfficeKey("");
   }
 
   function selectAddress(nextChoice: number | "new") {
+    if (nextChoice === "new") {
+      setDraft({
+        name: "",
+        email: "",
+        phone: "",
+        pin: "",
+        state: "",
+        city: "",
+        address: "",
+        apartment: "",
+      });
+      lookupRequestId.current += 1;
+      setPincodeLookup({ status: "idle", message: "" });
+      setShippingQuote(null);
+      setDeliveryOffices([]);
+      setSelectedOfficeKey("");
+      setChoice("new");
+      return;
+    }
+
     const nextAddress =
-      typeof nextChoice === "number" ? saved[nextChoice] : undefined;
+      saved[nextChoice];
     const nextPin = nextAddress?.pin ?? String(draft.pin ?? prefill.pin ?? "");
     if (nextPin !== currentPin) {
       lookupRequestId.current += 1;
       setPincodeLookup({ status: "idle", message: "" });
       setShippingQuote(null);
     }
+    const savedOffice = nextAddress
+      ? deliveryOffices.find(
+          (office) =>
+            office.name.toLocaleLowerCase() ===
+            nextAddress.city.trim().toLocaleLowerCase(),
+        )
+      : undefined;
+    setSelectedOfficeKey(
+      savedOffice?.key ??
+        (deliveryOffices.length === 1 ? deliveryOffices[0].key : ""),
+    );
     setChoice(nextChoice);
+  }
+
+  function selectPostOffice(key: string) {
+    setSelectedOfficeKey(key);
+    const office = deliveryOffices.find((candidate) => candidate.key === key);
+    if (!useSaved && office) {
+      setField("city", office.name);
+      setField("state", office.state);
+    }
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -345,10 +518,12 @@ export function CheckoutPage() {
       }
     }
 
-    // The server reads the persisted cart and reprices it from the current catalog.
+    // The server reprices the checkout lines from the current catalog.
     const created = await createCheckoutSession({
       shipping,
+      postOffice: selectedOfficeKey,
       billingAddress: billingDifferent ? billing.trim() : null,
+      ...(buyNow ? { buyNow } : {}),
     });
     if (!created.ok) {
       setPayError(created.error);
@@ -359,7 +534,7 @@ export function CheckoutPage() {
     const checkoutSession = created.data;
     async function finish() {
       setPlacedRef(checkoutSession.orderNumber);
-      await clearCart();
+      if (!buyNow) await clearCart();
       window.location.replace(
         `/order-confirmation/${checkoutSession.accessToken}`,
       );
@@ -402,11 +577,31 @@ export function CheckoutPage() {
     );
   }
 
-  if (!items.length && cartLoading) {
+  if (buyNow && directLoading) {
     return <CheckoutLoadingSkeleton />;
   }
 
-  if (!items.length && cartError) {
+  if (buyNow && (directError || !directItem)) {
+    return (
+      <main className="mx-auto flex min-h-[65vh] max-w-3xl flex-col items-center justify-center px-5 text-center">
+        <p className="text-sm text-red-700">
+          {directError || "This product could not be loaded."}
+        </p>
+        <Link
+          className="mt-4 border border-ink px-5 py-3 text-sm font-bold uppercase"
+          href="/shop"
+        >
+          Continue shopping
+        </Link>
+      </main>
+    );
+  }
+
+  if (!buyNow && !items.length && cartLoading) {
+    return <CheckoutLoadingSkeleton />;
+  }
+
+  if (!buyNow && !items.length && cartError) {
     return (
       <main className="mx-auto flex min-h-[65vh] max-w-3xl flex-col items-center justify-center px-5 text-center">
         <p className="text-sm text-red-700">{cartError}</p>
@@ -421,7 +616,7 @@ export function CheckoutPage() {
     );
   }
 
-  if (!items.length) {
+  if (!buyNow && !items.length) {
     return (
       <main className="mx-auto flex min-h-[65vh] max-w-3xl flex-col items-center justify-center px-5 py-16 text-center">
         <p className="mt-6 text-xs font-bold uppercase text-muted">
@@ -638,6 +833,27 @@ export function CheckoutPage() {
                         {pincodeLookup.message}
                       </p>
                     )}
+                    {deliveryOffices.length > 1 && (
+                      <label className="mt-3 block text-xs font-semibold">
+                        Post office
+                        <select
+                          className={inputClass}
+                          onChange={(event) =>
+                            selectPostOffice(event.target.value)
+                          }
+                          required
+                          value={selectedOfficeKey}
+                        >
+                          <option value="">Select a post office</option>
+                          {deliveryOffices.map((office) => (
+                            <option key={office.key} value={office.key}>
+                              {office.name} ({office.branchType})
+                              {office.division ? ` — ${office.division}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                   </div>
                   <label className="text-xs font-semibold">
                     State
@@ -649,7 +865,7 @@ export function CheckoutPage() {
                         setField("state", event.target.value)
                       }
                       required
-                      value={value("state")}
+                      value={shipping.state}
                     />
                   </label>
                   <label className="text-xs font-semibold">
@@ -660,7 +876,7 @@ export function CheckoutPage() {
                       readOnly={shippingQuote?.pin === currentPin}
                       onChange={(event) => setField("city", event.target.value)}
                       required
-                      value={value("city")}
+                      value={shipping.city}
                     />
                   </label>
                   <label className="text-xs font-semibold sm:col-span-2">
@@ -738,95 +954,119 @@ export function CheckoutPage() {
               Review your order
             </h2>
             <span className="text-xs text-muted">
-              {items.reduce((sum, item) => sum + item.quantity, 0)} items
+              {quantity} {quantity === 1 ? "item" : "items"}
             </span>
           </div>
           <div className="divide-y divide-line">
-            {items.map((item) => {
+            {checkoutItems.map((item) => {
               const quantityIsUpdating =
                 updatingQuantityKey === JSON.stringify([item.id, item.size]);
               return (
-              <div className="flex gap-4 py-5" key={`${item.id}-${item.size}`}>
-                <div className="relative aspect-4/5 w-20.5 shrink-0 bg-canvas">
-                  <Image
-                    alt={item.imageAlt}
-                    className="object-cover"
-                    fill
-                    sizes="82px"
-                    src={item.image}
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
+                <div
+                  className="flex gap-4 py-5"
+                  key={`${item.id}-${item.size}`}
+                >
                   <Link
-                    className="font-semibold"
+                    aria-label={`View ${item.name}`}
+                    className="relative aspect-4/5 w-20.5 shrink-0 bg-canvas"
                     href={`/product-info/${item.slug}`}
                   >
-                    {item.name}
+                    <Image
+                      alt={item.imageAlt}
+                      className="object-cover"
+                      fill
+                      sizes="82px"
+                      src={item.image}
+                    />
                   </Link>
-                  <p className="mt-1 text-xs text-muted">Size {item.size}</p>
-                  {!item.available && (
-                    <p className="mt-1 text-xs text-red-700">
-                      This item is no longer available. Remove it to continue.
-                    </p>
-                  )}
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      aria-label="Decrease quantity"
-                      className="grid size-7 place-items-center border border-line disabled:opacity-50"
-                      disabled={cartPending || !item.available}
-                      onClick={() => {
-                        void changeQuantity(
-                          item.id,
-                          item.size,
-                          item.quantity - 1,
-                        );
-                      }}
-                      type="button"
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      className="font-semibold"
+                      href={`/product-info/${item.slug}`}
                     >
-                      <Minus size={13} />
-                    </button>
-                    <span aria-label={quantityIsUpdating ? "Updating quantity" : undefined} className="inline-flex w-5 justify-center text-sm" role={quantityIsUpdating ? "status" : undefined}>
-                      {quantityIsUpdating ? <LoaderCircle aria-hidden="true" className="animate-spin" size={13} /> : item.quantity}
-                    </span>
-                    <button
-                      aria-label="Increase quantity"
-                      className="grid size-7 place-items-center border border-line disabled:opacity-50"
-                      disabled={cartPending || !item.available}
-                      onClick={() => {
-                        void changeQuantity(
-                          item.id,
-                          item.size,
-                          item.quantity + 1,
-                        );
-                      }}
-                      type="button"
-                    >
-                      <Plus size={13} />
-                    </button>
-                    <button
-                      aria-label="Remove item"
-                      className="ml-2 text-muted hover:text-red-600 disabled:opacity-50"
-                      disabled={cartPending}
-                      onClick={() => {
-                        void removeItem(item.id, item.size);
-                      }}
-                      type="button"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                      {item.name}
+                    </Link>
+                    <p className="mt-1 text-xs text-muted">Size {item.size}</p>
+                    {!item.available && (
+                      <p className="mt-1 text-xs text-red-700">
+                        This size is no longer available. Return to the product
+                        page and select another size.
+                      </p>
+                    )}
+                    {!buyNow && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          aria-label="Decrease quantity"
+                          className="grid size-7 place-items-center border border-line disabled:opacity-50"
+                          disabled={cartPending || !item.available}
+                          onClick={() => {
+                            void changeQuantity(
+                              item.id,
+                              item.size,
+                              item.quantity - 1,
+                            );
+                          }}
+                          type="button"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span
+                          aria-label={
+                            quantityIsUpdating ? "Updating quantity" : undefined
+                          }
+                          className="inline-flex w-5 justify-center text-sm"
+                          role={quantityIsUpdating ? "status" : undefined}
+                        >
+                          {quantityIsUpdating ? (
+                            <LoaderCircle
+                              aria-hidden="true"
+                              className="animate-spin"
+                              size={13}
+                            />
+                          ) : (
+                            item.quantity
+                          )}
+                        </span>
+                        <button
+                          aria-label="Increase quantity"
+                          className="grid size-7 place-items-center border border-line disabled:opacity-50"
+                          disabled={cartPending || !item.available}
+                          onClick={() => {
+                            void changeQuantity(
+                              item.id,
+                              item.size,
+                              item.quantity + 1,
+                            );
+                          }}
+                          type="button"
+                        >
+                          <Plus size={13} />
+                        </button>
+                        <button
+                          aria-label="Remove item"
+                          className="ml-2 text-muted hover:text-red-600 disabled:opacity-50"
+                          disabled={cartPending}
+                          onClick={() => {
+                            void removeItem(item.id, item.size);
+                          }}
+                          type="button"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  <p className="shrink-0 text-sm font-bold">
+                    {formatRupees(item.price * item.quantity)}
+                  </p>
                 </div>
-                <p className="shrink-0 text-sm font-bold">
-                  {formatRupees(item.price * item.quantity)}
-                </p>
-              </div>
               );
             })}
           </div>
           <div className="space-y-3 border-t border-line pt-4 text-sm">
             <div className="flex justify-between">
               <span className="text-muted">Subtotal</span>
-              <span>{formatRupees(total)}</span>
+              <span>{formatRupees(checkoutTotal)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Shipping</span>
@@ -851,17 +1091,17 @@ export function CheckoutPage() {
             </div>
           </div>
           {/* <p className="mt-3 text-xs leading-5 text-muted">Orders with multiple items may have an additional shipping charge. Any applicable charge will be shown before confirmation.</p> */}
-          {(cartError || hasUnavailableItems) && (
+          {((!buyNow && cartError) || hasUnavailableItems) && (
             <p
               aria-live="polite"
               className="mt-3 text-sm text-red-700"
               role="alert"
             >
-              {cartError ||
+              {(!buyNow && cartError) ||
                 "Remove unavailable items before placing your order."}
             </p>
           )}
-          {cartError && (
+          {!buyNow && cartError && (
             <button
               className="mt-2 text-xs font-bold uppercase underline"
               disabled={cartLoading}
@@ -876,9 +1116,9 @@ export function CheckoutPage() {
             className="mt-6 inline-flex min-h-12 w-full items-center justify-center bg-brand text-sm font-bold uppercase transition hover:bg-[#d8df0d] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={
               paying ||
-              cartPending ||
-              cartLoading ||
-              Boolean(cartError) ||
+              (!buyNow && cartPending) ||
+              (!buyNow && cartLoading) ||
+              (!buyNow && Boolean(cartError)) ||
               hasUnavailableItems ||
               stage === "method" ||
               pincodeLookup.status !== "success" ||
