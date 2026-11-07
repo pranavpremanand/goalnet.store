@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Jost, Poppins } from "next/font/google";
 import { LocalCartProvider } from "@/components/common/LocalCartProvider";
+import { WishlistProvider } from "@/components/common/WishlistProvider";
 import { InitialPageLoader } from "@/components/common/InitialPageLoader";
 import { SessionSync } from "@/components/common/SessionSync";
 import "./globals.css";
@@ -42,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${jost.variable} ${poppins.variable}`}>
-      <body><LocalCartProvider><SessionSync />{children}<InitialPageLoader /></LocalCartProvider></body>
+      <body><LocalCartProvider><WishlistProvider><SessionSync />{children}<InitialPageLoader /></WishlistProvider></LocalCartProvider></body>
     </html>
   );
 }

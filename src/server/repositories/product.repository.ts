@@ -1,14 +1,16 @@
 import { Types, type QueryFilter } from "mongoose";
-import type { JerseyType, TeamType } from "@/lib/catalog-constants";
+import type { FitType, JerseyType, TeamType } from "@/lib/catalog-constants";
 import type { ProductDto } from "@/lib/types/catalog";
 import type { StorePriceBand } from "@/lib/types/storefront";
 import { connectToDatabase } from "@/server/db/connect";
-import { ProductModel, type ProductAttrs } from "@/server/models/product.model";
+import { ProductModel, type ProductAttrs, type StoredJerseyType } from "@/server/models/product.model";
 
 export type ProductData = Omit<ProductAttrs, "category" | "createdAt" | "updatedAt"> & { category: string };
 
 type PopulatedCategory = { _id: Types.ObjectId; name: string; slug: string } | null;
 type ProductDoc = Omit<ProductAttrs, "category"> & { _id: Types.ObjectId; category: PopulatedCategory };
+const LEGACY_OVERSIZED_TYPES: StoredJerseyType[] = ["oversized-five-sleeve", "oversized-full-sleeve"];
+const LEGACY_OVERSIZED_TEXT = /oversized/i;
 
 function normalizeJerseyType(value: unknown): JerseyType | null {
   switch (value) {
@@ -19,6 +21,7 @@ function normalizeJerseyType(value: unknown): JerseyType | null {
     case "five-sleeve-collar":
       return "five-sleeve";
     case "full-sleeve":
+    case "oversized-full-sleeve":
     case "full-sleeve-collar":
     case "full-sleeve-round-neck":
       return "full-sleeve";
@@ -28,6 +31,8 @@ function normalizeJerseyType(value: unknown): JerseyType | null {
 }
 
 function toDto(doc: ProductDoc): ProductDto {
+  const isLegacyOversized = (doc.jerseyType !== null && LEGACY_OVERSIZED_TYPES.includes(doc.jerseyType))
+    || LEGACY_OVERSIZED_TEXT.test(`${doc.name} ${doc.description}`);
   return {
     id: doc._id.toString(),
     name: doc.name,
@@ -35,10 +40,13 @@ function toDto(doc: ProductDoc): ProductDto {
     description: doc.description,
     productType: doc.productType ?? "jersey",
     brand: doc.brand ?? "",
-    team: { name: doc.team?.name ?? "", type: doc.team?.type ?? null },
+    team: { name: doc.team?.name || null, type: doc.team?.type ?? null },
     season: doc.season,
     player: { name: doc.player.name, number: doc.player.number ?? null },
     jerseyType: normalizeJerseyType(doc.jerseyType),
+    fit: doc.productType === "jersey"
+      ? doc.fit ?? (isLegacyOversized ? "oversized" : "regular")
+      : null,
     logoType: doc.logoType,
     fabric: doc.fabric,
     price: doc.price,
@@ -95,6 +103,7 @@ type StorefrontPageFilter = {
   query: string;
   teamTypes?: TeamType[];
   jerseyTypes?: JerseyType[];
+  fits?: FitType[];
   minPrice?: number;
   maxPrice?: number;
   sort: "featured" | "low" | "high";
@@ -125,6 +134,7 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
     isActive: true,
     category: { $in: filter.categoryIds },
   };
+  const conditions: QueryFilter<ProductAttrs>[] = [];
   if (filter.query) {
     const pattern = new RegExp(escapeRegex(filter.query), "i");
     const searchConditions: QueryFilter<ProductAttrs>[] = [
@@ -136,16 +146,61 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
     if (filter.searchCategoryIds.length > 0) {
       searchConditions.push({ category: { $in: filter.searchCategoryIds } });
     }
-    query.$or = searchConditions;
+    conditions.push({ $or: searchConditions });
   }
-  if (filter.teamTypes?.length) query["team.type"] = { $in: filter.teamTypes };
+  if (filter.teamTypes?.length) {
+    const teamTypeConditions = filter.teamTypes.map((teamType): QueryFilter<ProductAttrs> => {
+      if (teamType === "uncategorized") {
+        return {
+          productType: { $in: ["jersey", "kit"] },
+          $or: [{ "team.type": "uncategorized" }, { "team.type": null }],
+        };
+      }
+      return { "team.type": teamType };
+    });
+    conditions.push({ $or: teamTypeConditions });
+  }
+  if (filter.fits?.length) {
+    const fitConditions = filter.fits.map((fit): QueryFilter<ProductAttrs> => (
+      fit === "oversized"
+        ? {
+            productType: "jersey",
+            $or: [
+              { fit: "oversized" },
+              {
+                fit: null,
+                $or: [
+                  { jerseyType: { $in: LEGACY_OVERSIZED_TYPES } },
+                  { name: LEGACY_OVERSIZED_TEXT },
+                  { description: LEGACY_OVERSIZED_TEXT },
+                ],
+              },
+            ],
+          }
+        : {
+            productType: "jersey",
+            $or: [
+              { fit: "regular" },
+              {
+                fit: null,
+                jerseyType: { $nin: LEGACY_OVERSIZED_TYPES },
+                name: { $not: LEGACY_OVERSIZED_TEXT },
+                description: { $not: LEGACY_OVERSIZED_TEXT },
+              },
+            ],
+          }
+    ));
+    conditions.push({ $or: fitConditions });
+  }
+  if (conditions.length === 1) Object.assign(query, conditions[0]);
+  else if (conditions.length > 1) query.$and = conditions;
   if (filter.jerseyTypes?.length) {
-    const storedTypes = filter.jerseyTypes.flatMap((jerseyType): (JerseyType | RegExp)[] => {
+    const storedTypes = filter.jerseyTypes.flatMap((jerseyType): (StoredJerseyType | RegExp)[] => {
       switch (jerseyType) {
         case "five-sleeve":
           return ["five-sleeve", /^oversized-five-sleeve$/, /^five-sleeve-collar$/];
         case "full-sleeve":
-          return ["full-sleeve", /^full-sleeve-collar$/, /^full-sleeve-round-neck$/];
+          return ["full-sleeve", /^oversized-full-sleeve$/, /^full-sleeve-collar$/, /^full-sleeve-round-neck$/];
         default:
           return [jerseyType];
       }

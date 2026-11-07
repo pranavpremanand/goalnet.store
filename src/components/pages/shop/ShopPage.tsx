@@ -12,7 +12,7 @@ import { ProductCard } from "@/components/common/ProductCard";
 import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { LoadingSpinner, SkeletonBlock } from "@/components/common/Loading";
 import { apiRequest } from "@/lib/api-client";
-import type { JerseyType, TeamType } from "@/lib/catalog-constants";
+import type { FitType, JerseyType, TeamType } from "@/lib/catalog-constants";
 import type {
   StoreCategory,
   StorePriceBand,
@@ -21,13 +21,18 @@ import type {
 
 type ShopSort = "featured" | "low" | "high";
 const teamTypeOptions: { value: TeamType; label: string }[] = [
-  { value: "national", label: "National" },
   { value: "club", label: "Club" },
+  { value: "national", label: "National" },
+  { value: "uncategorized", label: "Uncategorized" },
 ];
 const sleeveOptions: { value: JerseyType; label: string }[] = [
   { value: "five-sleeve", label: "Five Sleeves" },
   { value: "half-sleeve", label: "Short Sleeves" },
   { value: "full-sleeve", label: "Long Sleeves" },
+];
+const fitOptions: { value: FitType; label: string }[] = [
+  { value: "regular", label: "Regular Fit" },
+  { value: "oversized", label: "Oversized Fit" },
 ];
 
 function getProductPageUrl(
@@ -37,6 +42,7 @@ function getProductPageUrl(
     categories: string[];
     teamTypes: TeamType[];
     jerseyTypes: JerseyType[];
+    fits: FitType[];
     minPrice?: number;
     maxPrice?: number;
     sort: ShopSort;
@@ -52,6 +58,7 @@ function getProductPageUrl(
   for (const teamType of filters.teamTypes) params.append("teamType", teamType);
   for (const jerseyType of filters.jerseyTypes)
     params.append("jerseyType", jerseyType);
+  for (const fit of filters.fits) params.append("fit", fit);
   if (filters.minPrice !== undefined)
     params.set("minPrice", String(filters.minPrice));
   if (filters.maxPrice !== undefined)
@@ -79,6 +86,7 @@ function ShopContent({
   const [selectedJerseyTypes, setSelectedJerseyTypes] = useState<JerseyType[]>(
     [],
   );
+  const [selectedFits, setSelectedFits] = useState<FitType[]>([]);
   const [selectedPriceBand, setSelectedPriceBand] = useState<string | null>(
     null,
   );
@@ -107,6 +115,7 @@ function ShopContent({
       categories: [...selectedCategories].sort(),
       teamTypes: [...selectedTeamTypes].sort(),
       jerseyTypes: [...selectedJerseyTypes].sort(),
+      fits: [...selectedFits].sort(),
       minPrice: selectedPrice?.minPrice,
       maxPrice: selectedPrice?.maxPrice,
       sort,
@@ -116,6 +125,7 @@ function ShopContent({
       selectedCategories,
       selectedTeamTypes,
       selectedJerseyTypes,
+      selectedFits,
       selectedPrice,
       sort,
     ],
@@ -128,6 +138,7 @@ function ShopContent({
         categories: [...initialCategories].sort(),
         teamTypes: [],
         jerseyTypes: [],
+        fits: [],
         sort: "featured",
       }),
     [initialCategories, searchQuery],
@@ -189,7 +200,6 @@ function ShopContent({
     const controller = new AbortController();
     activeRequestRef.current = controller;
     setProducts([]);
-    setTotal(0);
     setNextPage(1);
     setHasMore(false);
     setLoadingMore(false);
@@ -305,11 +315,12 @@ function ShopContent({
     setSelectedCategories([]);
     setSelectedTeamTypes([]);
     setSelectedJerseyTypes([]);
+    setSelectedFits([]);
     setSelectedPriceBand(null);
   }
 
   const filterContent = (
-    <div className="space-y-7">
+    <div className="space-y-7 no-scrollbar">
       {categories.length > 0 && (
         <div>
           <div className="mb-3 flex items-center justify-between">
@@ -368,9 +379,7 @@ function ShopContent({
         </div>
       </fieldset>
       <fieldset>
-        <legend className="mb-3 text-xs font-bold uppercase">
-          Sleeve length
-        </legend>
+        <legend className="mb-3 text-xs font-bold uppercase">Sleeve type</legend>
         <div className="space-y-2.5">
           {sleeveOptions.map(({ value, label }) => (
             <label
@@ -387,6 +396,25 @@ function ShopContent({
                     setSelectedJerseyTypes,
                   )
                 }
+                type="checkbox"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend className="mb-3 text-xs font-bold uppercase">Fit</legend>
+        <div className="space-y-2.5">
+          {fitOptions.map(({ value, label }) => (
+            <label
+              className="flex cursor-pointer items-center gap-2.5 text-sm"
+              key={value}
+            >
+              <input
+                checked={selectedFits.includes(value)}
+                className="size-4 accent-[#f2fa18]"
+                onChange={() => toggleValue(value, selectedFits, setSelectedFits)}
                 type="checkbox"
               />
               {label}
@@ -608,11 +636,15 @@ function ShopContent({
             </div>
             {filterContent}
             <button
+              aria-busy={loadingPage}
               className="mt-7 w-full bg-brand py-3 text-sm font-bold uppercase"
+              disabled={loadingPage}
               onClick={() => setFilterOpen(false)}
               type="button"
             >
-              Show {total} results
+              {loadingPage
+                ? "Updating results…"
+                : `Show ${total} results`}
             </button>
           </section>
         </div>

@@ -4,12 +4,21 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LuArrowUpRight as ArrowUpRight, LuHeart as Heart } from "react-icons/lu";
+import { useWishlist } from "@/components/common/WishlistProvider";
 import { formatRupees } from "@/lib/format";
 import type { StoreProduct } from "@/lib/types/storefront";
 
 export function ProductCard({ product }: { product: StoreProduct }) {
-  const [liked, setLiked] = useState(false);
+  const { isWishlisted, isLoading, isPending, toggleWishlist } = useWishlist();
+  const [wishlistError, setWishlistError] = useState("");
+  const liked = isWishlisted(product.id);
   const href = `/product-info/${product.slug}`;
+
+  async function handleWishlistToggle() {
+    setWishlistError("");
+    const result = await toggleWishlist(product);
+    if (!result.ok) setWishlistError(result.error);
+  }
 
   return (
     <article className="group min-w-0">
@@ -29,15 +38,17 @@ export function ProductCard({ product }: { product: StoreProduct }) {
             Featured
           </span>
         )}
-        {/* <button
-          aria-label={liked ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
+        <button
+          aria-label={liked ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
           aria-pressed={liked}
-          className={`absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-full bg-white/95 transition hover:bg-brand ${liked ? "text-red-600" : "text-ink"}`}
-          onClick={() => setLiked(!liked)}
+          aria-busy={isPending}
+          className={`absolute right-3 top-3 z-10 grid size-9 place-items-center rounded-full bg-white/95 transition hover:bg-brand disabled:cursor-wait disabled:opacity-60 ${liked ? "text-red-600" : "text-ink"}`}
+          disabled={isLoading || isPending}
+          onClick={() => void handleWishlistToggle()}
           type="button"
         >
           <Heart fill={liked ? "currentColor" : "none"} size={17} />
-        </button> */}
+        </button>
         <Link
           aria-label={`View ${product.name}`}
           className="absolute bottom-3 right-3 z-10 grid size-10 translate-y-2 place-items-center bg-brand opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 focus:translate-y-0 focus:opacity-100"
@@ -58,6 +69,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
           {product.compareAtPrice && <p className="text-xs text-muted line-through">{formatRupees(product.compareAtPrice)}</p>}
         </div>
       </div>
+      {wishlistError && <p className="mt-2 text-xs text-red-700" role="alert">{wishlistError}</p>}
       <p className="mt-1 text-xs text-muted">Check product availability</p>
     </article>
   );

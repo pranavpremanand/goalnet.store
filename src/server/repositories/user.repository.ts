@@ -101,6 +101,15 @@ export async function findUserById(id: string): Promise<UserRecord | null> {
   return doc ? toRecord(doc) : null;
 }
 
+export async function listUserFavoriteIds(id: string): Promise<string[]> {
+  await connectToDatabase();
+  const user = await UserModel.findOne({ _id: id, isBlocked: { $ne: true } })
+    .select("favorites")
+    .lean<{ favorites?: Array<Types.ObjectId | string> }>();
+  if (!user) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+  return toFavoriteIds(user.favorites);
+}
+
 export async function findUserByEmail(email: string): Promise<UserRecord | null> {
   await connectToDatabase();
   const doc = await UserModel.findOne({ email }).select("+passwordHash").lean<UserDoc>();
@@ -253,21 +262,43 @@ export async function removeUserAddress(id: string, addressId: string): Promise<
   return toAddressRecords(user.addresses ?? []);
 }
 
-export async function toggleUserFavorite(id: string, productId: string): Promise<string[]> {
+function toFavoriteIds(favorites: Array<Types.ObjectId | string> | undefined) {
+  return (favorites ?? []).map((favorite) => favorite.toString());
+}
+
+export async function addUserFavorite(id: string, productId: string): Promise<string[]> {
   await connectToDatabase();
-  const user = await UserModel.findOne({ _id: id, isBlocked: { $ne: true } }).lean<UserDoc>();
-  if (!user) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
   const prodObjId = new Types.ObjectId(productId);
-  const favorites = user.favorites ?? [];
-  const exists = favorites.some((fav) => fav.toString() === productId);
-  const updatedFavorites = exists
-    ? favorites.filter((fav) => fav.toString() !== productId)
-    : [...favorites, prodObjId];
   const updatedUser = await UserModel.findOneAndUpdate(
     { _id: id, isBlocked: { $ne: true } },
-    { $set: { favorites: updatedFavorites } },
+    { $addToSet: { favorites: prodObjId } },
     { returnDocument: "after", runValidators: true },
   ).lean<UserDoc>();
   if (!updatedUser) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
-  return (updatedUser.favorites ?? []).map((favorite) => favorite.toString());
+  return toFavoriteIds(updatedUser.favorites);
+}
+
+export async function removeUserFavorite(id: string, productId: string): Promise<string[]> {
+  await connectToDatabase();
+  const updatedUser = await UserModel.findOneAndUpdate(
+    { _id: id, isBlocked: { $ne: true } },
+    { $pull: { favorites: new Types.ObjectId(productId) } },
+    { returnDocument: "after", runValidators: true },
+  ).lean<UserDoc>();
+  if (!updatedUser) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+  return toFavoriteIds(updatedUser.favorites);
+}
+
+export async function mergeUserFavorites(id: string, productIds: string[]): Promise<string[]> {
+  await connectToDatabase();
+  const objectIds = productIds.map((productId) => new Types.ObjectId(productId));
+  const updatedUser = objectIds.length > 0
+    ? await UserModel.findOneAndUpdate(
+        { _id: id, isBlocked: { $ne: true } },
+        { $addToSet: { favorites: { $each: objectIds } } },
+        { returnDocument: "after", runValidators: true },
+      ).lean<UserDoc>()
+    : await UserModel.findOne({ _id: id, isBlocked: { $ne: true } }).lean<UserDoc>();
+  if (!updatedUser) throw new UnauthorizedError("This account is unavailable. Contact support for assistance.");
+  return toFavoriteIds(updatedUser.favorites);
 }

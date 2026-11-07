@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   LuArrowRight as ArrowRight,
+  LuHeart as Heart,
   LuMenu as Menu,
   LuSearch as Search,
   LuShoppingBag as ShoppingBag,
@@ -13,6 +14,7 @@ import {
 } from "react-icons/lu";
 import { BrandMark } from "@/ui/BrandMark";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
+import { useWishlist } from "@/components/common/WishlistProvider";
 import { useDemoStore } from "@/lib/demo-store";
 import { formatRupees } from "@/lib/format";
 
@@ -43,6 +45,7 @@ export function HomeNavbar() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const { itemCount } = useLocalCart();
+  const { products: wishlistProducts } = useWishlist();
   const { session } = useDemoStore();
   const accountHref = session ? "/dashboard/dashboard" : "/login";
 
@@ -153,6 +156,18 @@ export function HomeNavbar() {
             >
               {searchOpen ? <X size={19} /> : <Search size={19} />}
             </button>
+            <Link
+              aria-label={`Your wishlist${wishlistProducts.length ? `, ${wishlistProducts.length} saved` : ""}`}
+              className="relative grid size-10 place-items-center transition hover:bg-canvas"
+              href="/wishlist"
+            >
+              <Heart size={19} />
+              {wishlistProducts.length > 0 && (
+                <span className="absolute right-1 top-1 grid size-[17px] place-items-center rounded-full bg-brand text-[10px] font-bold">
+                  {wishlistProducts.length}
+                </span>
+              )}
+            </Link>
             <Link
               aria-label="Your shopping bag"
               className="relative grid size-10 place-items-center transition hover:bg-canvas"

@@ -10,6 +10,7 @@ export const GET = apiHandler(async (request) => {
     categories: query.categories,
     teamTypes: query.teamTypes,
     jerseyTypes: query.jerseyTypes,
+    fits: query.fits,
     minPrice: query.minPrice,
     maxPrice: query.maxPrice,
     sort: query.sort,

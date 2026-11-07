@@ -7,6 +7,7 @@ import {
   LuCircleAlert as CircleAlert,
   LuArrowRight as ArrowRight,
   LuCheck as Check,
+  LuHeart as Heart,
   LuShare2 as Share2,
   LuTruck as Truck,
   LuX as X,
@@ -15,8 +16,9 @@ import { ProductCard } from "@/components/common/ProductCard";
 import { ScrollReveal } from "@/components/common/ScrollReveal";
 import { LoadingSpinner } from "@/components/common/Loading";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
+import { useWishlist } from "@/components/common/WishlistProvider";
 import { ProductImageZoom } from "@/components/pages/product-details/ProductImageZoom";
-import { PRODUCT_TYPE_LABELS, type JerseyType } from "@/lib/catalog-constants";
+import { FIT_TYPE_LABELS, PRODUCT_TYPE_LABELS, type JerseyType } from "@/lib/catalog-constants";
 import { formatRupees } from "@/lib/format";
 import type { StoreProduct } from "@/lib/types/storefront";
 
@@ -32,15 +34,15 @@ type Notice = { type: "success" | "error"; message: string };
 
 const SIZE_CHARTS: Record<JerseyType, { label: string; image: string }> = {
   "half-sleeve": {
-    label: "Half Sleeve",
+    label: "Short Sleeves",
     image: "/images/size-charts/half-sleeve.png",
   },
   "five-sleeve": {
-    label: "Five Sleeve",
+    label: "Five Sleeves",
     image: "/images/size-charts/five-sleeve.png",
   },
   "full-sleeve": {
-    label: "Full Sleeve",
+    label: "Long Sleeves",
     image: "/images/size-charts/full-sleeve.png",
   },
 };
@@ -63,6 +65,8 @@ export function ProductDetailsPage({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [expanded, setExpanded] = useState("Description");
   const { addItem, isPending: cartPending } = useLocalCart();
+  const { isWishlisted, isLoading: wishlistLoading, isPending: wishlistPending, toggleWishlist } = useWishlist();
+  const wishlisted = isWishlisted(product.id);
   const sizeChart =
     product.productType === "jersey" && product.jerseyType
       ? SIZE_CHARTS[product.jerseyType]
@@ -82,6 +86,7 @@ export function ProductDetailsPage({
     ["Brand", product.brand],
     ["Team", product.teamName],
     ["Season", product.season],
+    ["Fit", product.fit ? FIT_TYPE_LABELS[product.fit] : ""],
     ["Material", product.material],
   ].filter(([, value]) => value);
 
@@ -105,6 +110,13 @@ export function ProductDetailsPage({
       type: "success",
       message: `${product.name}, ${sizeLabel}${product.sizeSystem === "one-size" ? "" : "size "}${size}, added to your bag.`,
     });
+  }
+
+  async function toggleProductWishlist() {
+    const result = await toggleWishlist(product);
+    setNotice(result.ok
+      ? { type: "success", message: wishlisted ? "Removed from your wishlist." : "Added to your wishlist." }
+      : { type: "error", message: result.error });
   }
 
   async function checkPincode(pin: string) {
@@ -298,7 +310,7 @@ export function ProductDetailsPage({
               </p>
             )}
           </div>
-          <div className="mt-7 grid sm:grid-cols-[1.3fr_0.7fr] gap-2">
+          <div className="mt-7 grid gap-2 sm:grid-cols-[1.3fr_0.7fr_0.8fr]">
             <button
               className="min-h-12 bg-brand px-5 text-sm font-bold uppercase transition hover:bg-[#d8df0d]"
               disabled={cartPending}
@@ -313,6 +325,16 @@ export function ProductDetailsPage({
               type="button"
             >
               <Share2 size={16} /> Share
+            </button>
+            <button
+              aria-pressed={wishlisted}
+              className="flex min-h-11 w-full items-center justify-center gap-2 border border-ink text-sm font-semibold disabled:cursor-wait disabled:opacity-60"
+              disabled={wishlistLoading || wishlistPending}
+              onClick={() => void toggleProductWishlist()}
+              type="button"
+            >
+              <Heart fill={wishlisted ? "currentColor" : "none"} size={16} />
+              {wishlisted ? "Saved" : "Wishlist"}
             </button>
           </div>
 

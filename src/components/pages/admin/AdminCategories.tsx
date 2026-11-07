@@ -326,7 +326,7 @@ function CategoryDialog({
           <Field
             error={errors.tagline?.message}
             hint="Short line shown above the name on the homepage, e.g. From the archive."
-            label="Tagline"
+            label="Tagline (optional)"
           >
             <input
               {...register("tagline")}
@@ -335,7 +335,7 @@ function CategoryDialog({
               placeholder="From the archive"
             />
           </Field>
-          <Field error={errors.description?.message} label="Description">
+          <Field error={errors.description?.message} label="Description (optional)">
             <textarea
               {...register("description")}
               aria-invalid={Boolean(errors.description)}

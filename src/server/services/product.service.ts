@@ -22,10 +22,11 @@ function toData(input: ProductInput, slug: string): productRepository.ProductDat
   return {
     ...input,
     slug,
-    team: teamBased ? input.team : { name: "", type: null },
+    team: teamBased ? input.team : { name: null, type: null },
     season: teamBased ? input.season : "",
     player: teamBased ? input.player : { name: "", number: null },
     jerseyType: input.productType === "jersey" ? input.jerseyType : null,
+    fit: input.productType === "jersey" ? input.fit : null,
     logoType: teamBased ? input.logoType : "unknown",
   };
 }

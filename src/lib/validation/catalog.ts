@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AVAILABILITY_STATUSES, JERSEY_TYPES, LOGO_TYPES, MAX_PRODUCT_IMAGES, PRODUCT_TYPES, SIZE_OPTIONS, SIZE_SYSTEMS, TEAM_TYPES, isTeamBased } from "@/lib/catalog-constants";
+import { AVAILABILITY_STATUSES, FIT_TYPES, JERSEY_TYPES, LOGO_TYPES, MAX_PRODUCT_IMAGES, PRODUCT_TYPES, SIZE_OPTIONS, SIZE_SYSTEMS, TEAM_TYPES, isTeamBased } from "@/lib/catalog-constants";
 
 // Shared by the admin forms and the API so both enforce the same rules.
 
@@ -47,8 +47,11 @@ export const productInputSchema = z
     productType: z.enum(PRODUCT_TYPES, { error: "Select a product type" }),
     brand: text("Brand", 80),
     team: z.object({
-      name: text("Team name", 100),
-      type: z.enum(TEAM_TYPES, { error: "Select club or national" }).nullable(),
+      name: z.preprocess(
+        (value) => typeof value === "string" && value.trim() === "" ? null : value,
+        z.string().trim().max(100, "Team name must be 100 characters or fewer").nullable(),
+      ),
+      type: z.enum(TEAM_TYPES, { error: "Select a team type" }).nullable(),
     }),
     season: text("Season", 20),
     player: z.object({
@@ -56,9 +59,13 @@ export const productInputSchema = z
       number: wholeNumber("Player number", 0, 99).nullable(),
     }),
     jerseyType: z.enum(JERSEY_TYPES, { error: "Select a jersey type" }).nullable(),
+    fit: z.enum(FIT_TYPES, { error: "Select a fit" }).nullable(),
     logoType: z.enum(LOGO_TYPES, { error: "Select a logo type" }),
     fabric: text("Material", 120),
-    price: z.number({ error: "Enter a price" }).positive("Price must be greater than 0").max(1_000_000, "Price is too high"),
+    price: z.preprocess(
+      (value) => value === "" ? undefined : Number(value),
+      z.number({ error: "Enter a price" }).positive("Price must be greater than 0").max(1_000_000, "Price is too high"),
+    ),
     compareAtPrice: z.number({ error: "Enter a valid price" }).positive("Price must be greater than 0").max(1_000_000, "Price is too high").nullable(),
     sizeSystem: z.enum(SIZE_SYSTEMS, { error: "Select a size type" }),
     variants: z
@@ -81,10 +88,10 @@ export const productInputSchema = z
   })
   .superRefine((product, context) => {
     if (isTeamBased(product.productType)) {
-      if (!product.team.name) context.addIssue({ code: "custom", path: ["team", "name"], message: "Enter the team name" });
-      if (!product.team.type) context.addIssue({ code: "custom", path: ["team", "type"], message: "Select club or national" });
+      if (!product.team.type) context.addIssue({ code: "custom", path: ["team", "type"], message: "Select a team type" });
     }
     if (product.productType === "jersey" && !product.jerseyType) context.addIssue({ code: "custom", path: ["jerseyType"], message: "Select a jersey type" });
+    if (product.productType === "jersey" && !product.fit) context.addIssue({ code: "custom", path: ["fit"], message: "Select a fit" });
 
     const allowed = SIZE_OPTIONS[product.sizeSystem];
     if (product.variants.some((variant) => !allowed.includes(variant.size))) {

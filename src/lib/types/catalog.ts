@@ -1,4 +1,4 @@
-import type { AvailabilityStatus, JerseyType, LogoType, ProductType, SizeSystem, TeamType } from "@/lib/catalog-constants";
+import type { AvailabilityStatus, FitType, JerseyType, LogoType, ProductType, SizeSystem, TeamType } from "@/lib/catalog-constants";
 
 export type ImageAsset = { url: string; fileId: string; alt: string };
 export type ImageCropPosition = { x: number; y: number };
@@ -24,10 +24,11 @@ export type ProductDto = {
   description: string;
   productType: ProductType;
   brand: string;
-  team: { name: string; type: TeamType | null };
+  team: { name: string | null; type: TeamType | null };
   season: string;
   player: { name: string; number: number | null };
   jerseyType: JerseyType | null;
+  fit: FitType | null;
   logoType: LogoType;
   fabric: string;
   price: number;

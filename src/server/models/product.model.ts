@@ -1,5 +1,5 @@
 import { Schema, model, models, type Model, type Types } from "mongoose";
-import { AVAILABILITY_STATUSES, JERSEY_TYPES, LOGO_TYPES, PRODUCT_TYPES, SIZE_SYSTEMS, TEAM_TYPES, type AvailabilityStatus, type JerseyType, type LogoType, type ProductType, type SizeSystem, type TeamType } from "@/lib/catalog-constants";
+import { AVAILABILITY_STATUSES, FIT_TYPES, JERSEY_TYPES, LOGO_TYPES, PRODUCT_TYPES, SIZE_SYSTEMS, TEAM_TYPES, type AvailabilityStatus, type FitType, type JerseyType, type LogoType, type ProductType, type SizeSystem, type TeamType } from "@/lib/catalog-constants";
 import "@/server/models/category.model";
 
 export interface ProductAttrs {
@@ -8,10 +8,11 @@ export interface ProductAttrs {
   description: string;
   productType: ProductType;
   brand: string;
-  team: { name: string; type: TeamType | null };
+  team: { name: string | null; type: TeamType | null };
   season: string;
   player: { name: string; number: number | null };
-  jerseyType: JerseyType | null;
+  jerseyType: StoredJerseyType | null;
+  fit: FitType | null;
   logoType: LogoType;
   fabric: string;
   price: number;
@@ -28,6 +29,8 @@ export interface ProductAttrs {
   updatedAt: Date;
 }
 
+export type StoredJerseyType = JerseyType | "oversized-five-sleeve" | "oversized-full-sleeve";
+
 const productSchema = new Schema<ProductAttrs>(
   {
     name: { type: String, required: true, trim: true, maxlength: 200 },
@@ -37,7 +40,7 @@ const productSchema = new Schema<ProductAttrs>(
     productType: { type: String, enum: PRODUCT_TYPES, default: "jersey", required: true },
     brand: { type: String, default: "", trim: true },
     team: {
-      name: { type: String, default: "", trim: true },
+      name: { type: String, default: null, trim: true },
       type: { type: String, enum: TEAM_TYPES, default: null },
     },
     season: { type: String, default: "", trim: true },
@@ -46,6 +49,7 @@ const productSchema = new Schema<ProductAttrs>(
       number: { type: Number, default: null, min: 0, max: 99 },
     },
     jerseyType: { type: String, enum: JERSEY_TYPES, default: null },
+    fit: { type: String, enum: FIT_TYPES, default: null },
     logoType: { type: String, enum: LOGO_TYPES, default: "unknown" },
     fabric: { type: String, default: "Breathable Polyster Dot Knit Fabric", trim: true },
     price: { type: Number, required: true, min: 0 },
@@ -80,5 +84,8 @@ const productSchema = new Schema<ProductAttrs>(
 
 productSchema.index({ category: 1, isActive: 1, price: 1 });
 productSchema.index({ isFeatured: 1, isActive: 1 });
+
+const cachedProductModel = models.Product as Model<ProductAttrs> | undefined;
+if (cachedProductModel && !cachedProductModel.schema.path("fit")) delete models.Product;
 
 export const ProductModel = (models.Product as Model<ProductAttrs> | undefined) ?? model<ProductAttrs>("Product", productSchema);
