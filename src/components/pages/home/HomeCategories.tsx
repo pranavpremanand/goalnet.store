@@ -73,7 +73,7 @@ async function CategoryCards() {
                 />
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/5"
+                  className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent"
                 />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 sm:p-4">
                   <div className="min-w-0">
