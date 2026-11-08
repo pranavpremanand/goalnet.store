@@ -14,7 +14,10 @@ export type HeroSlide = {
   heading: string;
   highlightedWord: string;
   description: string;
+  showContent: boolean;
   image: HeroMedia;
+  mobileImage?: HeroMedia | null;
+  desktopImage?: HeroMedia | null;
   buttons: HeroSlideButton[];
   isActive: boolean;
   displayOrder: number;

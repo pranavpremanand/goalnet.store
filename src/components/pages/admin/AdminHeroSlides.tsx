@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LuCheck as Check, LuChevronDown as ChevronDown, LuChevronUp as ChevronUp, LuGripVertical as GripVertical, LuPencil as Pencil, LuPlus as Plus, LuTrash2 as Trash2, LuX as X } from "react-icons/lu";
+import { LuCheck as Check, LuChevronDown as ChevronDown, LuChevronUp as ChevronUp, LuGripVertical as GripVertical, LuMonitor as Monitor, LuPencil as Pencil, LuPlus as Plus, LuSmartphone as Smartphone, LuTrash2 as Trash2, LuX as X } from "react-icons/lu";
 import { LoadingSpinner } from "@/components/common/Loading";
 import { SortableTable, SortableTableRow } from "@/components/pages/admin/SortableTable";
 import { moveItem } from "@/lib/reorder";
@@ -19,32 +19,165 @@ import { ImageUploader } from "@/components/pages/admin/ImageUploader";
 import { HeroMediaUploader } from "@/components/pages/admin/HeroMediaUploader";
 import { useUploadSession } from "@/components/pages/admin/useUploadSession";
 
-type HeroSlide = HeroSlideInput & { id: string; createdAt: string; updatedAt: string };
+type HeroResponsiveMedia = Omit<HeroMedia, "mediaType"> & { mediaType: "image" };
+type HeroSlide = Omit<HeroSlideOutput, "mobileImage" | "desktopImage"> & {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  mobileImage?: HeroResponsiveMedia | null;
+  desktopImage?: HeroResponsiveMedia | null;
+};
 
 const emptySlide: HeroSlideInput = {
-  tagline: "", heading: "", highlightedWord: "", description: "", image: { url: "", fileId: "", alt: "", mediaType: "image" }, buttons: [], isActive: true, displayOrder: 0,
+  tagline: "", heading: "", highlightedWord: "", description: "", showContent: true, image: { url: "", fileId: "", alt: "", mediaType: "image" }, mobileImage: null, desktopImage: null, buttons: [], isActive: true, displayOrder: 0,
 };
+
+type PreviewDevice = "small" | "large";
+
+function HeroBannerPreview({
+  device,
+  image,
+  mobileImage,
+  desktopImage,
+  tagline,
+  heading,
+  highlightedWord,
+  description,
+  showContent,
+  buttons,
+  onDeviceChange,
+  onClose,
+}: {
+  device: PreviewDevice;
+  image: HeroMedia;
+  mobileImage?: HeroMedia | null;
+  desktopImage?: HeroMedia | null;
+  tagline: string;
+  heading: string;
+  highlightedWord: string;
+  description: string;
+  showContent: boolean;
+  buttons: HeroSlideInput["buttons"];
+  onDeviceChange: (device: PreviewDevice) => void;
+  onClose: () => void;
+}) {
+  const responsiveImage = device === "small" ? mobileImage : desktopImage;
+  const media = responsiveImage ?? image;
+  const highlightIndex = heading.toLocaleLowerCase().indexOf(highlightedWord.toLocaleLowerCase());
+  const hasHighlight = Boolean(highlightedWord) && highlightIndex >= 0;
+  const isVideo = resolveHeroMediaType(media) === "video";
+
+  return (
+    <div className="fixed inset-0 z-[60] grid place-items-center overflow-y-auto bg-black/70 p-4">
+      <section
+        aria-labelledby="hero-preview-title"
+        aria-modal="true"
+        className="my-auto w-full max-w-5xl bg-paper p-4 sm:p-6"
+        role="dialog"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase text-muted">Homepage</p>
+            <h2 className="mt-1 font-display text-xl font-semibold" id="hero-preview-title">Banner preview</h2>
+          </div>
+          <button aria-label="Close preview" className="grid size-10 place-items-center border border-line" onClick={onClose} type="button"><X size={18} /></button>
+        </div>
+        <div className="my-4 flex gap-2">
+          <button aria-pressed={device === "small"} className={`inline-flex min-h-10 items-center gap-2 border px-3 text-xs font-bold uppercase ${device === "small" ? "border-ink bg-brand" : "border-line"}`} onClick={() => onDeviceChange("small")} type="button"><Smartphone size={15} /> Small device</button>
+          <button aria-pressed={device === "large"} className={`inline-flex min-h-10 items-center gap-2 border px-3 text-xs font-bold uppercase ${device === "large" ? "border-ink bg-brand" : "border-line"}`} onClick={() => onDeviceChange("large")} type="button"><Monitor size={15} /> Large device</button>
+        </div>
+        <div className={`relative mx-auto overflow-hidden bg-charcoal text-white ${device === "small" ? "aspect-[9/16] w-full max-w-[320px]" : "aspect-[16/7] w-full"}`}>
+          {isVideo ? (
+            <video
+              aria-hidden="true"
+              autoPlay
+              className="absolute inset-0 size-full object-cover"
+              key={media.fileId}
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              src={media.url}
+            />
+          ) : (
+            <Image alt={media.alt || "Hero banner preview"} className="object-cover" fill priority sizes={device === "small" ? "320px" : "100vw"} src={media.url} />
+          )}
+          {showContent && (
+            <>
+              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/10" />
+              <div className={`absolute inset-0 flex flex-col justify-center ${device === "small" ? "items-center px-5 text-center" : "items-start px-[8%] text-left"}`}>
+                <p className={`font-bold uppercase text-brand ${device === "small" ? "text-[9px]" : "text-xs sm:text-sm"}`}>{tagline || "Your tagline"}</p>
+                <h3 className={`mt-3 max-w-[85%] font-display font-semibold leading-tight ${device === "small" ? "text-3xl" : "text-4xl sm:text-6xl"}`}>
+                  {hasHighlight ? (
+                    <>
+                      {heading.slice(0, highlightIndex)}
+                      <span className="inline-block bg-brand px-1.5 py-0.5 text-ink">{heading.slice(highlightIndex, highlightIndex + highlightedWord.length)}</span>
+                      {heading.slice(highlightIndex + highlightedWord.length)}
+                    </>
+                  ) : heading || "Your heading"}
+                </h3>
+                <p className={`mt-3 max-w-md text-white/90 ${device === "small" ? "line-clamp-4 text-xs leading-5" : "text-sm leading-6 sm:text-base"}`}>{description || "Your banner description"}</p>
+                {buttons.length > 0 && (
+                  <div className={`mt-5 flex flex-wrap gap-2 ${device === "small" ? "justify-center" : ""}`}>
+                    {buttons.map((button, index) => (
+                      <span className={`inline-flex min-h-9 items-center px-3 text-[10px] font-bold uppercase ${button.style === "primary" ? "bg-brand text-ink" : "border border-white/65 text-white"}`} key={`${button.label}-${index}`}>{button.label}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+        <p className="mt-3 text-center text-xs text-muted">
+          {responsiveImage ? `Showing the uploaded ${device === "small" ? "small-device" : "large-device"} image.` : `No ${device === "small" ? "small" : "large"}-device override uploaded; showing the background media fallback.`}
+        </p>
+      </section>
+    </div>
+  );
+}
 
 function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onClose: () => void; onSaved: (message: string) => void }) {
   const uploads = useUploadSession();
-  const { register, control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<HeroSlideInput, unknown, HeroSlideOutput>({
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice | null>(null);
+  const [showMobileUploader, setShowMobileUploader] = useState(
+    Boolean(slide?.mobileImage && resolveHeroMediaType(slide.image) === "image"),
+  );
+  const { register, control, handleSubmit, setError, setValue, formState: { errors, isSubmitting } } = useForm<HeroSlideInput, unknown, HeroSlideOutput>({
     resolver: zodResolver(heroSlideInputSchema),
     defaultValues: slide ? {
       tagline: slide.tagline, heading: slide.heading, highlightedWord: slide.highlightedWord, description: slide.description,
-      image: slide.image, buttons: slide.buttons, isActive: slide.isActive, displayOrder: slide.displayOrder,
+      showContent: slide.showContent ?? true,
+      image: slide.image,
+      mobileImage: resolveHeroMediaType(slide.image) === "image" ? slide.mobileImage ?? null : null,
+      desktopImage: resolveHeroMediaType(slide.image) === "image"
+        ? slide.desktopImage ?? { ...slide.image, mediaType: "image" }
+        : null,
+      buttons: slide.buttons, isActive: slide.isActive, displayOrder: slide.displayOrder,
     } : emptySlide,
   });
   const { fields, append, remove } = useFieldArray({ control, name: "buttons" });
   const heading = useWatch({ control, name: "heading" }) ?? "";
   const highlightedWord = useWatch({ control, name: "highlightedWord" }) ?? "";
+  const image = useWatch({ control, name: "image" });
+  const mobileImage = useWatch({ control, name: "mobileImage" });
+  const desktopImage = useWatch({ control, name: "desktopImage" });
+  const description = useWatch({ control, name: "description" }) ?? "";
+  const tagline = useWatch({ control, name: "tagline" }) ?? "";
+  const showContent = useWatch({ control, name: "showContent" }) ?? true;
+  const buttons = useWatch({ control, name: "buttons" }) ?? [];
+  const previewMedia = image && resolveHeroMediaType(image) === "video"
+    ? image.url ? image : null
+    : desktopImage ?? (image?.url ? image : null);
   const highlightIndex = heading.toLocaleLowerCase().indexOf(highlightedWord.toLocaleLowerCase());
   const hasHighlight = Boolean(highlightedWord) && highlightIndex >= 0;
 
-  async function onSubmit(values: HeroSlideInput) {
+  async function onSubmit(values: HeroSlideOutput) {
     try {
       const normalizedValues = {
         ...values,
         image: { ...values.image, mediaType: resolveHeroMediaType(values.image) },
+        mobileImage: values.mobileImage ? { ...values.mobileImage, mediaType: "image" as const } : null,
+        desktopImage: values.desktopImage ? { ...values.desktopImage, mediaType: "image" as const } : null,
       };
       if (slide) await apiRequest(`/api/admin/hero-slides/${slide.id}`, { method: "PUT", body: JSON.stringify(normalizedValues) });
       else await apiRequest("/api/admin/hero-slides", { method: "POST", body: JSON.stringify(normalizedValues) });
@@ -63,16 +196,23 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
         <h2 className="mt-1 font-display text-2xl font-semibold" id="hero-editor-title">{slide ? "Edit slide" : "New slide"}</h2>
         <form className="mt-6 space-y-6" noValidate onSubmit={handleSubmit(onSubmit)}>
           <FormError message={errors.root?.server?.message} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field error={errors.tagline?.message} label="Tagline"><input {...register("tagline")} aria-invalid={Boolean(errors.tagline)} className={adminInputClass} placeholder="e.g. Made for matchday" /></Field>
-            <Field error={errors.displayOrder?.message} hint="Lower numbers appear first." label="Display order"><input {...register("displayOrder", { valueAsNumber: true })} aria-invalid={Boolean(errors.displayOrder)} className={adminInputClass} min="0" type="number" /></Field>
-          </div>
-          <Field error={errors.heading?.message} label="Heading"><input {...register("heading")} aria-invalid={Boolean(errors.heading)} className={adminInputClass} placeholder="Every legend has a beginning." /></Field>
-          <div>
-            <Field error={errors.highlightedWord?.message} label="Highlighted word or phrase"><input {...register("highlightedWord")} aria-invalid={Boolean(errors.highlightedWord)} className={adminInputClass} placeholder="beginning" /></Field>
-            <p aria-live="polite" className="mt-1.5 text-xs text-muted">Preview: {hasHighlight ? <>{heading.slice(0, highlightIndex)}<span className="bg-brand px-1 text-ink">{heading.slice(highlightIndex, highlightIndex + highlightedWord.length)}</span>{heading.slice(highlightIndex + highlightedWord.length)}</> : heading}</p>
-          </div>
-          <Field error={errors.description?.message} label="Description"><textarea {...register("description")} aria-invalid={Boolean(errors.description)} className={adminInputClass} rows={3} /></Field>
+          <Field error={errors.displayOrder?.message} hint="Lower numbers appear first." label="Display order"><input {...register("displayOrder", { valueAsNumber: true })} aria-invalid={Boolean(errors.displayOrder)} className={adminInputClass} min="0" type="number" /></Field>
+          <label className="flex items-center gap-2 text-sm">
+            <input {...register("showContent")} className="size-4 accent-[#f2fa18]" type="checkbox" />
+            Show text content on this slide
+          </label>
+          <p className="-mt-5 text-xs text-muted">Turn this off for a banner-only slide. The text overlay will be removed from the preview and homepage.</p>
+          {showContent && (
+            <>
+              <Field error={errors.tagline?.message} label="Tagline"><input {...register("tagline")} aria-invalid={Boolean(errors.tagline)} className={adminInputClass} placeholder="e.g. Made for matchday" /></Field>
+              <Field error={errors.heading?.message} label="Heading"><input {...register("heading")} aria-invalid={Boolean(errors.heading)} className={adminInputClass} placeholder="Every legend has a beginning." /></Field>
+              <div>
+                <Field error={errors.highlightedWord?.message} label="Highlighted word or phrase"><input {...register("highlightedWord")} aria-invalid={Boolean(errors.highlightedWord)} className={adminInputClass} placeholder="beginning" /></Field>
+                <p aria-live="polite" className="mt-1.5 text-xs text-muted">Preview: {hasHighlight ? <>{heading.slice(0, highlightIndex)}<span className="bg-brand px-1 text-ink">{heading.slice(highlightIndex, highlightIndex + highlightedWord.length)}</span>{heading.slice(highlightIndex + highlightedWord.length)}</> : heading}</p>
+              </div>
+              <Field error={errors.description?.message} label="Description"><textarea {...register("description")} aria-invalid={Boolean(errors.description)} className={adminInputClass} rows={3} /></Field>
+            </>
+          )}
           <div>
             <p className="text-xs font-semibold">Background media</p>
             <p className="mt-1 text-[11px] text-muted">Choose an image or a short video for this slide.</p>
@@ -85,6 +225,13 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
                       onChange={(event) => {
                         const mediaType: HeroMedia["mediaType"] = event.target.value === "video" ? "video" : "image";
                         if (field.value.fileId) uploads.release(field.value.fileId);
+                        if (mediaType === "video") {
+                          if (mobileImage?.fileId) uploads.release(mobileImage.fileId);
+                          if (desktopImage?.fileId) uploads.release(desktopImage.fileId);
+                          setValue("mobileImage", null);
+                          setValue("desktopImage", null);
+                          setShowMobileUploader(false);
+                        }
                         field.onChange({ url: "", fileId: "", alt: "", mediaType });
                       }}
                       value={resolveHeroMediaType(field.value)}
@@ -93,26 +240,89 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
                       <option value="video">Video</option>
                     </select>
                   </Field>
-                  <div className="mt-3">
-                    {resolveHeroMediaType(field.value) === "video" ? (
+                  {resolveHeroMediaType(field.value) === "video" && (
+                    <div className="mt-3">
                       <HeroMediaUploader onChange={field.onChange} session={uploads} value={{ ...field.value, mediaType: "video" }} />
-                    ) : (
-                      <ImageUploader
-                        error={errors.image?.message ?? errors.image?.url?.message}
-                        max={1}
-                        onChange={(images: ImageAsset[]) => field.onChange(images[0] ? { ...images[0], mediaType: "image" } : { url: "", fileId: "", alt: "", mediaType: "image" })}
-                        session={uploads}
-                        target="hero"
-                        value={field.value?.fileId ? [{ ...field.value, alt: field.value.alt }] : []}
-                      />
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {errors.image?.message && <p className="mt-2 text-xs text-red-700" role="alert">{errors.image.message}</p>}
                 </div>
               )} />
             </div>
           </div>
-          <div>
+          {resolveHeroMediaType(image) === "image" && <div className="space-y-4 border-t border-line pt-5">
+            <div>
+              <p className="text-xs font-semibold">Large-device banner</p>
+              <p className="mt-1 text-[11px] leading-5 text-muted">
+                Upload the large banner first. It will be used on small devices too unless you add a separate small-device image.
+              </p>
+            </div>
+            <Controller control={control} name="desktopImage" render={({ field }) => (
+              <div>
+                <p className="mb-2 text-sm font-medium">Large device banner (16:9)</p>
+                <ImageUploader
+                  error={errors.desktopImage?.message ?? errors.desktopImage?.url?.message}
+                  max={1}
+                  onChange={(images: ImageAsset[]) => field.onChange(images[0] ? { ...images[0], mediaType: "image" } : null)}
+                  session={uploads}
+                  target="hero"
+                  showPreview={false}
+                  value={field.value ? [{ ...field.value, alt: field.value.alt }] : []}
+                />
+                {field.value?.url && (
+                  <div className="mt-4 grid max-w-3xl items-start gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+                    <div>
+                      <p className="mb-1 text-[10px] font-bold uppercase text-muted">Large-device preview (16:9)</p>
+                      <div className="relative aspect-video overflow-hidden border border-line bg-canvas">
+                        <Image alt={field.value.alt || "Large-device banner preview"} className="object-cover" fill sizes="(max-width: 672px) 100vw, 672px" src={field.value.url} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[10px] font-bold uppercase text-muted">Small-device fallback (4:5)</p>
+                      <div className="relative aspect-[4/5] overflow-hidden border border-line bg-canvas">
+                        <Image alt={field.value.alt || "Small-device banner fallback preview"} className="object-cover" fill sizes="180px" src={field.value.url} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {field.value?.url && (
+                  <div className="mt-5 border-t border-line pt-4">
+                    <p className="text-sm font-medium">Need a different small-device image?</p>
+                    {!showMobileUploader && (
+                      <button className="mt-2 inline-flex min-h-10 items-center gap-2 border border-ink px-3 text-xs font-bold uppercase" onClick={() => setShowMobileUploader(true)} type="button">
+                        <Smartphone size={15} /> Upload small-device banner
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )} />
+            {desktopImage?.url && showMobileUploader && (
+              <Controller control={control} name="mobileImage" render={({ field }) => (
+                <div>
+                  <p className="mb-2 text-sm font-medium">Optional small-device banner (4:5)</p>
+                  <ImageUploader
+                    error={errors.mobileImage?.message ?? errors.mobileImage?.url?.message}
+                    max={1}
+                    onChange={(images: ImageAsset[]) => field.onChange(images[0] ? { ...images[0], mediaType: "image" } : null)}
+                    session={uploads}
+                    target="hero"
+                    showPreview={false}
+                    value={field.value ? [{ ...field.value, alt: field.value.alt }] : []}
+                  />
+                  {field.value?.url && (
+                    <div className="mt-3 max-w-[180px]">
+                      <p className="mb-1 text-[10px] font-bold uppercase text-muted">Small-device preview (4:5)</p>
+                      <div className="relative aspect-[4/5] overflow-hidden border border-line bg-canvas">
+                        <Image alt={field.value.alt || "Small-device banner preview"} className="object-cover" fill sizes="180px" src={field.value.url} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )} />
+            )}
+          </div>}
+          {showContent && <div>
             <div className="flex items-center justify-between"><div><h3 className="text-xs font-bold uppercase">Buttons</h3><p className="mt-1 text-[11px] text-muted">Use a path on this website, such as /shop.</p></div><button className="inline-flex min-h-9 items-center gap-1 border border-line px-3 text-[10px] font-bold uppercase disabled:opacity-40" disabled={fields.length >= 2} onClick={() => append({ label: "Shop now", href: "/shop", style: fields.length === 0 ? "primary" : "secondary" })} type="button"><Plus size={14} /> Add button</button></div>
             {errors.buttons?.root?.message && <p className="mt-2 text-xs text-red-700" role="alert">{errors.buttons.root.message}</p>}
             <div className="mt-3 space-y-3">
@@ -125,11 +335,31 @@ function SlideEditor({ slide, onClose, onSaved }: { slide: HeroSlide | null; onC
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
           <label className="flex items-center gap-2 text-sm"><input {...register("isActive")} className="size-4 accent-[#f2fa18]" type="checkbox" />Active (shown in the carousel)</label>
-          <div className="flex gap-3"><button aria-busy={isSubmitting} className="inline-flex min-h-11 items-center justify-center bg-brand px-6 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? <LoadingSpinner label="Saving…" /> : slide ? "Save slide" : "Add slide"}</button><button className="min-h-11 border border-line px-6 text-xs font-bold uppercase" onClick={onClose} type="button">Cancel</button></div>
+          <div className="flex flex-wrap gap-3">
+            <button className="inline-flex min-h-11 items-center gap-2 border border-ink px-5 text-xs font-bold uppercase hover:bg-canvas disabled:opacity-50" disabled={!previewMedia} onClick={() => setPreviewDevice("large")} type="button"><Monitor size={15} /> Preview banner</button>
+            <button aria-busy={isSubmitting} className="inline-flex min-h-11 items-center justify-center bg-brand px-6 text-xs font-bold uppercase disabled:opacity-60" disabled={isSubmitting} type="submit">{isSubmitting ? <LoadingSpinner label="Saving…" /> : slide ? "Save slide" : "Add slide"}</button>
+            <button className="min-h-11 border border-line px-6 text-xs font-bold uppercase" onClick={onClose} type="button">Cancel</button>
+          </div>
         </form>
       </section>
+        {previewDevice && previewMedia && (
+        <HeroBannerPreview
+          buttons={buttons}
+          description={description}
+          desktopImage={desktopImage}
+          device={previewDevice}
+          heading={heading}
+          highlightedWord={highlightedWord}
+          showContent={showContent}
+          image={{ ...previewMedia, mediaType: resolveHeroMediaType(previewMedia) }}
+          mobileImage={mobileImage}
+          onClose={() => setPreviewDevice(null)}
+          onDeviceChange={setPreviewDevice}
+          tagline={tagline}
+        />
+      )}
     </div>
   );
 }

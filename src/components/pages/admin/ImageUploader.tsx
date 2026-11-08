@@ -17,6 +17,7 @@ type ImageUploaderProps = {
   session: UploadSession;
   error?: string;
   showCropPosition?: boolean;
+  showPreview?: boolean;
 };
 
 function getCropSelection(imageAspect: number, x: number, y: number) {
@@ -39,7 +40,7 @@ function getCropSelection(imageAspect: number, x: number, y: number) {
   };
 }
 
-export function ImageUploader({ target, value, onChange, max, session, error, showCropPosition = false }: ImageUploaderProps) {
+export function ImageUploader({ target, value, onChange, max, session, error, showCropPosition = false, showPreview = true }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const cropDragRef = useRef<{
     pointerId: number;
@@ -165,22 +166,23 @@ export function ImageUploader({ target, value, onChange, max, session, error, sh
             : null;
           return (
           <li className="border border-line p-2" key={image.fileId}>
-            <div className={`relative bg-canvas ${showCropPosition ? "mx-auto aspect-square w-full max-w-xs overflow-hidden" : "aspect-4/5 overflow-hidden"}`}>
-              <Image
-                alt={image.alt || "Uploaded image"}
-                className={showCropPosition ? "object-contain" : "object-cover"}
-                fill
-                onLoad={(event) => {
-                  if (showCropPosition) {
-                    const { naturalHeight, naturalWidth } = event.currentTarget;
-                    setCropImageAspects((current) => ({ ...current, [image.fileId]: naturalWidth / naturalHeight }));
-                  }
-                }}
-                sizes="240px"
-                src={image.url}
-                style={!showCropPosition ? { objectPosition: `${image.cropPosition?.x ?? 50}% ${image.cropPosition?.y ?? 50}%` } : undefined}
-              />
-              {selection && (
+            {showPreview && (
+              <div className={`relative bg-canvas ${showCropPosition ? "mx-auto aspect-square w-full max-w-xs overflow-hidden" : "aspect-4/5 overflow-hidden"}`}>
+                <Image
+                  alt={image.alt || "Uploaded image"}
+                  className={showCropPosition ? "object-contain" : "object-cover"}
+                  fill
+                  onLoad={(event) => {
+                    if (showCropPosition) {
+                      const { naturalHeight, naturalWidth } = event.currentTarget;
+                      setCropImageAspects((current) => ({ ...current, [image.fileId]: naturalWidth / naturalHeight }));
+                    }
+                  }}
+                  sizes="240px"
+                  src={image.url}
+                  style={!showCropPosition ? { objectPosition: `${image.cropPosition?.x ?? 50}% ${image.cropPosition?.y ?? 50}%` } : undefined}
+                />
+                {selection && (
                   <div
                     aria-label="Crop selection. The area outside this frame is dimmed. Drag the frame to change the crop."
                     className="absolute touch-none cursor-grab border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.55)] outline-none active:cursor-grabbing"
@@ -207,8 +209,9 @@ export function ImageUploader({ target, value, onChange, max, session, error, sh
                     }}
                     tabIndex={0}
                   />
-              )}
-            </div>
+                )}
+              </div>
+            )}
             <input aria-label="Image description" className="mt-2 w-full border border-line px-2 py-1.5 text-xs outline-none focus:border-ink" maxLength={200} onChange={(event) => updateAlt(index, event.target.value)} placeholder="Short description (alt text)" value={image.alt} />
             {showCropPosition && (
               <p className="mt-2 text-[11px] text-muted">Drag the crop frame to position it. The bright area is saved as the cover. Use arrow keys for fine adjustments.</p>
@@ -220,7 +223,7 @@ export function ImageUploader({ target, value, onChange, max, session, error, sh
           </li>
           );
         })}
-        {Array.from({ length: uploading }, (_, index) => (
+        {showPreview && Array.from({ length: uploading }, (_, index) => (
           <li className="grid aspect-4/5 place-items-center border border-dashed border-line text-xs text-muted" key={`uploading-${index}`}><Loader className="animate-spin" size={20} /><span className="sr-only">Uploading</span></li>
         ))}
       </ul>

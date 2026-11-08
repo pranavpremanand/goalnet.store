@@ -19,6 +19,7 @@ const DEFAULT_SLIDE: HeroSlide = {
   highlightedWord: "beginning.",
   description:
     "Wear the colors that carry a story. Find your team, your era, and the pieces that tell your story.",
+  showContent: true,
   image: {
     url: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=2200&q=90",
     fileId: "default-home-hero",
@@ -35,43 +36,79 @@ const DEFAULT_SLIDE: HeroSlide = {
 
 function HeroMediaLayer({
   media,
+  mobileImage,
+  desktopImage,
   alt,
   className,
+  showContent,
   decorative = false,
 }: {
   media: HeroMedia;
+  mobileImage?: HeroMedia | null;
+  desktopImage?: HeroMedia | null;
   alt: string;
   className: string;
+  showContent: boolean;
   decorative?: boolean;
 }) {
   if (resolveHeroMediaType(media) === "video") {
     return (
-      <video
-        aria-hidden={decorative}
-        autoPlay
-        className={`absolute inset-0 z-0 size-full object-cover object-center ${className}`}
-        key={media.fileId}
-        loop
-        muted
-        playsInline
-        preload="auto"
-        src={media.url}
-      />
+      <div className={`absolute inset-0 z-0 ${className}`}>
+        <video
+          aria-hidden={decorative}
+          autoPlay
+          className="absolute inset-0 size-full object-cover object-center"
+          key={media.fileId}
+          loop
+          muted
+          playsInline
+          preload="auto"
+          src={media.url}
+        />
+        {mobileImage && (
+          <Image
+            alt={decorative ? "" : mobileImage.alt || alt}
+            aria-hidden={decorative}
+            className="object-cover md:hidden"
+            fill
+            quality={90}
+            sizes="100vw"
+            src={mobileImage.url}
+          />
+        )}
+        {desktopImage && (
+          <Image
+            alt={decorative ? "" : desktopImage.alt || alt}
+            aria-hidden={decorative}
+            className="hidden object-cover md:block"
+            fill
+            quality={90}
+            sizes="100vw"
+            src={desktopImage.url}
+          />
+        )}
+      </div>
     );
   }
 
   return (
-    <Image
-      alt={decorative ? "" : alt}
-      aria-hidden={decorative}
-      className={`z-0 object-cover object-right lg:object-center ${className}`}
-      fill
-      key={media.fileId}
-      priority
-      quality={90}
-      sizes="100vw"
-      src={media.url}
-    />
+    <div className={`absolute inset-0 z-0 ${className}`}>
+      <picture className="absolute inset-0">
+        {mobileImage && <source media="(max-width: 767px)" srcSet={mobileImage.url} />}
+        {desktopImage && <source media="(min-width: 768px)" srcSet={desktopImage.url} />}
+        <Image
+          alt={decorative ? "" : alt}
+          aria-hidden={decorative}
+          className={`object-cover ${showContent ? "object-right lg:object-center" : "object-center"}`}
+          fill
+          key={media.fileId}
+          priority
+          quality={90}
+          sizes="100vw"
+          src={media.url}
+        />
+      </picture>
+    </div>
   );
 }
 
@@ -169,6 +206,9 @@ export function HeroCarousel({ slides: savedSlides }: { slides: HeroSlide[] }) {
           decorative
           key={`${transition.id}-out`}
           media={transition.previous.image}
+          mobileImage={transition.previous.mobileImage}
+          desktopImage={transition.previous.desktopImage}
+          showContent={transition.previous.showContent}
         />
       )}
       <HeroMediaLayer
@@ -176,69 +216,78 @@ export function HeroCarousel({ slides: savedSlides }: { slides: HeroSlide[] }) {
         className={transition ? `hero-media-swipe-in-${transition.direction}` : ""}
         key={slide.id}
         media={slide.image}
+        mobileImage={slide.mobileImage}
+        desktopImage={slide.desktopImage}
+        showContent={slide.showContent}
       />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 z-10 bg-gradient-to-r from-black/80 via-black/40 to-black/10"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 z-10 bg-gradient-to-t from-black/75 via-transparent to-black/15"
-      />
-      <div className="relative z-20 mx-auto flex min-h-[670px] max-w-[1440px] flex-col justify-center px-5 pb-28 pt-16 sm:px-8 md:min-h-[760px] lg:px-14">
+      {slide.showContent && (
         <div
-          aria-live="polite"
-          className={`relative z-10 max-w-[720px] ${transition ? `hero-content-swipe-in-${transition.direction}` : ""}`}
-          key={slide.id}
-        >
-          <p className="mb-6 flex items-center gap-3 text-xs font-bold uppercase text-brand sm:text-sm">
-            <span className="h-px w-9 bg-brand" />
-            {slide.tagline}
-          </p>
-          <h1 className="font-display text-[2.8rem] font-semibold !leading-[1.2] md:!leading-tight sm:text-6xl md:text-7xl">
-            {hasHighlight ? (
-              <>
-                {slide.heading.slice(0, highlightIndex)}
-                <span className="inline-block bg-brand px-2 py-0.5 text-ink">
-                  {slide.heading.slice(
-                    highlightIndex,
-                    highlightIndex + slide.highlightedWord.length,
-                  )}
-                </span>
-                {slide.heading.slice(
-                  highlightIndex + slide.highlightedWord.length,
-                )}
-              </>
-            ) : (
-              slide.heading
+          aria-hidden="true"
+          className="absolute inset-0 z-10 bg-gradient-to-r from-black/60 via-black/30 to-black/10"
+        />
+      )}
+      <div className="relative z-20 mx-auto flex min-h-[670px] max-w-[1440px] flex-col justify-center px-5 pb-28 pt-16 sm:px-8 md:min-h-[760px] lg:px-14">
+        {slide.showContent && (
+          <div
+            aria-live="polite"
+            className={`relative z-10 max-w-[720px] ${transition ? `hero-content-swipe-in-${transition.direction}` : ""}`}
+            key={slide.id}
+          >
+            {slide.tagline && (
+              <p className="hero-text-stroke mb-6 flex items-center gap-3 text-xs font-bold uppercase text-brand sm:text-sm">
+                <span className="h-px w-9 bg-brand" />
+                {slide.tagline}
+              </p>
             )}
-          </h1>
-          <p className="mt-7 max-w-md font-copy text-sm leading-7 text-white/85 sm:text-base">
-            {slide.description}
-          </p>
-          {slide.buttons.length > 0 && (
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              {slide.buttons.map((button, index) => (
-                <Link
-                  className={
-                    button.style === "primary"
-                      ? "inline-flex min-h-12 items-center gap-3 bg-brand px-6 text-sm font-bold uppercase text-ink transition hover:bg-[#d8df0d]"
-                      : "inline-flex min-h-12 items-center gap-2 border border-white/65 px-5 text-sm font-semibold text-white transition hover:border-brand hover:text-brand"
-                  }
-                  href={button.href}
-                  key={`${button.href}-${index}`}
-                >
-                  {button.label}
-                  {button.style === "primary" ? (
-                    <ArrowRight size={17} />
-                  ) : (
-                    <ArrowDown className="rotate-[-45deg]" size={16} />
-                  )}
-                </Link>
-              ))}
+            {slide.heading && (
+              <h1 className="hero-text-stroke font-display text-[2.8rem] font-semibold !leading-[1.2] md:!leading-tight sm:text-6xl md:text-7xl">
+                {hasHighlight ? (
+                  <>
+                    {slide.heading.slice(0, highlightIndex)}
+                    <span className="inline-block bg-brand px-2 py-0.5 text-ink">
+                      {slide.heading.slice(
+                        highlightIndex,
+                        highlightIndex + slide.highlightedWord.length,
+                      )}
+                    </span>
+                    {slide.heading.slice(
+                      highlightIndex + slide.highlightedWord.length,
+                    )}
+                  </>
+                ) : (
+                  slide.heading
+                )}
+              </h1>
+            )}
+            {slide.description && (
+              <p className="hero-text-stroke mt-7 max-w-md font-copy text-sm leading-7 text-white/90 sm:text-base">
+                {slide.description}
+              </p>
+            )}
+            {slide.buttons.length > 0 && (
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                {slide.buttons.map((button, index) => (
+                  <Link
+                    className={
+                      button.style === "primary"
+                        ? "inline-flex min-h-12 items-center gap-3 bg-brand px-6 text-sm font-bold uppercase text-ink transition hover:bg-[#d8df0d]"
+                        : "inline-flex min-h-12 items-center gap-2 border border-white/65 px-5 text-sm font-semibold text-white transition hover:border-brand hover:text-brand"
+                    }
+                    href={button.href}
+                    key={`${button.href}-${index}`}
+                  >
+                    {button.label}
+                    {button.style === "primary" ? (
+                      <ArrowRight size={17} />
+                    ) : (
+                      <ArrowDown className="rotate-[-45deg]" size={16} />
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
             </div>
-          )}
-        </div>
+        )}
         <div className="absolute bottom-5 left-5 right-5 z-20 flex items-center justify-between gap-4 sm:left-8 sm:right-8 lg:left-14 lg:right-14">
           <div className="hidden items-center gap-3 text-[10px] font-semibold uppercase text-white/75 sm:flex">
             <ArrowDown aria-hidden="true" size={16} />

@@ -1,5 +1,5 @@
 import { BadRequestError, NotFoundError } from "@/server/errors";
-import type { HeroSlideInput } from "@/lib/validation/hero";
+import type { HeroSlideOutput } from "@/lib/validation/hero";
 import type { HeroMedia } from "@/lib/types/hero";
 import * as heroSlideRepository from "@/server/repositories/hero-slide.repository";
 import { deleteImages, verifyNewHeroMedia } from "@/server/services/image.service";
@@ -12,6 +12,26 @@ export async function listActiveHeroSlides() {
   return heroSlideRepository.listHeroSlides({ activeOnly: true });
 }
 
+async function verifySlideMedia(input: HeroSlideOutput, media: HeroMedia, knownFileIds: Set<string>) {
+  const mediaToVerify = new Map<string, { media: HeroMedia; field: string }>();
+  mediaToVerify.set(media.fileId, { media, field: "image" });
+  if (input.mobileImage) {
+    mediaToVerify.set(input.mobileImage.fileId, {
+      media: { ...input.mobileImage, mediaType: "image" },
+      field: "mobileImage",
+    });
+  }
+  if (input.desktopImage) {
+    mediaToVerify.set(input.desktopImage.fileId, {
+      media: { ...input.desktopImage, mediaType: "image" },
+      field: "desktopImage",
+    });
+  }
+  await Promise.all([...mediaToVerify.values()].map(({ media: item, field }) => (
+    verifyNewHeroMedia(item, knownFileIds, field)
+  )));
+}
+
 export async function reorderHeroSlides(ids: string[]) {
   const slides = await heroSlideRepository.listHeroSlides();
   const expected = new Set(slides.map((slide) => slide.id));
@@ -21,24 +41,38 @@ export async function reorderHeroSlides(ids: string[]) {
   await heroSlideRepository.reorderHeroSlides(ids);
 }
 
-export async function createHeroSlide(input: HeroSlideInput) {
+export async function createHeroSlide(input: HeroSlideOutput) {
   const media: HeroMedia = { ...input.image, mediaType: input.image.mediaType ?? "image" };
-  await verifyNewHeroMedia(media, new Set(), "image");
-  return heroSlideRepository.createHeroSlide({ ...input, image: media });
+  await verifySlideMedia(input, media, new Set());
+  return heroSlideRepository.createHeroSlide({
+    ...input,
+    image: media,
+    mobileImage: input.mobileImage ? { ...input.mobileImage, mediaType: "image" } : null,
+    desktopImage: input.desktopImage ? { ...input.desktopImage, mediaType: "image" } : null,
+  });
 }
 
-export async function updateHeroSlide(id: string, input: HeroSlideInput) {
+export async function updateHeroSlide(id: string, input: HeroSlideOutput) {
   const existing = await heroSlideRepository.findHeroSlide(id);
   if (!existing) throw new NotFoundError("Hero slide not found.");
 
   const media: HeroMedia = { ...input.image, mediaType: input.image.mediaType ?? "image" };
-  const knownFileIds = existing.image.fileId === media.fileId && existing.image.mediaType === media.mediaType
-    ? new Set([existing.image.fileId])
-    : new Set<string>();
-  await verifyNewHeroMedia(media, knownFileIds, "image");
-  const updated = await heroSlideRepository.updateHeroSlide(id, { ...input, image: media });
+  const existingImages = [existing.image, existing.mobileImage, existing.desktopImage].filter((image) => image !== null && image !== undefined);
+  const knownFileIds = new Set(existingImages.map((image) => image.fileId));
+  await verifySlideMedia(input, media, knownFileIds);
+  const updated = await heroSlideRepository.updateHeroSlide(id, {
+    ...input,
+    image: media,
+    mobileImage: input.mobileImage ? { ...input.mobileImage, mediaType: "image" } : null,
+    desktopImage: input.desktopImage ? { ...input.desktopImage, mediaType: "image" } : null,
+  });
   if (!updated) throw new NotFoundError("Hero slide not found.");
-  if (existing.image.fileId !== updated.image.fileId) await deleteImages([existing.image.fileId]);
+  const keptFileIds = new Set([updated.image, updated.mobileImage, updated.desktopImage].flatMap((image) => image ? [image.fileId] : []));
+  const removedFileIds = existingImages.map((image) => image.fileId).filter((fileId) => !keptFileIds.has(fileId));
+  const unusedFileIds = await Promise.all(removedFileIds.map(async (fileId) => (
+    await heroSlideRepository.isHeroMediaFileUsed(fileId) ? null : fileId
+  )));
+  await deleteImages(unusedFileIds.filter((fileId): fileId is string => fileId !== null));
   return updated;
 }
 
@@ -46,5 +80,9 @@ export async function deleteHeroSlide(id: string) {
   const existing = await heroSlideRepository.findHeroSlide(id);
   if (!existing) throw new NotFoundError("Hero slide not found.");
   await heroSlideRepository.deleteHeroSlide(id);
-  await deleteImages([existing.image.fileId]);
+  const fileIds = [existing.image, existing.mobileImage, existing.desktopImage].flatMap((image) => image ? [image.fileId] : []);
+  const unusedFileIds = await Promise.all(fileIds.map(async (fileId) => (
+    await heroSlideRepository.isHeroMediaFileUsed(fileId) ? null : fileId
+  )));
+  await deleteImages(unusedFileIds.filter((fileId): fileId is string => fileId !== null));
 }
