@@ -17,6 +17,7 @@
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@hookform/resolvers": "^6.0.2",
+    "@vercel/analytics": "^2.0.1",
     "google-auth-library": "^11.3.2",
     "mongoose": "^9.11.4",
     "next": "16.4.3",
