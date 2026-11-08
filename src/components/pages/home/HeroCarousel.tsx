@@ -234,13 +234,13 @@ export function HeroCarousel({ slides: savedSlides }: { slides: HeroSlide[] }) {
             key={slide.id}
           >
             {slide.tagline && (
-              <p className="hero-text-stroke mb-6 flex items-center gap-3 text-xs font-bold uppercase text-brand sm:text-sm">
+              <p className="mb-6 flex items-center gap-3 text-xs font-bold uppercase text-brand sm:text-sm">
                 <span className="h-px w-9 bg-brand" />
                 {slide.tagline}
               </p>
             )}
             {slide.heading && (
-              <h1 className="hero-text-stroke font-display text-[2.8rem] font-semibold !leading-[1.2] md:!leading-tight sm:text-6xl md:text-7xl">
+              <h1 className="font-display text-[2.8rem] font-semibold !leading-[1.2] md:!leading-tight sm:text-6xl md:text-7xl">
                 {hasHighlight ? (
                   <>
                     {slide.heading.slice(0, highlightIndex)}
@@ -260,7 +260,7 @@ export function HeroCarousel({ slides: savedSlides }: { slides: HeroSlide[] }) {
               </h1>
             )}
             {slide.description && (
-              <p className="hero-text-stroke mt-7 max-w-md font-copy text-sm leading-7 text-white/90 sm:text-base">
+              <p className="mt-7 max-w-md font-copy text-sm leading-7 text-white/90 sm:text-base">
                 {slide.description}
               </p>
             )}

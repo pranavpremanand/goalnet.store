@@ -26,10 +26,6 @@
   --font-copy: var(--font-poppins);
 }
 
-.hero-text-stroke {
-  -webkit-text-stroke: 3px var(--ink);
-}
-
 @keyframes announcement-marquee {
   to {
     transform: translateX(-50%);
