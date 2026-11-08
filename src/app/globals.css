@@ -26,6 +26,54 @@
   --font-copy: var(--font-poppins);
 }
 
+@keyframes announcement-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.announcement-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: announcement-marquee 60s linear infinite;
+  will-change: transform;
+}
+
+.announcement-marquee:hover .announcement-marquee-track {
+  animation-play-state: paused;
+}
+
+.announcement-marquee-copy {
+  display: flex;
+  min-width: 100vw;
+  flex: none;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4rem;
+  padding: 0.55rem 1.5rem;
+  white-space: nowrap;
+}
+
+.announcement-marquee-message {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-marquee-track {
+    animation: none !important;
+    transform: none;
+  }
+
+  .announcement-marquee-copy:not(:first-child),
+  .announcement-marquee-message:not(:first-child) {
+    display: none;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

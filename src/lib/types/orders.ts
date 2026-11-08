@@ -30,6 +30,9 @@ export type OrderLine = {
   size: string;
   quantity: number;
   price: number;
+  originalPrice?: number;
+  discountAmount?: number;
+  offerName?: string | null;
 };
 
 export type OrderTracking = { carrier: string; awb: string };

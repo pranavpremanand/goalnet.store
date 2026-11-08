@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LuBoxes as Boxes, LuCircleHelp as CircleHelp, LuClipboardList as ClipboardList, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuMail as Mail, LuPanelsTopLeft as PanelsTopLeft, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
+import { LuBoxes as Boxes, LuCircleHelp as CircleHelp, LuClipboardList as ClipboardList, LuLayoutDashboard as LayoutDashboard, LuLogOut as LogOut, LuMail as Mail, LuMegaphone as Megaphone, LuPanelsTopLeft as PanelsTopLeft, LuPercent as Percent, LuShoppingBag as ShoppingBag, LuUsers as Users } from "react-icons/lu";
 import { signOutUser } from "@/lib/auth-client";
 
 const items = [
@@ -10,7 +10,9 @@ const items = [
   { href: "/admin/users", label: "Users", mobileLabel: "Users", icon: Users },
   { href: "/admin/products", label: "Products", mobileLabel: "Products", icon: ShoppingBag },
   { href: "/admin/categories", label: "Categories", mobileLabel: "Categories", icon: ClipboardList },
+  { href: "/admin/offers", label: "Offers & Discounts", mobileLabel: "Offers", icon: Percent },
   { href: "/admin/hero", label: "Homepage hero", mobileLabel: "Hero", icon: PanelsTopLeft },
+  { href: "/admin/announcement", label: "Announcement bar", mobileLabel: "Banner", icon: Megaphone },
   { href: "/admin/manage-orders", label: "Orders", mobileLabel: "Orders", icon: Boxes },
   { href: "/admin/tickets", label: "Support tickets", mobileLabel: "Tickets", icon: CircleHelp },
   { href: "/admin/contact-messages", label: "Contact messages", mobileLabel: "Messages", icon: Mail },
@@ -21,7 +23,7 @@ export function AdminSidebar() {
   const router = useRouter();
   return (
     <aside className="border-r border-line bg-paper lg:min-h-[calc(100svh-64px)]">
-      <nav aria-label="Admin sections" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-line bg-paper px-1 pb-[max(5px,env(safe-area-inset-bottom))] pt-1 sm:grid-cols-8 lg:sticky lg:top-16 lg:block lg:border-0 lg:px-4 lg:py-7">
+      <nav aria-label="Admin sections" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-paper px-1 pb-[max(5px,env(safe-area-inset-bottom))] pt-1 sm:grid-cols-10 lg:sticky lg:top-16 lg:block lg:border-0 lg:px-4 lg:py-7">
         <p className="mb-4 hidden px-3 text-[10px] font-bold uppercase text-muted lg:block">Workspace</p>
         {items.map(({ href, label, mobileLabel, icon: Icon }) => {
           const active = href === "/admin" ? pathname === href : pathname.startsWith(href);

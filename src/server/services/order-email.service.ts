@@ -95,13 +95,16 @@ function buildOrderEmail(order: OrderDto, event: OrderNotificationEvent) {
     const image = imageUrl
       ? `<img src="${imageUrl}" alt="${escapeHtml(line.imageAlt || line.name)}" width="72" height="72" style="display:block;width:72px;height:72px;object-fit:cover;border-radius:4px;">`
       : `<div style="width:72px;height:72px;background:#eeeeee;border-radius:4px;"></div>`;
+    const linePrice = line.discountAmount
+      ? `<div style="color:#666;text-decoration:line-through;font-size:12px;">${formatPrice((line.originalPrice ?? line.price + line.discountAmount) * line.quantity)}</div><strong>${formatPrice(line.price * line.quantity)}</strong><div style="color:#26723a;font-size:12px;">Saved ${formatPrice(line.discountAmount * line.quantity)}</div>`
+      : formatPrice(line.price * line.quantity);
     return `<tr>
       <td style="padding:14px 0;border-bottom:1px solid #e8e8e8;">${image}</td>
       <td style="padding:14px 12px;border-bottom:1px solid #e8e8e8;vertical-align:middle;">
         <strong style="color:${BRAND_DARK};">${escapeHtml(line.name)}</strong>
         <div style="margin-top:5px;color:#666;font-size:13px;">Size ${escapeHtml(line.size)} · Qty ${line.quantity}</div>
       </td>
-      <td style="padding:14px 0;border-bottom:1px solid #e8e8e8;text-align:right;white-space:nowrap;vertical-align:middle;">${formatPrice(line.price * line.quantity)}</td>
+      <td style="padding:14px 0;border-bottom:1px solid #e8e8e8;text-align:right;white-space:nowrap;vertical-align:middle;">${linePrice}</td>
     </tr>`;
   }).join("");
   const address = [

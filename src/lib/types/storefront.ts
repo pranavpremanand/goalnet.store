@@ -16,6 +16,9 @@ export type StoreProduct = {
   jerseyType?: JerseyType | null;
   fit: FitType | null;
   price: number;
+  originalPrice?: number;
+  discountAmount?: number;
+  offerName?: string | null;
   compareAtPrice: number | null;
   image: string;
   imageAlt: string;
@@ -38,4 +41,4 @@ export type StoreProductPage = {
   hasMore: boolean;
 };
 
-export type CartProduct = Pick<StoreProduct, "id" | "slug" | "name" | "image" | "imageAlt" | "price">;
+export type CartProduct = Pick<StoreProduct, "id" | "slug" | "name" | "image" | "imageAlt" | "price" | "originalPrice" | "discountAmount" | "offerName">;

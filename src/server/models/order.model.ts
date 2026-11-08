@@ -10,7 +10,7 @@ export interface OrderAttrs {
   userId?: Types.ObjectId;
   shipping: { name: string; email: string; phone: string; pin: string; state: string; city: string; address: string; apartment: string };
   billingAddress?: string | null;
-  lines: { productId: Types.ObjectId; slug: string; name: string; image: string; imageAlt: string; size: string; quantity: number; price: number }[];
+  lines: { productId: Types.ObjectId; slug: string; name: string; image: string; imageAlt: string; size: string; quantity: number; price: number; originalPrice?: number; discountAmount?: number; offerName?: string | null }[];
   subtotal: number;
   shippingFee: number;
   /** Kept for backward-compatibility with existing orders; always 0 for new orders. */
@@ -56,6 +56,9 @@ const orderSchema = new Schema<OrderAttrs>(
         size: { type: String, required: true },
         quantity: { type: Number, required: true, min: 1 },
         price: { type: Number, required: true, min: 0 },
+        originalPrice: { type: Number, min: 0 },
+        discountAmount: { type: Number, min: 0, default: 0 },
+        offerName: { type: String, default: null },
       },
     ],
     subtotal: { type: Number, required: true, min: 0 },

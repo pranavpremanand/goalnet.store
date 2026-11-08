@@ -146,6 +146,9 @@ export function CheckoutPage({
             image: product.image,
             imageAlt: product.imageAlt,
             price: product.price,
+            originalPrice: product.originalPrice,
+            discountAmount: product.discountAmount,
+            offerName: product.offerName,
             size: directPurchase.size,
             quantity: 1,
             available: selectedSize.availability !== "unavailable",
@@ -1062,9 +1065,21 @@ export function CheckoutPage({
                       </div>
                     )}
                   </div>
-                  <p className="shrink-0 text-sm font-bold">
-                    {formatRupees(item.price * item.quantity)}
-                  </p>
+                  <div className="shrink-0 text-right">
+                    {item.discountAmount ? (
+                      <>
+                        <p className="text-xs text-muted line-through">
+                          {formatRupees((item.originalPrice ?? item.price + item.discountAmount) * item.quantity)}
+                        </p>
+                        <p className="text-sm font-bold">{formatRupees(item.price * item.quantity)}</p>
+                        <p className="text-[10px] font-semibold text-green-800">
+                          Save {formatRupees(item.discountAmount * item.quantity)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-bold">{formatRupees(item.price * item.quantity)}</p>
+                    )}
+                  </div>
                 </div>
               );
             })}

@@ -13,10 +13,12 @@ import {
   LuX as X,
 } from "react-icons/lu";
 import { BrandMark } from "@/ui/BrandMark";
+import { AnnouncementMarquee } from "@/components/common/AnnouncementMarquee";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { useWishlist } from "@/components/common/WishlistProvider";
 import { useDemoStore } from "@/lib/demo-store";
 import { formatRupees } from "@/lib/format";
+import type { AnnouncementBar } from "@/lib/types/announcement";
 
 type SearchResult = {
   id: string;
@@ -38,6 +40,7 @@ const links = [
 ];
 
 export function HomeNavbar() {
+  const [announcement, setAnnouncement] = useState<AnnouncementBar | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +51,33 @@ export function HomeNavbar() {
   const { products: wishlistProducts } = useWishlist();
   const { session } = useDemoStore();
   const accountHref = session ? "/dashboard/dashboard" : "/login";
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadAnnouncement() {
+      try {
+        const response = await fetch("/api/announcement-bar", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const result = (await response.json()) as {
+          announcement?: AnnouncementBar;
+          error?: string;
+        };
+        if (!response.ok || !result.announcement) {
+          throw new Error(result.error ?? "The announcement bar could not be loaded.");
+        }
+        setAnnouncement(result.announcement);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error("Could not load announcement bar", error);
+        }
+      }
+    }
+
+    void loadAnnouncement();
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -106,9 +136,12 @@ export function HomeNavbar() {
 
   return (
     <>
-      {/* <div className="flex min-h-9 items-center justify-center bg-ink px-4 text-center text-[11px] font-semibold uppercase text-white sm:text-xs">
-        <p>For the love of the game.</p>
-      </div> */}
+      {announcement?.isActive && announcement.text.trim() && (
+        <div aria-label="Announcement" className="announcement-marquee overflow-hidden bg-ink text-white" role="region">
+          <p className="sr-only">{announcement.text}</p>
+          <AnnouncementMarquee text={announcement.text} />
+        </div>
+      )}
       <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
         <nav
           aria-label="Main navigation"

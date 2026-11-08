@@ -2,7 +2,9 @@ import { HERO_VIDEO_MIME_TYPES, IMAGE_MIME_TYPES, MAX_HERO_VIDEO_BYTES, MAX_IMAG
 import { ApiError, apiRequest } from "@/lib/api-client";
 import type { CategoryDto, ImageAsset, ProductDto, UploadAuth } from "@/lib/types/catalog";
 import type { HeroMedia } from "@/lib/types/hero";
+import type { OfferDto } from "@/lib/types/offers";
 import type { CategoryDeleteOptions, CategoryInput, ProductInput, UploadTarget } from "@/lib/validation/catalog";
+import type { OfferInput } from "@/lib/validation/offers";
 
 const IMAGEKIT_UPLOAD_URL = "https://upload.imagekit.io/api/v1/files/upload";
 
@@ -26,6 +28,12 @@ export const productApi = {
   update: (id: string, input: ProductInput) => apiRequest<{ product: ProductDto }>(`/api/admin/products/${id}`, json("PUT", input)),
   reorder: (ids: string[]) => apiRequest<{ success: boolean }>("/api/admin/products/reorder", json("PATCH", { ids })),
   remove: (id: string) => apiRequest<void>(`/api/admin/products/${id}`, { method: "DELETE" }),
+};
+
+export const offerApi = {
+  create: (input: OfferInput) => apiRequest<{ offer: OfferDto }>("/api/admin/offers", json("POST", input)),
+  update: (id: string, input: OfferInput) => apiRequest<{ offer: OfferDto }>(`/api/admin/offers/${id}`, json("PUT", input)),
+  remove: (id: string) => apiRequest<void>(`/api/admin/offers/${id}`, { method: "DELETE" }),
 };
 
 // Deletes uploads that were never saved. Failures are ignored; the server only removes files no record uses.

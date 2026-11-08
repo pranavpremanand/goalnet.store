@@ -65,7 +65,15 @@ export function ProductCard({ product }: { product: StoreProduct }) {
           </Link>
         </div>
         <div className="shrink-0 pt-3 text-right">
-          <p className="text-sm font-bold">{formatRupees(product.price)}</p>
+          {product.discountAmount ? (
+            <>
+              <p className="text-[11px] text-muted line-through">{formatRupees(product.originalPrice ?? product.price + product.discountAmount)}</p>
+              <p className="text-sm font-bold">{formatRupees(product.price)}</p>
+              <p className="text-[10px] font-semibold text-green-800">Save {formatRupees(product.discountAmount)}</p>
+            </>
+          ) : (
+            <p className="text-sm font-bold">{formatRupees(product.price)}</p>
+          )}
           {product.compareAtPrice && <p className="text-xs text-muted line-through">{formatRupees(product.compareAtPrice)}</p>}
         </div>
       </div>

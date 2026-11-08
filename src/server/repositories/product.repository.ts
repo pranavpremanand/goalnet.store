@@ -335,6 +335,7 @@ export type ProductSearchRecord = {
   teamName: string;
   season: string;
   price: number;
+  categoryIds: string[];
   image: string;
   imageAlt: string;
 };
@@ -347,6 +348,8 @@ type ProductSearchDoc = {
   team?: { name?: string };
   season?: string;
   price: number;
+  category?: Types.ObjectId;
+  categories?: Types.ObjectId[];
   images?: { url?: string; alt?: string }[];
 };
 
@@ -362,7 +365,7 @@ export async function searchActiveProducts(queryText: string, categoryIds: strin
       { $or: [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }, { season: pattern }] },
     ],
   })
-    .select("name slug brand team.name season price images.url images.alt displayOrder createdAt")
+    .select("name slug brand team.name season price category categories images.url images.alt displayOrder createdAt")
     .sort({ displayOrder: 1, createdAt: -1 })
     .limit(limit)
     .lean<ProductSearchDoc[]>();
@@ -377,6 +380,10 @@ export async function searchActiveProducts(queryText: string, categoryIds: strin
       teamName: doc.team?.name ?? "",
       season: doc.season ?? "",
       price: doc.price,
+      categoryIds: [
+        ...(doc.category ? [doc.category.toString()] : []),
+        ...(doc.categories ?? []).map((category) => category.toString()),
+      ],
       image: image?.url ?? "",
       imageAlt: image?.alt || doc.name,
     };

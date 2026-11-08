@@ -7,6 +7,7 @@ import { connectToDatabase } from "@/server/db/connect";
 import { CartModel, type CartItemAttrs } from "@/server/models/cart.model";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as productRepository from "@/server/repositories/product.repository";
+import * as offerService from "@/server/services/offer.service";
 import type { CartLineKey } from "@/lib/validation/cart";
 
 export type CartIdentity = { userId?: string; guestTokenHash: string };
@@ -107,6 +108,7 @@ async function getCartResult(identity: CartIdentity): Promise<CartResult> {
   const cart = await getOwnedCart(identity);
   const products = await getActiveProducts(cart.items.map((item) => item.productId.toString()));
   const productById = new Map(products.map((product) => [product.id, product]));
+  const offerPrices = await offerService.priceProducts(products);
 
   return {
     items: cart.items.map((item) => {
@@ -118,7 +120,10 @@ async function getCartResult(identity: CartIdentity): Promise<CartResult> {
         name: product?.name ?? item.name,
         image: product?.images[0]?.url ?? item.image,
         imageAlt: product?.images[0]?.alt || item.imageAlt,
-        price: product?.price ?? item.price,
+        price: product ? offerPrices.get(product.id)!.price : item.price,
+        originalPrice: product ? offerPrices.get(product.id)!.originalPrice : item.price,
+        discountAmount: product ? offerPrices.get(product.id)!.discountAmount : 0,
+        offerName: product ? offerPrices.get(product.id)!.offerName : null,
         size: item.size,
         quantity: item.quantity,
         available: Boolean(variant && variant.availabilityStatus !== "unavailable"),
@@ -135,13 +140,14 @@ async function findAvailableProduct(key: CartLineKey) {
     throw new BadRequestError(`${product.name} in size ${key.size} is no longer available.`);
   }
   const image = product.images[0];
+  const price = (await offerService.priceProducts([product])).get(product.id)!;
   return {
     id: product.id,
     slug: product.slug,
     name: product.name,
     image: image?.url ?? "",
     imageAlt: image?.alt || product.name,
-    price: product.price,
+    ...price,
   } satisfies CartProduct;
 }
 

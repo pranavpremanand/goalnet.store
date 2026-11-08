@@ -7,6 +7,7 @@ import { generateSessionToken, hashSessionToken } from "@/server/lib/token";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as orderRepository from "@/server/repositories/order.repository";
 import * as productRepository from "@/server/repositories/product.repository";
+import * as offerService from "@/server/services/offer.service";
 import type { AuthUser } from "@/server/services/auth.service";
 import { getDeliveryQuote } from "@/server/services/delivery.service";
 import { getCart, type CartIdentity } from "@/server/services/cart.service";
@@ -39,6 +40,7 @@ async function priceLines(items: CartOrderLine[]) {
   const productIds = [...new Set(items.map((item) => item.productId))];
   const products = await productRepository.listActiveProducts({ categoryIds, ids: productIds, limit: productIds.length });
   const byId = new Map(products.map((product) => [product.id, product]));
+  const prices = await offerService.priceProducts(products);
 
   return [...merged.values()].map((item) => {
     const product = byId.get(item.productId);
@@ -56,7 +58,10 @@ async function priceLines(items: CartOrderLine[]) {
       imageAlt: image?.alt || product.name,
       size: item.size,
       quantity: item.quantity,
-      price: product.price,
+      price: prices.get(product.id)?.price ?? product.price,
+      originalPrice: prices.get(product.id)?.originalPrice ?? product.price,
+      discountAmount: prices.get(product.id)?.discountAmount ?? 0,
+      offerName: prices.get(product.id)?.offerName ?? null,
     };
   });
 }

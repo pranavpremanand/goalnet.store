@@ -1,10 +1,12 @@
 import type { ProductDto } from "@/lib/types/catalog";
 import type { FitType, JerseyType, LogoType, TeamType } from "@/lib/catalog-constants";
+import type { OfferPrice } from "@/lib/types/offers";
 import type { StoreCategory, StorePriceBand, StoreProduct, StoreProductPage } from "@/lib/types/storefront";
 import * as categoryRepository from "@/server/repositories/category.repository";
 import * as productRepository from "@/server/repositories/product.repository";
+import * as offerService from "@/server/services/offer.service";
 
-function toStoreProduct(product: ProductDto): StoreProduct {
+function toStoreProduct(product: ProductDto, price: OfferPrice): StoreProduct {
   const [main] = product.images;
   return {
     id: product.id,
@@ -20,7 +22,10 @@ function toStoreProduct(product: ProductDto): StoreProduct {
     material: product.fabric,
     jerseyType: product.jerseyType ?? null,
     fit: product.fit,
-    price: product.price,
+    price: price.price,
+    originalPrice: price.originalPrice,
+    discountAmount: price.discountAmount,
+    offerName: price.offerName,
     compareAtPrice: product.compareAtPrice,
     image: main?.url ?? "",
     imageAlt: main?.alt || product.name,
@@ -31,6 +36,16 @@ function toStoreProduct(product: ProductDto): StoreProduct {
     seoTitle: product.seo.title,
     seoDescription: product.seo.description,
   };
+}
+
+async function toStoreProducts(products: ProductDto[]): Promise<StoreProduct[]> {
+  const prices = await offerService.priceProducts(products);
+  return products.map((product) => toStoreProduct(product, prices.get(product.id) ?? {
+    price: product.price,
+    originalPrice: product.price,
+    discountAmount: 0,
+    offerName: null,
+  }));
 }
 
 async function activeCategoryIds() {
@@ -84,7 +99,7 @@ export async function listStoreProductPage(filter: {
   });
 
   return {
-    items: result.items.map(toStoreProduct),
+    items: await toStoreProducts(result.items),
     page: filter.page,
     total: result.total,
     hasMore: result.hasMore,
@@ -96,18 +111,33 @@ export async function listStorePriceBands(): Promise<StorePriceBand[]> {
 }
 
 export async function searchStoreProducts(query: string) {
-  return productRepository.searchActiveProducts(query, await activeCategoryIds());
+  const products = await productRepository.searchActiveProducts(query, await activeCategoryIds());
+  const prices = await offerService.priceProducts(products.map((product) => ({
+    id: product.id,
+    price: product.price,
+    category: { id: product.categoryIds[0] ?? "", name: "", slug: "" },
+    categories: product.categoryIds.map((id) => ({ id, name: "", slug: "" })),
+  })));
+  return products.map((product) => ({
+    ...product,
+    ...(prices.get(product.id) ?? {
+      price: product.price,
+      originalPrice: product.price,
+      discountAmount: 0,
+      offerName: null,
+    }),
+  }));
 }
 
 export async function getStoreProduct(slug: string): Promise<StoreProduct | null> {
   const product = await productRepository.findActiveProductBySlug(slug, await activeCategoryIds());
-  return product ? toStoreProduct(product) : null;
+  return product ? (await toStoreProducts([product]))[0] : null;
 }
 
 export async function listStoreProductsByIds(ids: string[]): Promise<StoreProduct[]> {
   if (!ids || ids.length === 0) return [];
   const products = await productRepository.listActiveProducts({ categoryIds: await activeCategoryIds(), ids });
-  return products.map(toStoreProduct);
+  return toStoreProducts(products);
 }
 
 // Shows featured products in admin-defined order; without featured items, the catalog order fills the section.
@@ -115,11 +145,11 @@ export async function listFeaturedProducts(limit: number): Promise<StoreProduct[
   const categoryIds = await activeCategoryIds();
   const featured = await productRepository.listActiveProducts({ categoryIds, featuredOnly: true, limit });
   const products = featured.length > 0 ? featured : await productRepository.listActiveProducts({ categoryIds, limit });
-  return products.map(toStoreProduct);
+  return toStoreProducts(products);
 }
 
 export async function listRelatedProducts(product: StoreProduct, limit: number): Promise<StoreProduct[]> {
   const categoryIds = await activeCategoryIds();
   const candidates = await productRepository.listActiveProducts({ categoryIds, excludeId: product.id, limit: 50 });
-  return candidates.slice(0, limit).map(toStoreProduct);
+  return toStoreProducts(candidates.slice(0, limit));
 }

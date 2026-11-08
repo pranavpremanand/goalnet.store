@@ -312,14 +312,23 @@ export function ProductDetailsPage({
           <h1 className="mt-2 font-display text-4xl font-semibold leading-tight sm:text-5xl">
             {product.name}
           </h1>
-          <p className="mt-5 flex items-baseline gap-3 font-display text-3xl font-medium">
-            {formatRupees(product.price)}
-            {product.compareAtPrice && (
-              <span className="text-lg text-muted line-through">
-                {formatRupees(product.compareAtPrice)}
-              </span>
-            )}
-          </p>
+          <div className="mt-5">
+            <p className="flex flex-wrap items-baseline gap-3 font-display text-3xl font-medium">
+              {formatRupees(product.price)}
+              {product.discountAmount ? (
+                <span className="text-lg text-muted line-through">
+                  {formatRupees(product.originalPrice ?? product.price + product.discountAmount)}
+                </span>
+              ) : product.compareAtPrice ? (
+                <span className="text-lg text-muted line-through">{formatRupees(product.compareAtPrice)}</span>
+              ) : null}
+            </p>
+            {product.discountAmount ? (
+              <p className="mt-1 text-sm font-semibold text-green-800">
+                {formatRupees(product.discountAmount)} off{product.offerName ? ` with ${product.offerName}` : ""}
+              </p>
+            ) : null}
+          </div>
           <p className="mt-5 max-w-lg font-copy text-sm leading-7 text-muted">
             {description.length > 220
               ? `${description.slice(0, 217).trimEnd()}…`
