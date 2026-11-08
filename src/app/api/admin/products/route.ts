@@ -1,4 +1,5 @@
 import { productInputSchema, productListQuerySchema } from "@/lib/validation/catalog";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/server/auth/current-user";
 import { apiHandler, readJson } from "@/server/http/handler";
 import * as productService from "@/server/services/product.service";
@@ -12,5 +13,8 @@ export const GET = apiHandler(async (request) => {
 export const POST = apiHandler(async (request) => {
   await requireAdmin();
   const input = await readJson(request, productInputSchema);
-  return Response.json({ product: await productService.createProduct(input) }, { status: 201 });
+  const product = await productService.createProduct(input);
+  revalidatePath("/admin/products");
+  revalidatePath("/admin/categories");
+  return Response.json({ product }, { status: 201 });
 });
