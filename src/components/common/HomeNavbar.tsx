@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -14,6 +14,7 @@ import {
 } from "react-icons/lu";
 import { BrandMark } from "@/ui/BrandMark";
 import { AnnouncementMarquee } from "@/components/common/AnnouncementMarquee";
+import { LoadingSpinner } from "@/components/common/Loading";
 import { useLocalCart } from "@/components/common/LocalCartProvider";
 import { useWishlist } from "@/components/common/WishlistProvider";
 import { useDemoStore } from "@/lib/demo-store";
@@ -47,6 +48,12 @@ export function HomeNavbar() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
+  const [searchMoreError, setSearchMoreError] = useState("");
+  const searchPageRef = useRef(0);
+  const searchLoadingMoreRef = useRef(false);
+  const searchRequestControllerRef = useRef<AbortController | null>(null);
   const { itemCount } = useLocalCart();
   const { products: wishlistProducts } = useWishlist();
   const { session } = useDemoStore();
@@ -84,17 +91,22 @@ export function HomeNavbar() {
     if (!searchOpen || query.length < 2) return;
 
     const controller = new AbortController();
+    searchRequestControllerRef.current = controller;
     const timeout = window.setTimeout(async () => {
       setSearchLoading(true);
       setSearchError("");
+      setSearchHasMore(false);
+      setSearchMoreError("");
       try {
-        const response = await fetch(`/api/search/products?q=${encodeURIComponent(query)}`, {
+        const response = await fetch(`/api/search/products?q=${encodeURIComponent(query)}&page=1`, {
           cache: "no-store",
           signal: controller.signal,
         });
-        const data = (await response.json()) as { items?: SearchResult[]; error?: string };
+        const data = (await response.json()) as { items?: SearchResult[]; hasMore?: boolean; error?: string };
         if (!response.ok) throw new Error(data.error ?? "Product search is unavailable. Please try again.");
         setSearchResults(data.items ?? []);
+        setSearchHasMore(data.hasMore ?? false);
+        searchPageRef.current = 1;
       } catch (error) {
         if (!controller.signal.aborted) {
           setSearchResults([]);
@@ -108,15 +120,56 @@ export function HomeNavbar() {
     return () => {
       window.clearTimeout(timeout);
       controller.abort();
+      if (searchRequestControllerRef.current === controller) searchRequestControllerRef.current = null;
     };
   }, [searchOpen, searchQuery]);
 
+  async function loadMoreSearchResults() {
+    const query = searchQuery.trim();
+    const controller = searchRequestControllerRef.current;
+    if (!searchOpen || query.length < 2 || !searchHasMore || searchLoadingMoreRef.current || !controller || controller.signal.aborted) return;
+
+    const page = searchPageRef.current + 1;
+    searchLoadingMoreRef.current = true;
+    setSearchLoadingMore(true);
+    setSearchMoreError("");
+    try {
+      const response = await fetch(`/api/search/products?q=${encodeURIComponent(query)}&page=${page}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const data = (await response.json()) as { items?: SearchResult[]; hasMore?: boolean; error?: string };
+      if (!response.ok) throw new Error(data.error ?? "More search results could not be loaded.");
+      const items = data.items ?? [];
+      setSearchResults((current) => {
+        const existingIds = new Set(current.map((product) => product.id));
+        return [...current, ...items.filter((product) => !existingIds.has(product.id))];
+      });
+      searchPageRef.current = page;
+      setSearchHasMore(data.hasMore ?? false);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setSearchMoreError(error instanceof Error ? error.message : "More search results could not be loaded.");
+      }
+    } finally {
+      searchLoadingMoreRef.current = false;
+      setSearchLoadingMore(false);
+    }
+  }
+
   function closeSearch() {
+    searchRequestControllerRef.current?.abort();
+    searchRequestControllerRef.current = null;
     setSearchOpen(false);
     setSearchQuery("");
     setSearchResults([]);
     setSearchError("");
+    setSearchHasMore(false);
+    setSearchMoreError("");
+    searchPageRef.current = 0;
+    searchLoadingMoreRef.current = false;
     setSearchLoading(false);
+    setSearchLoadingMore(false);
   }
 
   useEffect(() => {
@@ -251,7 +304,12 @@ export function HomeNavbar() {
                     setSearchQuery(event.target.value);
                     setSearchResults([]);
                     setSearchError("");
+                    setSearchHasMore(false);
+                    setSearchMoreError("");
+                    searchPageRef.current = 0;
+                    searchLoadingMoreRef.current = false;
                     setSearchLoading(false);
+                    setSearchLoadingMore(false);
                   }}
                   placeholder="Search teams, seasons, and products"
                   role="combobox"
@@ -263,7 +321,17 @@ export function HomeNavbar() {
               </label>
             </form>
             {searchQuery.trim().length >= 2 && (
-              <div aria-live="polite" className="mx-auto max-w-[900px]" id="navbar-product-search-results">
+              <div
+                aria-live="polite"
+                className="mx-auto max-h-[min(60vh,32rem)] max-w-[900px] overflow-y-auto"
+                id="navbar-product-search-results"
+                onScroll={(event) => {
+                  const container = event.currentTarget;
+                  if (container.scrollHeight - container.scrollTop - container.clientHeight < 120) {
+                    void loadMoreSearchResults();
+                  }
+                }}
+              >
                 {searchLoading && <p className="py-4 text-sm text-muted">Searching products…</p>}
                 {!searchLoading && searchError && <p className="py-4 text-sm text-red-700">{searchError}</p>}
                 {!searchLoading && !searchError && searchResults.length === 0 && <p className="py-4 text-sm text-muted">No products found. Try another search.</p>}
@@ -287,6 +355,17 @@ export function HomeNavbar() {
                         </Link>
                       </li>
                     ))}
+                    {searchLoadingMore && (
+                      <li className="flex justify-center py-4 text-sm text-muted">
+                        <LoadingSpinner label="Loading more products…" />
+                      </li>
+                    )}
+                    {searchMoreError && (
+                      <li className="py-4 text-center text-sm text-red-700">
+                        {searchMoreError}{" "}
+                        <button className="font-semibold underline" onClick={() => void loadMoreSearchResults()} type="button">Try again</button>
+                      </li>
+                    )}
                   </ul>
                 )}
               </div>

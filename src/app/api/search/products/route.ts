@@ -3,8 +3,10 @@ import { apiHandler } from "@/server/http/handler";
 import { searchStoreProducts } from "@/server/services/storefront.service";
 
 export const GET = apiHandler(async (request) => {
-  const { q } = productSearchSchema.parse({
-    q: new URL(request.url).searchParams.get("q") ?? "",
+  const searchParams = new URL(request.url).searchParams;
+  const { q, page } = productSearchSchema.parse({
+    q: searchParams.get("q") ?? "",
+    page: searchParams.get("page") ?? undefined,
   });
-  return Response.json({ items: await searchStoreProducts(q) });
+  return Response.json(await searchStoreProducts(q, page));
 });

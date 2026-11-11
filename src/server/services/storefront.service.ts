@@ -111,23 +111,26 @@ export async function listStorePriceBands(): Promise<StorePriceBand[]> {
   return productRepository.listActivePriceBands(await activeCategoryIds());
 }
 
-export async function searchStoreProducts(query: string) {
-  const products = await productRepository.searchActiveProducts(query, await activeCategoryIds());
-  const prices = await offerService.priceProducts(products.map((product) => ({
+export async function searchStoreProducts(query: string, page: number) {
+  const result = await productRepository.searchActiveProducts(query, await activeCategoryIds(), page);
+  const prices = await offerService.priceProducts(result.items.map((product) => ({
     id: product.id,
     price: product.price,
     category: { id: product.categoryIds[0] ?? "", name: "", slug: "" },
     categories: product.categoryIds.map((id) => ({ id, name: "", slug: "" })),
   })));
-  return products.map((product) => ({
-    ...product,
-    ...(prices.get(product.id) ?? {
-      price: product.price,
-      originalPrice: product.price,
-      discountAmount: 0,
-      offerName: null,
-    }),
-  }));
+  return {
+    items: result.items.map((product) => ({
+      ...product,
+      ...(prices.get(product.id) ?? {
+        price: product.price,
+        originalPrice: product.price,
+        discountAmount: 0,
+        offerName: null,
+      }),
+    })),
+    hasMore: result.hasMore,
+  };
 }
 
 export async function getStoreProduct(slug: string): Promise<StoreProduct | null> {

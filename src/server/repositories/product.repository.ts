@@ -363,7 +363,9 @@ type ProductSearchDoc = {
   images?: { url?: string; alt?: string }[];
 };
 
-export async function searchActiveProducts(queryText: string, categoryIds: string[], limit = 8): Promise<ProductSearchRecord[]> {
+const PRODUCT_SEARCH_PAGE_SIZE = 8;
+
+export async function searchActiveProducts(queryText: string, categoryIds: string[], page: number): Promise<{ items: ProductSearchRecord[]; hasMore: boolean }> {
   await connectToDatabase();
 
   const pattern = new RegExp(escapeRegex(queryText), "i");
@@ -375,11 +377,13 @@ export async function searchActiveProducts(queryText: string, categoryIds: strin
     ],
   })
     .select("name slug brand team.name season price category categories images.url images.alt displayOrder createdAt")
-    .sort({ displayOrder: 1, createdAt: -1 })
-    .limit(limit)
+    .sort({ displayOrder: 1, createdAt: -1, _id: 1 })
+    .skip((page - 1) * PRODUCT_SEARCH_PAGE_SIZE)
+    .limit(PRODUCT_SEARCH_PAGE_SIZE + 1)
     .lean<ProductSearchDoc[]>();
 
-  return docs.map((doc) => {
+  const hasMore = docs.length > PRODUCT_SEARCH_PAGE_SIZE;
+  const items = docs.slice(0, PRODUCT_SEARCH_PAGE_SIZE).map((doc) => {
     const image = doc.images?.[0];
     return {
       id: doc._id.toString(),
@@ -397,6 +401,7 @@ export async function searchActiveProducts(queryText: string, categoryIds: strin
       imageAlt: image?.alt || doc.name,
     };
   });
+  return { items, hasMore };
 }
 
 export async function findActiveProductBySlug(slug: string, categoryIds: string[]): Promise<ProductDto | null> {
