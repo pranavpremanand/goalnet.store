@@ -531,39 +531,42 @@ export function AdminProductForm({
 
         <Section title="Category and storefront">
           <fieldset className="sm:col-span-2">
-            <legend className="text-xs font-semibold">Categories</legend>
+            <legend className="text-xs font-semibold">Categories (optional)</legend>
             {categories.length > 0 && (
               <p className="mt-1 text-[11px] text-muted">
-                Select every category where this product should appear.
+                Select every category where this product should appear, or leave blank.
               </p>
             )}
             <Controller
               control={control}
               name="categories"
-              render={({ field }) => (
-                <div aria-invalid={invalid(errors.categories?.message)} className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {categories.map((category) => (
-                    <label className="flex min-h-11 items-center gap-2 border border-line px-3 text-sm" key={category.id}>
-                      <input
-                        checked={field.value.includes(category.id)}
-                        className="size-4 accent-[#f2fa18]"
-                        name={field.name}
-                        onBlur={field.onBlur}
-                        onChange={(event) => {
-                          const selected = new Set(field.value);
-                          if (event.target.checked) selected.add(category.id);
-                          else selected.delete(category.id);
-                          field.onChange([...selected]);
-                        }}
-                        ref={field.ref}
-                        type="checkbox"
-                        value={category.id}
-                      />
-                      <span>{category.name}{category.isActive ? "" : " (inactive)"}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+              render={({ field }) => {
+                const selectedCategories = field.value ?? [];
+                return (
+                  <div aria-invalid={invalid(errors.categories?.message)} className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {categories.map((category) => (
+                      <label className="flex min-h-11 items-center gap-2 border border-line px-3 text-sm" key={category.id}>
+                        <input
+                          checked={selectedCategories.includes(category.id)}
+                          className="size-4 accent-[#f2fa18]"
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          onChange={(event) => {
+                            const selected = new Set(selectedCategories);
+                            if (event.target.checked) selected.add(category.id);
+                            else selected.delete(category.id);
+                            field.onChange([...selected]);
+                          }}
+                          ref={field.ref}
+                          type="checkbox"
+                          value={category.id}
+                        />
+                        <span>{category.name}{category.isActive ? "" : " (inactive)"}</span>
+                      </label>
+                    ))}
+                  </div>
+                );
+              }}
             />
             {errors.categories?.message && (
               <span className="mt-1.5 block text-xs font-normal text-red-700" role="alert">
@@ -573,7 +576,7 @@ export function AdminProductForm({
           </fieldset>
           {categories.length === 0 && (
             <p className="text-sm text-muted sm:col-span-2">
-              You need a category first.{" "}
+              No categories are available. You can create one in{" "}
               <Link
                 className="font-semibold text-ink underline"
                 href="/admin/categories"

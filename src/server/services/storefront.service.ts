@@ -81,6 +81,7 @@ export async function listStoreProductPage(filter: {
 
   const result = await productRepository.listActiveProductPage({
     categoryIds,
+    includeUncategorized: filter.categories.length === 0,
     searchCategoryIds: filter.query
       ? visibleCategories
         .filter((category) => category.name.toLocaleLowerCase().includes(filter.query.toLocaleLowerCase()))

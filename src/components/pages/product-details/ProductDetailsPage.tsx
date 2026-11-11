@@ -307,7 +307,7 @@ export function ProductDetailsPage({
         </div>
         <div className="lg:pt-4">
           <p className="text-xs font-bold uppercase text-muted">
-            {product.categories.map((category) => category.name).join(" · ")}
+            {product.categories.length > 0 ? product.categories.map((category) => category.name).join(" · ") : "Uncategorized"}
           </p>
           <h1 className="mt-2 font-display text-4xl font-semibold leading-tight sm:text-5xl">
             {product.name}

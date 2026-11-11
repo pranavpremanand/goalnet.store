@@ -6,16 +6,33 @@ import { connectToDatabase } from "@/server/db/connect";
 import { ProductModel, type ProductAttrs, type StoredJerseyType } from "@/server/models/product.model";
 
 export type ProductData = Omit<ProductAttrs, "category" | "categories" | "createdAt" | "updatedAt"> & {
-  category: string;
+  category: string | null;
   categories: string[];
 };
 
 type PopulatedCategory = { _id: Types.ObjectId; name: string; slug: string } | null;
 type ProductDoc = Omit<ProductAttrs, "category" | "categories"> & {
   _id: Types.ObjectId;
-  category: PopulatedCategory;
+  category?: PopulatedCategory;
   categories?: (PopulatedCategory | Types.ObjectId)[];
 };
+const uncategorizedCondition: QueryFilter<ProductAttrs> = {
+  $and: [
+    { $or: [{ category: { $exists: false } }, { category: null }] },
+    { $or: [{ categories: { $exists: false } }, { categories: { $size: 0 } }, { categories: null }] },
+  ],
+};
+
+function categoryFilter(categoryIds: string[], includeUncategorized = false): QueryFilter<ProductAttrs> {
+  return {
+    $or: [
+      { categories: { $in: categoryIds } },
+      { category: { $in: categoryIds } },
+      ...(includeUncategorized ? [uncategorizedCondition] : []),
+    ],
+  };
+}
+
 const LEGACY_OVERSIZED_TYPES: StoredJerseyType[] = ["oversized-five-sleeve", "oversized-full-sleeve"];
 const LEGACY_OVERSIZED_TEXT = /oversized/i;
 
@@ -48,7 +65,7 @@ function toDto(doc: ProductDoc): ProductDto {
     : doc.category
       ? [{ id: doc.category._id.toString(), name: doc.category.name, slug: doc.category.slug }]
       : [];
-  const primaryCategory = normalizedCategories[0] ?? { id: "", name: "Unknown category", slug: "" };
+  const primaryCategory = normalizedCategories[0] ?? { id: "", name: "", slug: "" };
   return {
     id: doc._id.toString(),
     name: doc.name,
@@ -120,6 +137,7 @@ export async function findProductById(id: string): Promise<ProductDto | null> {
 type StorefrontFilter = { categoryIds: string[]; featuredOnly?: boolean; categoryId?: string; excludeId?: string; ids?: string[]; limit?: number };
 type StorefrontPageFilter = {
   categoryIds: string[];
+  includeUncategorized: boolean;
   searchCategoryIds: string[];
   query: string;
   teamTypes?: TeamType[];
@@ -133,20 +151,16 @@ type StorefrontPageFilter = {
   pageSize: number;
 };
 
-// Customer-facing queries only ever see active products that belong to an active category.
+// Category-less products are available in unrestricted storefront queries, but not category-filtered results.
 export async function listActiveProducts(filter: StorefrontFilter): Promise<ProductDto[]> {
-  if (filter.categoryIds.length === 0) return [];
+  const includeUncategorized = !filter.categoryId;
+  if (filter.categoryIds.length === 0 && !includeUncategorized) return [];
   await connectToDatabase();
 
   const query: QueryFilter<ProductAttrs> = {
     isActive: true,
   };
-  const conditions: QueryFilter<ProductAttrs>[] = [{
-    $or: [
-      { categories: { $in: filter.categoryIds } },
-      { category: { $in: filter.categoryIds } },
-    ],
-  }];
+  const conditions: QueryFilter<ProductAttrs>[] = [categoryFilter(filter.categoryIds, includeUncategorized)];
   query.$and = conditions;
   if (filter.featuredOnly) query.isFeatured = true;
   if (filter.categoryId) conditions.push({ $or: [{ categories: filter.categoryId }, { category: filter.categoryId }] });
@@ -158,18 +172,13 @@ export async function listActiveProducts(filter: StorefrontFilter): Promise<Prod
 }
 
 export async function listActiveProductPage(filter: StorefrontPageFilter) {
-  if (filter.categoryIds.length === 0) return { items: [], total: 0, hasMore: false };
+  if (filter.categoryIds.length === 0 && !filter.includeUncategorized) return { items: [], total: 0, hasMore: false };
   await connectToDatabase();
 
   const query: QueryFilter<ProductAttrs> = {
     isActive: true,
   };
-  const conditions: QueryFilter<ProductAttrs>[] = [{
-    $or: [
-    { categories: { $in: filter.categoryIds } },
-    { category: { $in: filter.categoryIds } },
-    ],
-  }];
+  const conditions: QueryFilter<ProductAttrs>[] = [categoryFilter(filter.categoryIds, filter.includeUncategorized)];
   if (filter.query) {
     const pattern = new RegExp(escapeRegex(filter.query), "i");
     const searchConditions: QueryFilter<ProductAttrs>[] = [
@@ -287,16 +296,17 @@ export async function listActiveProductPage(filter: StorefrontPageFilter) {
 }
 
 export async function listActivePriceBands(categoryIds: string[]): Promise<StorePriceBand[]> {
-  if (categoryIds.length === 0) return [];
   await connectToDatabase();
 
+  const categoryObjectIds = categoryIds.map((id) => new Types.ObjectId(id));
   const [bounds] = await ProductModel.aggregate<{ minPrice: number; maxPrice: number }>([
     {
       $match: {
         isActive: true,
         $or: [
-          { categories: { $in: categoryIds.map((id) => new Types.ObjectId(id)) } },
-          { category: { $in: categoryIds.map((id) => new Types.ObjectId(id)) } },
+          { categories: { $in: categoryObjectIds } },
+          { category: { $in: categoryObjectIds } },
+          uncategorizedCondition,
         ],
       },
     },
@@ -354,14 +364,13 @@ type ProductSearchDoc = {
 };
 
 export async function searchActiveProducts(queryText: string, categoryIds: string[], limit = 8): Promise<ProductSearchRecord[]> {
-  if (categoryIds.length === 0) return [];
   await connectToDatabase();
 
   const pattern = new RegExp(escapeRegex(queryText), "i");
   const docs = await ProductModel.find({
     isActive: true,
     $and: [
-      { $or: [{ categories: { $in: categoryIds } }, { category: { $in: categoryIds } }] },
+      categoryFilter(categoryIds, true),
       { $or: [{ name: pattern }, { slug: pattern }, { brand: pattern }, { "team.name": pattern }, { season: pattern }] },
     ],
   })
@@ -391,15 +400,11 @@ export async function searchActiveProducts(queryText: string, categoryIds: strin
 }
 
 export async function findActiveProductBySlug(slug: string, categoryIds: string[]): Promise<ProductDto | null> {
-  if (categoryIds.length === 0) return null;
   await connectToDatabase();
   const doc = await ProductModel.findOne({
     slug,
     isActive: true,
-    $or: [
-      { categories: { $in: categoryIds } },
-      { category: { $in: categoryIds } },
-    ],
+    ...categoryFilter(categoryIds, true),
   }).populate("category", "name slug").populate("categories", "name slug").lean<ProductDoc>();
   return doc ? toDto(doc) : null;
 }
@@ -459,6 +464,7 @@ export async function countProductsByCategory(): Promise<Map<string, number>> {
       },
     },
     { $unwind: "$categoryIds" },
+    { $match: { categoryIds: { $ne: null } } },
     { $group: { _id: "$categoryIds", count: { $sum: 1 } } },
   ]);
   return new Map(rows.map((row) => [row._id.toString(), row.count]));

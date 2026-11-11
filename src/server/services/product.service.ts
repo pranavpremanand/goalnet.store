@@ -22,7 +22,7 @@ function toData(input: ProductInput, slug: string): productRepository.ProductDat
   const teamBased = isTeamBased(input.productType);
   return {
     ...input,
-    category: input.categories[0],
+    category: input.categories[0] ?? null,
     categories: input.categories,
     slug,
     team: teamBased ? input.team : { name: null, type: null },

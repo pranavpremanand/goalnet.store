@@ -20,7 +20,7 @@ export interface ProductAttrs {
   sizeSystem: SizeSystem;
   variants: { size: string; availabilityStatus: AvailabilityStatus }[];
   images: { url: string; fileId: string; alt: string }[];
-  category: Types.ObjectId;
+  category?: Types.ObjectId | null;
   categories: Types.ObjectId[];
   isActive: boolean;
   isFeatured: boolean;
@@ -71,7 +71,7 @@ const productSchema = new Schema<ProductAttrs>(
         alt: { type: String, default: "", trim: true },
       },
     ],
-    category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
+    category: { type: Schema.Types.ObjectId, ref: "Category" },
     categories: { type: [{ type: Schema.Types.ObjectId, ref: "Category" }], default: [] },
     isActive: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false },
@@ -89,6 +89,7 @@ productSchema.index({ categories: 1, isActive: 1, price: 1 });
 productSchema.index({ isFeatured: 1, isActive: 1 });
 
 const cachedProductModel = models.Product as Model<ProductAttrs> | undefined;
-if (cachedProductModel && (!cachedProductModel.schema.path("fit") || !cachedProductModel.schema.path("categories"))) delete models.Product;
+const cachedCategoryRequired = cachedProductModel?.schema.path("category")?.options.required;
+if (cachedProductModel && (cachedCategoryRequired || !cachedProductModel.schema.path("fit") || !cachedProductModel.schema.path("categories"))) delete models.Product;
 
 export const ProductModel = (models.Product as Model<ProductAttrs> | undefined) ?? model<ProductAttrs>("Product", productSchema);
